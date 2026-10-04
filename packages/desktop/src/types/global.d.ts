@@ -203,6 +203,16 @@ declare global {
     onEvent(handler: (pluginId: string, event: string, payload: unknown) => void): () => void
   }
 
+  interface CommunityAPI {
+    install(kind: 'folder' | 'zip'): Promise<PluginIpcResult<{ id: string; name: string }>>
+    uninstall(pluginId: string): Promise<PluginIpcResult<null>>
+    setEnabled(pluginId: string, enabled: boolean): Promise<PluginIpcResult<null>>
+    fetch(
+      pluginId: string,
+      url: string,
+      init?: unknown
+    ): Promise<PluginIpcResult<{ status: number; ok: boolean; headers: Record<string, string>; body: string }>>
+  }
   /** Plugin file access scoped by main to the window's vault; failures resolve as `{ ok: false, error }`. */
   interface VaultAPI {
     readText(p: string): Promise<PluginIpcResult<{ content: string; mtimeMs: number }>>
@@ -249,6 +259,7 @@ declare global {
     fonts: FontsAPI
     diagram: DiagramAPI
     plugins: PluginsAPI
+    community: CommunityAPI
     vault: VaultAPI
     vaultIndex: VaultIndexAPI
     process: ProcessShim

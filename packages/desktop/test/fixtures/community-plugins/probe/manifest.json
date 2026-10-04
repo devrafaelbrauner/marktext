@@ -1,0 +1,10 @@
+{
+  "id": "probe",
+  "name": "Probe",
+  "version": "1.0.0",
+  "minAppVersion": "0.21.0",
+  "author": "MarkText Plus",
+  "description": "Reports what a sandboxed plugin can reach.",
+  "main": "main.js",
+  "permissions": []
+}

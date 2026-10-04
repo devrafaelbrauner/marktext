@@ -265,6 +265,13 @@ body {
     text-decoration-color: var(--mu-decoration-style-color, #f59e0b);
 }
 
+.mu-decoration-info {
+    text-decoration-line: underline;
+    text-decoration-style: dotted;
+    text-decoration-skip-ink: none;
+    text-decoration-color: var(--mu-decoration-info-color, #6b7280);
+}
+
 /* Drag-and-drop image drop indicator (PG4). `dragDropImage.ts` positions this
    absolutely-anchored bar at the top/bottom edge of the drop-target block. */
 #mu-dragover-ghost {

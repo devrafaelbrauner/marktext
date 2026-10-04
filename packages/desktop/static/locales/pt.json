@@ -763,7 +763,39 @@
       "save": "Salvar",
       "clear": "Limpar",
       "stringListPlaceholder": "Uma entrada por linha",
-      "saveFailed": "Não foi possível salvar \"{setting}\": {message}"
+      "saveFailed": "Não foi possível salvar \"{setting}\": {message}",
+      "community": {
+        "title": "Comunidade",
+        "description": "Plugins da comunidade rodam em uma sandbox. Eles são instalados desativados; ao ativar, o MarkText pede permissão para o que eles solicitam.",
+        "empty": "Nenhum plugin da comunidade instalado.",
+        "installFolder": "Instalar de uma pasta",
+        "installZip": "Instalar de um .zip",
+        "uninstall": "Desinstalar",
+        "uninstallConfirm": "Desinstalar \"{name}\"? Os arquivos serão apagados.",
+        "uninstallFailed": "Não foi possível desinstalar o plugin: {message}",
+        "author": "Autor",
+        "consentTitle": "Permitir \"{name}\"?",
+        "consentBody": "Este plugin poderá:",
+        "consentConfirm": "Ativar",
+        "consentCancel": "Cancelar",
+        "consentNone": "Nenhuma permissão especial. Ele pode registrar comandos, mostrar notificações e usar suas configurações.",
+        "safeMode": "O modo seguro está ativo (--safe): plugins da comunidade permanecem desligados.",
+        "installFailed": "Não foi possível instalar o plugin: {message}",
+        "enableFailed": "Não foi possível alterar \"{name}\": {message}",
+        "installed": "\"{name}\" foi instalado. Ele permanece desligado até você ativá-lo.",
+        "permission": {
+          "editorRead": "Ler o documento aberto",
+          "editorWrite": "Editar o documento aberto",
+          "editorDecorate": "Sublinhar texto no editor",
+          "vaultRead": "Ler arquivos da pasta aberta",
+          "vaultWrite": "Criar e editar arquivos da pasta aberta",
+          "metadataRead": "Ler notas, links e tags",
+          "sidebar": "Adicionar um painel na barra lateral",
+          "statusbar": "Adicionar um item na barra de status",
+          "clipboard": "Copiar texto para a área de transferência",
+          "network": "Conectar a {host}"
+        }
+      }
     }
   },
   "about": {
@@ -1030,6 +1062,7 @@
   },
   "pluginHost": {
     "activationFailed": "Não foi possível iniciar o plugin \"{name}\"",
-    "commandFailed": "O comando \"{command}\" falhou"
+    "commandFailed": "O comando \"{command}\" falhou",
+    "communityDisabled": "O plugin da comunidade \"{name}\" foi desativado porque travou ou não iniciou."
   }
 }

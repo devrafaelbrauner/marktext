@@ -267,6 +267,12 @@ const pluginsAPI = {
   }
 }
 
+const communityAPI = {
+  install: (kind: 'folder' | 'zip') => invoke('mt::community::install', kind),
+  uninstall: (pluginId: string) => invoke('mt::community::uninstall', pluginId),
+  setEnabled: (pluginId: string, enabled: boolean) => invoke('mt::community::set-enabled', pluginId, enabled),
+  fetch: (pluginId: string, url: string, init?: unknown) => invoke('mt::community::fetch', pluginId, url, init)
+}
 const vaultAPI = {
   readText: (p: string) => invoke('mt::vault::read-text', p),
   readBinary: (p: string, maxBytes?: number) => invoke('mt::vault::read-binary', p, maxBytes),
@@ -372,6 +378,7 @@ try {
   contextBridge.exposeInMainWorld('fonts', fontsAPI)
   contextBridge.exposeInMainWorld('diagram', diagramAPI)
   contextBridge.exposeInMainWorld('plugins', pluginsAPI)
+  contextBridge.exposeInMainWorld('community', communityAPI)
   contextBridge.exposeInMainWorld('vault', vaultAPI)
   contextBridge.exposeInMainWorld('vaultIndex', vaultIndexAPI)
 } catch (error) {

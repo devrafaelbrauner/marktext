@@ -9,6 +9,9 @@
  * Everything in this file must stay serializable (it crosses IPC) and free of
  * Electron, Node and Vue imports.
  */
+import type { CommunityPluginRecord } from './community'
+
+export type { CommunityPluginRecord } from './community'
 
 export interface Disposable {
   dispose(): void
@@ -100,6 +103,11 @@ export interface PluginHostState {
   settings: Record<string, Record<string, PluginSettingValue>>
   /** Which `secret` settings are currently stored, per plugin id. */
   secretsSet: Record<string, Record<string, boolean>>
+  /**
+   * Installed community plugins. The host always sends this; tests that build
+   * a state by hand may omit it.
+   */
+  community?: CommunityPluginRecord[]
 }
 
 // ---------------------------------------------------------------------------

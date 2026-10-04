@@ -321,7 +321,7 @@ export interface WorkspaceApi {
 
 /** Rejection reason of vault and IPC calls. */
 export interface PluginErrorShape {
-  code: 'OUTSIDE_VAULT' | 'CONFLICT' | 'EXISTS' | 'NOT_FOUND' | 'TOO_LARGE' | 'DISABLED' | 'UNKNOWN_METHOD' | 'FAILED'
+  code: 'OUTSIDE_VAULT' | 'CONFLICT' | 'EXISTS' | 'NOT_FOUND' | 'TOO_LARGE' | 'DISABLED' | 'UNKNOWN_METHOD' | 'FAILED' | 'PERMISSION_DENIED' | 'BAD_ARGS' | 'TIMEOUT'
   message: string
 }
 

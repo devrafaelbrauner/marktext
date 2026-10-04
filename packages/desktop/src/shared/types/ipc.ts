@@ -122,6 +122,16 @@ export interface IpcInvokeChannels {
   }
   'mt::keybinding-save-user-keybindings': { args: [bindings: unknown]; ret: boolean }
   'mt::paths::is-image': { args: [path: string]; ret: boolean }
+  'mt::community::fetch': {
+    args: [pluginId: string, url: string, init?: unknown]
+    ret: PluginIpcResult<{ status: number; ok: boolean; headers: Record<string, string>; body: string }>
+  }
+  'mt::community::install': {
+    args: [kind: 'folder' | 'zip']
+    ret: PluginIpcResult<{ id: string; name: string }>
+  }
+  'mt::community::set-enabled': { args: [pluginId: string, enabled: boolean]; ret: PluginIpcResult<null> }
+  'mt::community::uninstall': { args: [pluginId: string]; ret: PluginIpcResult<null> }
   'mt::plugins::get-state': { args: []; ret: PluginHostState }
   'mt::plugins::invoke': {
     args: [pluginId: string, method: string, args: unknown[]]
