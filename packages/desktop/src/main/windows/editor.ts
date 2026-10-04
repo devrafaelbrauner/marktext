@@ -3,9 +3,10 @@ import { BrowserWindow, dialog, ipcMain } from 'electron'
 import type { BrowserWindowConstructorOptions } from 'electron'
 import log from 'electron-log'
 import windowStateKeeper from 'electron-window-state'
-import { isChildOfDirectory, isSamePathSync } from 'common/filesystem/paths'
+import { hasViewableAssetExtension, isChildOfDirectory, isSamePathSync } from 'common/filesystem/paths'
 import BaseWindow, { WindowLifecycle, WindowType } from './base'
 import type Accessor from '../app/accessor'
+import type { AssetTabRequest } from '@shared/types/files'
 import { ensureWindowPosition, zoomIn, zoomOut } from './utils'
 import { TITLE_BAR_HEIGHT, editorWinOptions, isLinux, isOsx } from '../config'
 import { showEditorContextMenu } from '../contextMenu/editor'
@@ -52,6 +53,7 @@ class EditorWindow extends BaseWindow {
   private _directoryToOpen: string | null
   private _filesToOpen: PendingFile[] | null
   private _markdownToOpen: string[] | null
+  private _assetsToOpen: Array<{ request: AssetTabRequest; selected: boolean }> | null
   // Root directory and file list that are currently opened. These lists are
   // used to find the best window to open new files in.
   private _openedRootDirectory: string | null
@@ -70,6 +72,7 @@ class EditorWindow extends BaseWindow {
     this._directoryToOpen = null
     this._filesToOpen = [] // {doc: IMarkdownDocumentRaw, options: any, selected: boolean}
     this._markdownToOpen = [] // List of markdown strings or an empty string will open a new untitled tab
+    this._assetsToOpen = []
 
     // Root directory and file list that are currently opened. These lists are
     // used to find the best window to open new files in.
@@ -329,6 +332,13 @@ class EditorWindow extends BaseWindow {
       preferences.getAll()
 
     for (const { filePath, options, selected } of fileList) {
+      if (hasViewableAssetExtension(filePath)) {
+        // The renderer owns asset tabs: it knows whether a view is registered and
+        // focuses an already open tab itself, so asset paths stay out of `_openedFiles`.
+        const subpath = typeof options.subpath === 'string' && options.subpath ? options.subpath : null
+        this._openAssetTab({ pathname: filePath, subpath }, selected)
+        continue
+      }
       if (this._openedFiles!.includes(filePath)) {
         // File is already opened - avoid opening it again so we dont have duplicate watchers
         browserWindow!.webContents.send('mt::switch-tab-by-file_path', filePath, options)
@@ -478,6 +488,7 @@ class EditorWindow extends BaseWindow {
     this._directoryToOpen = ''
     this._filesToOpen = []
     this._markdownToOpen = []
+    this._assetsToOpen = []
     this._openedRootDirectory = ''
     this._openedFiles = []
 
@@ -510,6 +521,7 @@ class EditorWindow extends BaseWindow {
     this._directoryToOpen = null
     this._filesToOpen = null
     this._markdownToOpen = null
+    this._assetsToOpen = null
     this._openedRootDirectory = null
     this._openedFiles = null
   }
@@ -540,6 +552,14 @@ class EditorWindow extends BaseWindow {
     browserWindow!.webContents.send('mt::open-new-tab', rawDocument, options, selected)
   }
 
+  private _openAssetTab(request: AssetTabRequest, selected: boolean): void {
+    if (this.lifecycle === WindowLifecycle.READY) {
+      this.browserWindow!.webContents.send('mt::open-asset-tab', request, selected)
+    } else {
+      this._assetsToOpen!.push({ request, selected })
+    }
+  }
+
   private _doOpenFilesToOpen(): void {
     if (this.lifecycle !== WindowLifecycle.READY) {
       throw new Error('Invalid state.')
@@ -554,6 +574,11 @@ class EditorWindow extends BaseWindow {
       this._doOpenTab(doc, options, selected)
     }
     this._filesToOpen!.length = 0
+
+    for (const { request, selected } of this._assetsToOpen!) {
+      this._openAssetTab(request, selected)
+    }
+    this._assetsToOpen!.length = 0
   }
 
   private _restoreAllState(): void {
@@ -585,7 +610,8 @@ class EditorWindow extends BaseWindow {
 
       const fileOpenRequests: Promise<void>[] = []
       for (const tab of bufferState.tabs) {
-        if (!tab.pathname) {
+        if (!tab.pathname || tab.kind === 'asset') {
+          // Asset tabs keep no text to compare and are not watched.
           continue
         }
 

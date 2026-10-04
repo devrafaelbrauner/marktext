@@ -71,6 +71,13 @@ export const toggleTypewriterMode = (win: Win): void => {
   toggleTypeMode(win, 'typewriter')
 }
 
+// The renderer owns the plugin view registry, so it decides what toggling means.
+export const toggleDocumentView = (win: Win): void => {
+  if (win && win.webContents) {
+    win.webContents.send('mt::execute-command-by-id', 'view.toggle-document-view')
+  }
+}
+
 export const reloadImageCache = (win: Win): void => {
   if (win && win.webContents) {
     win.webContents.send('mt::invalidate-image-cache')

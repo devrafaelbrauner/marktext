@@ -15,6 +15,19 @@
         >
           <component :is="c.icon" />
         </li>
+        <li
+          v-for="panel of pluginPanels"
+          :key="panel.id"
+          :class="{ active: panel.id === rightColumn }"
+          :title="panel.ctx.t(panel.title)"
+          @click="handleLeftIconClick(panel.id)"
+        >
+          <!-- eslint-disable-next-line vue/no-v-html -- sanitized by sanitizeSvgIcon at registration -->
+          <span
+            class="plugin-panel-icon"
+            v-html="panel.icon"
+          />
+        </li>
       </ul>
       <ul class="bottom">
         <li
@@ -38,6 +51,12 @@
       />
       <side-bar-search v-else-if="rightColumn === 'search'" />
       <toc v-else-if="rightColumn === 'toc'" />
+      <component
+        :is="activePluginPanel.component"
+        v-else-if="activePluginPanel"
+        :key="activePluginPanel.id"
+        :ctx="activePluginPanel.ctx"
+      />
     </div>
     <div
       v-show="rightColumn"
@@ -59,6 +78,7 @@ import SideBarSearch from './search.vue'
 import Toc from './toc.vue'
 import { storeToRefs } from 'pinia'
 import type { TabDescriptor } from './types'
+import { getSidebarPanel, listSidebarPanels } from '@/plugins/registries/sidebarPanels'
 
 const layoutStore = useLayoutStore()
 const projectStore = useProjectStore()
@@ -74,6 +94,9 @@ const { rightColumn, showSideBar, sideBarWidth } = storeToRefs(layoutStore)
 
 const { projectTree } = storeToRefs(projectStore)
 const { tabs } = storeToRefs(editorStore)
+
+const pluginPanels = listSidebarPanels()
+const activePluginPanel = computed(() => getSidebarPanel(rightColumn.value))
 
 const finalSideBarWidth = computed<number>(() => {
   if (!showSideBar.value) return 0
@@ -201,6 +224,20 @@ const handleLeftBottomClick = (name: string): void => {
 
 .left-column ul > li.active > svg {
   color: var(--themeColor);
+}
+
+.left-column ul > li > .plugin-panel-icon {
+  display: flex;
+  color: var(--sideBarIconColor);
+}
+
+.left-column ul > li.active > .plugin-panel-icon {
+  color: var(--themeColor);
+}
+
+.plugin-panel-icon :deep(svg) {
+  width: 18px;
+  height: 18px;
 }
 
 .side-bar:hover .left-column ul li svg {

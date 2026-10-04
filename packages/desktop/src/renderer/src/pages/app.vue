@@ -62,6 +62,7 @@ import { useCommandCenterStore } from '@/store/commandCenter'
 import { useProjectStore } from '@/store/project'
 import { useAutoUpdatesStore } from '@/store/autoUpdates'
 import { useNotificationStore } from '@/store/notification'
+import { startPluginHost } from '@/plugins/host'
 
 const mainStore = useMainStore()
 const editorStore = useEditorStore()
@@ -198,6 +199,8 @@ onMounted(async () => {
   editorStore.LISTEN_FOR_RELOAD_IMAGES()
   editorStore.LISTEN_FOR_CONTEXT_MENU()
   editorStore.LISTEN_FOR_STATE_REPLACE()
+
+  startPluginHost()
 
   // module: notification
   notificationStore.listenForNotification()

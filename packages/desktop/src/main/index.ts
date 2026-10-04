@@ -14,6 +14,9 @@ import App from './app'
 import { t } from './i18n'
 import { registerSandboxIpcHandlers } from './ipc'
 import { setPlantumlServerSource } from './ipc/diagram'
+import { startMainPluginHost } from './plugins'
+import EditorWindow from './windows/editor'
+import { setupVaultIndex } from './vaultIndex'
 
 // Set version strings into global and process.versions
 process.env.MARKTEXT_VERSION = MARKTEXT_VERSION
@@ -117,6 +120,13 @@ try {
 // Preferences only exist now; the fetch handler refuses everything until it
 // knows which server the user configured.
 setPlantumlServerSource(() => accessor.preferences.getItem<string>('plantumlServer') ?? '')
+
+startMainPluginHost(accessor.pluginHost, (windowId) => {
+  const win = accessor.windowManager.get(windowId)
+  return win instanceof EditorWindow ? win.openedRootDirectory || null : null
+})
+
+setupVaultIndex({ preferences: accessor.preferences, userDataPath: appEnvironment.paths.userDataPath })
 
 const appController = new App(accessor, args as unknown as { _: string[] })
 appController.init()

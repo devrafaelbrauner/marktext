@@ -19,8 +19,23 @@ export const useCommandCenterStore = defineStore('commandCenter', () => {
     new RootCommand(staticCommands as unknown as CommandDescriptor[]) as Root
   )
 
-  function REGISTER_COMMAND(command: Command): void {
+  // Runtime commands whose description depends on the UI language (plugin
+  // commands). `getCommandsWithDescriptions` only knows static command ids and
+  // resets every other description to the id, so these are re-applied after it.
+  const localizedDescriptions = new Map<string, () => string>()
+
+  function REGISTER_COMMAND(command: Command, describe?: () => string): void {
+    if (describe) {
+      localizedDescriptions.set(command.id, describe)
+      command.description = describe()
+    }
     rootCommand.value.subcommands.push(command)
+  }
+
+  function UNREGISTER_COMMAND(id: string): void {
+    localizedDescriptions.delete(id)
+    const index = rootCommand.value.subcommands.findIndex((c) => c.id === id)
+    if (index !== -1) rootCommand.value.subcommands.splice(index, 1)
   }
 
   function SORT_COMMANDS(): void {
@@ -29,15 +44,20 @@ export const useCommandCenterStore = defineStore('commandCenter', () => {
     )
   }
 
-  async function LISTEN_COMMAND_CENTER_BUS(): Promise<void> {
+  async function refreshDescriptions(): Promise<void> {
     rootCommand.value.subcommands = await getCommandsWithDescriptions()
+    for (const entry of rootCommand.value.subcommands) {
+      const describe = localizedDescriptions.get(entry.id)
+      if (describe) entry.description = describe()
+    }
     SORT_COMMANDS()
+  }
+
+  async function LISTEN_COMMAND_CENTER_BUS(): Promise<void> {
+    await refreshDescriptions()
 
     // Listen for language changes and update command descriptions.
-    bus.on('language-changed', async() => {
-      rootCommand.value.subcommands = await getCommandsWithDescriptions()
-      SORT_COMMANDS()
-    })
+    bus.on('language-changed', refreshDescriptions)
 
     bus.on('cmd::sort-commands', () => {
       SORT_COMMANDS()
@@ -71,6 +91,7 @@ export const useCommandCenterStore = defineStore('commandCenter', () => {
   return {
     rootCommand,
     REGISTER_COMMAND,
+    UNREGISTER_COMMAND,
     SORT_COMMANDS,
     LISTEN_COMMAND_CENTER_BUS
   }

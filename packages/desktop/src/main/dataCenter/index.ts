@@ -8,6 +8,7 @@ import log from 'electron-log'
 import { ensureDirSync } from 'common/filesystem'
 import { IMAGE_EXTENSIONS } from 'common/filesystem/paths'
 import { TypedEmitter } from '@shared/types/typedEmitter'
+import { validateSender } from '../security/validateSender'
 
 const DATA_CENTER_NAME = 'dataCenter'
 
@@ -69,27 +70,14 @@ class DataCenter extends TypedEmitter<DataCenterEvents> {
     this._listenForIpcMain()
   }
 
-  async getAll(): Promise<Record<string, unknown>> {
-    const { serviceName, encryptKeys } = this
-    const data = this.store.store
-    try {
-      const encryptData = await Promise.all(
-        encryptKeys.map((key) => {
-          return keytar.getPassword(serviceName, key)
-        })
-      )
-      const encryptObj = encryptKeys.reduce<Record<string, string | null>>((acc, k, i) => {
-        return {
-          ...acc,
-          [k]: encryptData[i]
-        }
-      }, {})
-
-      return Object.assign(data, encryptObj)
-    } catch (err) {
-      log.error('Failed to decrypt secure keys:', err)
-      return data
-    }
+  /**
+   * Everything renderers may see. Values of `encryptKeys` live in the OS
+   * keychain and are read only through `getItem` in the main process.
+   */
+  getAll(): Record<string, unknown> {
+    const data = { ...this.store.store }
+    for (const key of this.encryptKeys) delete data[key]
+    return data
   }
 
   addImage(key: string, url: string): void {
@@ -133,7 +121,6 @@ class DataCenter extends TypedEmitter<DataCenterEvents> {
     if (key === 'screenshotFolderPath') {
       ensureDirSync(value as string)
     }
-    ipcMain.emit('broadcast-user-data-changed', { [key]: value })
     if (encryptKeys.includes(key)) {
       try {
         return await keytar.setPassword(serviceName, key, value as string)
@@ -141,6 +128,7 @@ class DataCenter extends TypedEmitter<DataCenterEvents> {
         log.error('Keytar error:', err)
       }
     } else {
+      ipcMain.emit('broadcast-user-data-changed', { [key]: value })
       return this.store.set(key, value)
     }
   }
@@ -164,10 +152,10 @@ class DataCenter extends TypedEmitter<DataCenterEvents> {
       this.setItem('imageFolderPath', newPath)
     })
 
-    ipcMain.on('mt::ask-for-user-data', async(e) => {
+    ipcMain.on('mt::ask-for-user-data', (e) => {
       const win = BrowserWindow.fromWebContents(e.sender)
       if (!win) return
-      const userData = await this.getAll()
+      const userData = this.getAll()
       win.webContents.send('mt::user-preference', userData)
     })
 
@@ -187,7 +175,8 @@ class DataCenter extends TypedEmitter<DataCenterEvents> {
       }
     })
 
-    ipcMain.on('mt::set-user-data', (_e, userData: Record<string, unknown>) => {
+    ipcMain.on('mt::set-user-data', (e, userData: Record<string, unknown>) => {
+      if (!validateSender(e)) return
       this.setItems(userData)
     })
 

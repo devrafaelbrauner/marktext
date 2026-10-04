@@ -25,6 +25,14 @@ export default defineConfig({
         // ERR_PACKAGE_PATH_NOT_EXPORTED at startup.
         exclude: ['electron-store', 'plist'],
         include: ['native-keymap']
+      },
+      rollupOptions: {
+        // The vault index runs in an Electron utility process forked from
+        // out/main/vaultIndexWorker.js (see src/main/vaultIndex/index.ts).
+        input: {
+          index: resolve(__dirname, 'src/main/index.ts'),
+          vaultIndexWorker: resolve(__dirname, 'src/main/vaultIndex/worker/entry.ts')
+        }
       }
     },
     define: {
@@ -35,7 +43,8 @@ export default defineConfig({
       alias: {
         '@': resolve(__dirname, 'src/renderer/src'),
         common: resolve(__dirname, 'src/common'),
-        '@shared': resolve(__dirname, 'src/shared')
+        '@shared': resolve(__dirname, 'src/shared'),
+        '@plugins': resolve(__dirname, 'src/plugins')
       },
       extensions: ['.mjs', '.ts', '.js', '.json']
     }
@@ -54,7 +63,8 @@ export default defineConfig({
       alias: {
         '@': resolve(__dirname, 'src/renderer/src'),
         common: resolve(__dirname, 'src/common'),
-        '@shared': resolve(__dirname, 'src/shared')
+        '@shared': resolve(__dirname, 'src/shared'),
+        '@plugins': resolve(__dirname, 'src/plugins')
       },
       extensions: ['.mjs', '.ts', '.js', '.json']
     }
@@ -80,6 +90,7 @@ export default defineConfig({
         '@': resolve(__dirname, 'src/renderer/src'),
         common: resolve(__dirname, 'src/common'),
         '@shared': resolve(__dirname, 'src/shared'),
+        '@plugins': resolve(__dirname, 'src/plugins'),
         path: 'pathe'
       },
       extensions: ['.mjs', '.ts', '.js', '.json', '.vue']

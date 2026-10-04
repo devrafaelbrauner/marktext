@@ -124,7 +124,8 @@
       "toggleTableOfContents": "목차 토글",
       "reloadImages": "이미지 새로고침",
       "showDeveloperTools": "개발자 도구 보기",
-      "reloadWindow": "창 새로고침"
+      "reloadWindow": "창 새로고침",
+      "toggleDocumentView": "Toggle Document View"
     },
     "format": {
       "format": "서식",
@@ -367,7 +368,8 @@
         "searcher": "검색기",
         "watcher": "감시자",
         "spelling": "맞춤법",
-        "custom css": "사용자 정의 CSS"
+        "custom css": "사용자 정의 CSS",
+        "plugins": "Plugins"
       },
       "items": {
         "autoSave": "편집 중인 내용을 자동으로 저장",
@@ -444,7 +446,8 @@
       "spelling": "맞춤법",
       "theme": "테마",
       "image": "이미지",
-      "keybindings": "키 바인딩"
+      "keybindings": "키 바인딩",
+      "plugins": "Plugins"
     },
     "general": {
       "title": "일반",
@@ -746,6 +749,21 @@
       "enableSpellChecking": "맞춤법 검사 활성화",
       "hideMarksForErrors": "맞춤법 오류 표시 숨기기",
       "title": "맞춤법 검사기"
+    },
+    "plugins": {
+      "title": "Plugins",
+      "description": "Built-in plugins add features to MarkText. Disabled plugins do not run.",
+      "safeMode": "MarkText was started in safe mode (--safe): no plugin is running. You can still change their settings.",
+      "empty": "No plugins are available.",
+      "enabled": "Enabled",
+      "settings": "Settings",
+      "secretSet": "Configured",
+      "secretNotSet": "Not configured",
+      "secretPlaceholder": "Enter a new value",
+      "save": "Save",
+      "clear": "Clear",
+      "stringListPlaceholder": "One entry per line",
+      "saveFailed": "Could not save \"{setting}\": {message}"
     }
   },
   "about": {
@@ -866,7 +884,8 @@
       "reloadImages": "이미지 새로고침",
       "textDirection": "텍스트 방향",
       "actualSize": "실제 크기",
-      "devToggleDeveloperTools": "개발자 도구 전환"
+      "devToggleDeveloperTools": "개발자 도구 전환",
+      "toggleDocumentView": "Toggle Document View"
     },
     "tabs": {
       "cycleForward": "앞으로 순환",
@@ -1000,6 +1019,17 @@
       "languageMissing": "맞춤법 검사 언어 누락 {languageCode}",
       "switchError": "{languageCode} 맞춤법 검사 전환 오류, {error}",
       "title": "맞춤법 검사"
+    },
+    "tabView": {
+      "editor": "Markdown Editor",
+      "noViewer": "No viewer is available for this file.",
+      "openExternally": "Open in Default App",
+      "noDocumentViews": "No document view is available.",
+      "viewFailed": "This view could not be displayed."
     }
+  },
+  "pluginHost": {
+    "activationFailed": "Plugin \"{name}\" could not be started",
+    "commandFailed": "Command \"{command}\" failed"
   }
 }

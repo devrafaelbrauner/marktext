@@ -1,19 +1,41 @@
-import { ipcMain, shell, clipboard, nativeImage } from 'electron'
+import { BrowserWindow, ipcMain, shell, clipboard, nativeImage } from 'electron'
 import log from 'electron-log'
 import * as plist from 'plist'
+import { confirmOpenPath } from '../security/confirmOpenPath'
+import { validateSender } from '../security/validateSender'
+
+const EXTERNAL_PROTOCOLS: Record<string, true> = { 'https:': true, 'http:': true, 'mailto:': true }
+
+/** Whether the OS may be asked to open `url`; other schemes can launch arbitrary handlers. */
+export const isAllowedExternalUrl = (url: unknown): url is string => {
+  if (typeof url !== 'string') return false
+  try {
+    return EXTERNAL_PROTOCOLS[new URL(url).protocol] === true
+  } catch {
+    return false
+  }
+}
+
+const openExternal = async(url: unknown): Promise<boolean> => {
+  if (!isAllowedExternalUrl(url)) {
+    log.warn('shell.openExternal refused a URL with a disallowed scheme:', String(url).slice(0, 200))
+    return false
+  }
+  try {
+    await shell.openExternal(url)
+    return true
+  } catch (err) {
+    log.error('shell.openExternal failed:', err)
+    return false
+  }
+}
 
 export const registerShellHandlers = (): void => {
-  ipcMain.handle('mt::shell::open-external', async(_e, url: string) => {
-    try {
-      await shell.openExternal(url)
-      return true
-    } catch (err) {
-      log.error('shell.openExternal failed:', err)
-      return false
-    }
-  })
-  ipcMain.on('mt::shell::open-external', (_e, url: string) => {
-    shell.openExternal(url).catch((err) => log.error('shell.openExternal failed:', err))
+  ipcMain.handle('mt::shell::open-external', (e, url: unknown) =>
+    validateSender(e) ? openExternal(url) : false
+  )
+  ipcMain.on('mt::shell::open-external', (e, url: unknown) => {
+    if (validateSender(e)) openExternal(url)
   })
   ipcMain.on('mt::shell::show-item', (_e, fullPath: string) => {
     try {
@@ -22,8 +44,10 @@ export const registerShellHandlers = (): void => {
       log.error('shell.showItemInFolder failed:', err)
     }
   })
-  ipcMain.handle('mt::shell::open-path', async(_e, fullPath: string) => {
+  ipcMain.handle('mt::shell::open-path', async(e, fullPath: unknown) => {
+    if (!validateSender(e) || typeof fullPath !== 'string') return 'Refused'
     try {
+      if (!(await confirmOpenPath(BrowserWindow.fromWebContents(e.sender), fullPath))) return 'Cancelled'
       return await shell.openPath(fullPath)
     } catch (err) {
       log.error('shell.openPath failed:', err)

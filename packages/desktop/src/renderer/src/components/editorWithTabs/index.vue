@@ -12,10 +12,15 @@
         :platform="platform"
       />
       <source-code
-        v-if="sourceCode"
+        v-if="sourceCode && !showsTabView"
         :markdown="markdown"
         :muya-index-cursor="muyaIndexCursor"
         :text-direction="textDirection"
+      />
+      <tab-view-host
+        v-if="showsTabView && currentFile"
+        :key="currentFile.id"
+        :tab="currentFile"
       />
     </div>
     <tab-notifications />
@@ -23,11 +28,14 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useLayoutStore } from '@/store/layout'
+import { useEditorStore } from '@/store/editor'
 import { storeToRefs } from 'pinia'
 import Tabs from './tabs.vue'
 import Editor from './editor.vue'
 import SourceCode from './sourceCode.vue'
+import TabViewHost from './TabViewHost.vue'
 import TabNotifications from './notifications.vue'
 
 defineProps<{
@@ -44,6 +52,13 @@ defineProps<{
 }>()
 
 const { effectiveSideBarWidth } = storeToRefs(useLayoutStore())
+const { currentFile } = storeToRefs(useEditorStore())
+
+// Asset tabs and markdown tabs switched to a plugin view replace both the
+// WYSIWYG editor (hidden by editor.vue, like in source mode) and source mode.
+const showsTabView = computed<boolean>(
+  () => !!currentFile.value && (currentFile.value.kind === 'asset' || currentFile.value.viewId !== null)
+)
 </script>
 
 <style scoped>

@@ -46,7 +46,10 @@ const defaultFileStateWithoutId = {
   },
   scrollTop: 0,
   muyaIndexCursor: null,
-  notifications: []
+  notifications: [],
+  kind: 'markdown' as IFileState['kind'],
+  viewId: null as string | null,
+  subpath: null as string | null
 } satisfies Omit<IFileState, 'id'>
 
 /**
@@ -84,7 +87,10 @@ const documentStateKeys = [
   'searchMatches',
   'scrollTop',
   'muyaIndexCursor',
-  'notifications'
+  'notifications',
+  'kind',
+  'viewId',
+  'subpath'
 ] as const satisfies ReadonlyArray<keyof IFileState>
 
 export const getBlankFileState = (
@@ -146,6 +152,18 @@ export const createDocumentState = (
     if (src[key] !== undefined) {
       ;(docState as Record<string, unknown>)[key] = src[key]
     }
+  }
+
+  // Buffered state is read back from disk, so the view fields are re-validated.
+  if (docState.kind !== 'asset') docState.kind = 'markdown'
+  if (typeof docState.viewId !== 'string' || !docState.viewId) docState.viewId = null
+  if (typeof docState.subpath !== 'string' || !docState.subpath) docState.subpath = null
+  if (docState.kind === 'asset') {
+    // An asset tab has no text buffer: it is never dirty and never saved.
+    docState.markdown = ''
+    docState.isSaved = true
+  } else {
+    docState.subpath = null
   }
 
   return Object.assign(docState, {

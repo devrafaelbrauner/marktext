@@ -1,0 +1,53 @@
+# MarkText Plus — architecture and decisions
+
+This fork (`plus/develop`) adds a plugin platform to MarkText and ships a set of
+built-in, Obsidian-compatible plugins plus a pt-BR grammar checker backed by
+LanguageTool. Generic engine and platform pieces are written so they can be
+proposed upstream; feature plugins stay in this fork.
+
+## Decisions
+
+| #   | Decision                                                                                      | Consequence                                                                                              |
+| --- | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| D1  | Work in a fork; propose generic foundations (decorations, range replace, registries) upstream | Feature code lives in new directories; upstream files only get thin hooks, to keep rebases cheap         |
+| D2  | Read/write compatibility with Obsidian vaults                                                 | `[[wikilinks]]`, `#tags`, `key:: value`, Kanban board format, `YYYY-MM-DD` daily notes, `%% comments %%` |
+| D3  | No third-party plugins until the sandbox and IPC hardening land (milestone M7)                | Built-in plugins are trusted code using the same public API                                              |
+| D4  | LanguageTool Premium API by default, server URL configurable (self-hosted allowed)            | Credentials live only in the main process (Electron `safeStorage`)                                       |
+| D5  | Turn off Chromium's spellchecker while the LanguageTool checker is active                     | No double underlines                                                                                     |
+| D6  | Icons are written as `:pack-name:` shortcodes and exported as inline SVG                      | Source stays plain text; exported HTML/PDF shows the icon                                                |
+| D7  | Mermaid keeps its dedicated diagram block for now                                             | Migration to the generic code-block preview registry happens after Dataview proves it                    |
+
+Out of scope: running Obsidian plugins, DataviewJS (arbitrary code), sync, mobile.
+
+## Trust model
+
+| Tier                  | Runs in                                                         | Access                                                          |
+| --------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- |
+| Built-in plugin       | Renderer (UI) and main process (services); bundled with the app | Full plugin API                                                 |
+| Community plugin (M7) | Sandboxed iframe on a dedicated scheme, no preload              | Plugin API over a MessagePort, filtered by manifest permissions |
+
+Electron's `utilityProcess` is a Node child process, not a sandbox: it only
+hosts trusted services such as the vault index.
+
+## Where things live
+
+| Piece                   | Path                                                                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| API contract            | `packages/desktop/src/shared/plugins/types.ts`, `src/renderer/src/plugins/types.ts`, `src/main/plugins/types.ts`         |
+| Renderer host           | `packages/desktop/src/renderer/src/plugins/`                                                                             |
+| Main host               | `packages/desktop/src/main/plugins/`                                                                                     |
+| Security primitives     | `packages/desktop/src/main/security/` (secrets store, safe fetch, sender validation)                                     |
+| Vault index             | `packages/desktop/src/main/vaultIndex/` (utility process) and `src/common/markdownExt/` (parsers shared with the editor) |
+| Engine extension points | `packages/muya/src/` (decorations, range replace, inline syntax, code block previews, completion)                        |
+| Built-in plugins        | `packages/desktop/src/plugins/<id>/`                                                                                     |
+
+## Adding a built-in plugin
+
+1. Create `packages/desktop/src/plugins/<id>/` with `manifest.ts`, `locales/en.json`,
+   `locales/pt.json`, and `renderer/index.ts` and/or `main/index.ts` exporting
+   `activate(ctx)` (and optionally `deactivate()`).
+2. Register the manifest in `src/plugins/manifests.ts`, the renderer part in
+   `src/renderer/src/plugins/builtin.ts`, and the main part in
+   `src/main/plugins/builtin.ts`.
+3. Everything registered through `ctx` is disposed automatically when the plugin
+   is disabled; `--safe` starts the app with every plugin disabled.

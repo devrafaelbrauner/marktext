@@ -89,6 +89,7 @@
             <span class="text-center-vertical">{{ wordCountText }}</span>
           </div>
         </el-tooltip>
+        <plugin-status-bar />
       </div>
       <div
         v-if="titleBarStyle === 'custom' && !isFullScreen && !isOsx"
@@ -159,6 +160,7 @@ import { useEditorStore } from '@/store/editor'
 import { useI18n } from 'vue-i18n'
 import { ArrowRight } from '@element-plus/icons-vue'
 import type { FileWordCount } from '@shared/types/files'
+import PluginStatusBar from '../pluginStatusBar/index.vue'
 
 interface ProjectInfo {
   name?: string
@@ -436,7 +438,7 @@ div.title > span > .path > bdi > span {
   position: absolute;
   top: 0;
   left: 0;
-  width: 118px; /* + 2*10px padding*/
+  min-width: 118px; /* + 2*10px padding; plugin status items widen it */
   display: flex;
   flex-direction: row;
 }
@@ -445,7 +447,7 @@ div.title > span > .path > bdi > span {
   position: absolute;
   top: 0;
   right: 0;
-  width: 138px;
+  min-width: 138px;
   display: flex;
   align-items: center;
   flex-direction: row-reverse;

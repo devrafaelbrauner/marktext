@@ -29,10 +29,21 @@ import type {
   LineEnding,
   FileChangeDetail,
   PandocExportPayload,
-  UnsavedFile
+  UnsavedFile,
+  AssetTabRequest
 } from './files'
 import type { BufferedState as BufferedStateType } from './bufferedState'
 import type { MenuTemplate, MenuPopupPosition } from './menu'
+import type {
+  BacklinkEntry,
+  FileMetadata,
+  PluginHostState,
+  PluginSettingValue,
+  TagCount,
+  VaultChangeEvent,
+  VaultFileEntry
+} from '../plugins/types'
+import type { PluginErrorShape } from '../../renderer/src/plugins/types'
 
 export interface SaveDialogRequest {
   title?: string
@@ -43,6 +54,19 @@ export interface SaveDialogRequest {
 export type PlantumlFetchResult =
   | { ok: true; mime: string; data: Uint8Array }
   | { ok: false; error: string }
+
+/** Vault index readiness of a window (`mt::index::ready`); `rootPath` is null when no folder is open. */
+export interface VaultIndexReadyState {
+  rootPath: string | null
+  ready: boolean
+}
+
+/**
+ * Reply of the plugin and vault channels. Failures travel as a value because
+ * Electron reduces a rejected `invoke` to its message and the error code
+ * would be lost.
+ */
+export type PluginIpcResult<T> = { ok: true; value: T } | { ok: false; error: PluginErrorShape }
 
 // =================================================================
 // Invoke channels (renderer → main, returns Promise<T>)
@@ -80,6 +104,17 @@ export interface IpcInvokeChannels {
   'mt::i18n::is-supported': { args: [lang: string]; ret: boolean }
   'mt::i18n::load': { args: [language: string]; ret: Record<string, unknown> }
   'mt::i18n::supported': { args: []; ret: string[] }
+  'mt::index::backlinks': { args: [path: string]; ret: BacklinkEntry[] }
+  'mt::index::files-with-tag': {
+    args: [tag: string, options?: { includeNested?: boolean }]
+    ret: string[]
+  }
+  'mt::index::get-file': { args: [path: string]; ret: FileMetadata | null }
+  'mt::index::is-ready': { args: []; ret: boolean }
+  'mt::index::list-files': { args: []; ret: FileMetadata[] }
+  'mt::index::request': { args: [type: string, payload: unknown]; ret: unknown }
+  'mt::index::resolve-link': { args: [target: string, sourcePath: string]; ret: string | null }
+  'mt::index::tags': { args: []; ret: TagCount[] }
   'mt::keybinding-get-keyboard-info': { args: []; ret: KeyboardInfo }
   'mt::keybinding-get-pref-keybindings': {
     args: []
@@ -87,6 +122,21 @@ export interface IpcInvokeChannels {
   }
   'mt::keybinding-save-user-keybindings': { args: [bindings: unknown]; ret: boolean }
   'mt::paths::is-image': { args: [path: string]; ret: boolean }
+  'mt::plugins::get-state': { args: []; ret: PluginHostState }
+  'mt::plugins::invoke': {
+    args: [pluginId: string, method: string, args: unknown[]]
+    ret: PluginIpcResult<unknown>
+  }
+  'mt::plugins::set-enabled': { args: [pluginId: string, enabled: boolean]; ret: PluginIpcResult<null> }
+  /** `value: null` clears the secret. */
+  'mt::plugins::set-secret': {
+    args: [pluginId: string, key: string, value: string | null]
+    ret: PluginIpcResult<null>
+  }
+  'mt::plugins::set-setting': {
+    args: [pluginId: string, key: string, value: PluginSettingValue]
+    ret: PluginIpcResult<null>
+  }
   'mt::rg::start': { args: [req: unknown]; ret: { searchId: string } }
   'mt::shell::open-external': { args: [url: string]; ret: void }
   'mt::shell::open-path': { args: [fullPath: string]; ret: string }
@@ -101,6 +151,20 @@ export interface IpcInvokeChannels {
   // Main derives the BrowserWindow via BrowserWindow.fromWebContents(e.sender);
   // no need to pass windowId. Payload is the editor+project+layout snapshot.
   'update-buffer-state': { args: [payload: unknown]; ret: void }
+  // Plugin file access, scoped by main to the calling window's vault (see
+  // src/main/plugins/vaultFs.ts). Paths are absolute.
+  'mt::vault::create-text': { args: [path: string, content: string]; ret: PluginIpcResult<null> }
+  'mt::vault::exists': { args: [path: string]; ret: PluginIpcResult<boolean> }
+  'mt::vault::list': { args: [extensions?: string[]]; ret: PluginIpcResult<VaultFileEntry[]> }
+  'mt::vault::read-binary': { args: [path: string, maxBytes?: number]; ret: PluginIpcResult<Uint8Array> }
+  'mt::vault::read-text': {
+    args: [path: string]
+    ret: PluginIpcResult<{ content: string; mtimeMs: number }>
+  }
+  'mt::vault::write-text': {
+    args: [path: string, content: string, expectedMtimeMs?: number]
+    ret: PluginIpcResult<{ mtimeMs: number }>
+  }
 }
 
 // =================================================================
@@ -148,6 +212,7 @@ export interface IpcSendChannels {
   'mt::open-file-by-window-id': [windowId: number, filePath: string, options?: unknown]
   'mt::open-keybindings-config': []
   'mt::open-setting-window': []
+  'mt::plugins::open-settings': [pluginId: string]
   'mt::rename': [payload: { id: string; pathname: string; newPathname: string; currentFile?: unknown }]
   'mt::request-keybindings': []
   'mt::set-editor-format-menus-enabled': [windowId: number, enabled: boolean]
@@ -192,6 +257,8 @@ export interface IpcSendChannels {
   'mt::update-line-ending-menu': [windowId: number, lineEnding: LineEnding]
   'mt::update-sidebar-menu': [windowId: number, visible: boolean]
   'mt::view-layout-changed': [windowId: number, layout: unknown]
+  /** Active file of the window (or null); scopes vault access when no folder is open. */
+  'mt::vault::set-active-file': [pathname: string | null]
   'mt::win::close': []
   'mt::win::maximize': []
   'mt::win::minimize': []
@@ -261,11 +328,15 @@ export interface IpcMainEventChannels {
   'mt::file-saved': [tabId: string]
   'mt::force-close-tabs-by-id': [tabIds: string[]]
   'mt::invalidate-image-cache': []
+  'mt::index::changed': [event: VaultChangeEvent]
+  'mt::index::ready': [state: VaultIndexReadyState]
   'mt::keybindings-response': [bindings: unknown]
   'mt::load-state': [state: BufferedStateType]
   'mt::menu::click': [menuId: string]
   'mt::menu::closed': []
   'mt::new-untitled-tab': [selected?: boolean, markdown?: string]
+  /** Viewable asset (see VIEWABLE_ASSET_EXTENSIONS); the renderer opens it in a tab view or hands it to the OS. */
+  'mt::open-asset-tab': [request: AssetTabRequest, selected?: boolean]
   'mt::open-directory': [directoryPath: string]
   'mt::open-new-tab': [
     markdownDocument: MarkdownDocument | null,
@@ -298,6 +369,8 @@ export interface IpcMainEventChannels {
   'mt::toggle-view-mode-entry': [entry: string]
   'mt::update-file': [payload: { type: 'add' | 'change' | 'unlink'; change: FileChangeDetail }]
   'mt::update-object-tree': [payload: unknown]
+  'mt::plugins::event': [pluginId: string, event: string, payload: unknown]
+  'mt::plugins::state-changed': [state: PluginHostState]
   'mt::user-preference': [partial: unknown]
   'mt::window-active-status': [active: boolean]
   'mt::window-enter-full-screen': []

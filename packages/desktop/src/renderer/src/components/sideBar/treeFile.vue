@@ -52,10 +52,11 @@ const { currentFile, tabs } = storeToRefs(editorStore)
 
 // from fileMixins
 const handleFileClick = (): void => {
-  // Select before the open-file branch runs, so non-markdown rows select too.
+  // Select before the open-file branch runs, so every row selects.
   projectStore.CHANGE_ACTIVE_ITEM(props.file)
-  const { isMarkdown, pathname } = props.file
-  if (!isMarkdown) return
+  // Non-markdown rows are viewable assets (the watcher lists nothing else);
+  // main routes them to an asset tab or the OS default application.
+  const { pathname } = props.file
   const openedTab = tabs.value.find((f) => window.fileUtils.isSamePathSync(f.pathname, pathname))
   if (openedTab) {
     if (currentFile.value?.pathname === openedTab.pathname) {

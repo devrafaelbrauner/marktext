@@ -30,6 +30,10 @@ export const IMAGE_EXTENSIONS: readonly string[] = Object.freeze([
   'webp'
 ])
 
+// Non-markdown files that open in an in-app tab when a plugin registers a view
+// for their extension (otherwise the OS default application opens them).
+export const VIEWABLE_ASSET_EXTENSIONS: readonly string[] = Object.freeze(['pdf'])
+
 // Extensions the OS shell will execute rather than open in an application.
 // Opening one of these via shell.openPath runs code, so a markdown link
 // pointing at a co-located script/executable must be confirmed first (#3575).
@@ -125,6 +129,45 @@ export const isMarkdownFile = (filepath: string): boolean => {
     return isFile(targetPath) && hasMarkdownExtension(targetPath)
   }
   return hasMarkdownExtension(filepath)
+}
+
+/**
+ * Returns true if the filename has one of `VIEWABLE_ASSET_EXTENSIONS`.
+ */
+export const hasViewableAssetExtension = (filename: string): boolean => {
+  if (!filename || typeof filename !== 'string') return false
+  const ext = path.extname(filename).slice(1).toLowerCase()
+  return !!ext && VIEWABLE_ASSET_EXTENSIONS.includes(ext)
+}
+
+/**
+ * Returns true if the path is a viewable asset file or a symbolic link to one.
+ * Like `isMarkdownFile`, a link is judged by its target, so `doc.pdf` pointing
+ * at a script is not treated as a PDF.
+ */
+export const isViewableAssetFile = (filepath: string): boolean => {
+  if (!isFile2(filepath)) return false
+
+  if (isSymbolicLink(filepath)) {
+    const targetPath = path.resolve(path.dirname(filepath), fs.readlinkSync(filepath))
+    return isFile(targetPath) && hasViewableAssetExtension(targetPath)
+  }
+  return hasViewableAssetExtension(filepath)
+}
+
+/**
+ * Tab options for a resolved local link target (see `resolveLocalLinkTarget`),
+ * or null when the OS should open it. The link fragment becomes the heading
+ * anchor of a markdown file and the view subpath of a viewable asset
+ * (`doc.pdf#page=3` → `{ subpath: 'page=3' }`).
+ */
+export const getLocalLinkTabOptions = (
+  pathname: string,
+  fragment: string
+): { anchor: string } | { subpath?: string } | null => {
+  if (isMarkdownFile(pathname)) return { anchor: fragment }
+  if (isViewableAssetFile(pathname)) return fragment ? { subpath: fragment } : {}
+  return null
 }
 
 /**

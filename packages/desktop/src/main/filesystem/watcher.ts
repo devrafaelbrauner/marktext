@@ -3,7 +3,11 @@ import fsPromises from 'fs/promises'
 import log from 'electron-log'
 import chokidar, { type FSWatcher } from 'chokidar'
 import { exists } from 'common/filesystem'
-import { hasMarkdownExtension, checkPathExcludePattern } from 'common/filesystem/paths'
+import {
+  hasMarkdownExtension,
+  hasViewableAssetExtension,
+  checkPathExcludePattern
+} from 'common/filesystem/paths'
 import { getUniqueId } from '../utils'
 import { loadMarkdownFile } from '../filesystem/markdown'
 import { isLinux, isOsx } from '../config'
@@ -40,6 +44,20 @@ interface WatcherEntry {
   type: WatchType
   close: () => void
 }
+
+/**
+ * Activity of directory (opened folder) watchers, observed through
+ * `Watcher.addTap`. Single-file watchers are not reported. Path events
+ * carry only the path; consumers re-read the file themselves.
+ */
+export type WatcherTapEvent =
+  | { type: 'watch' | 'unwatch'; windowId: number; rootPath: string }
+  | {
+    type: 'add' | 'change' | 'unlink' | 'addDir' | 'unlinkDir'
+    windowId: number
+    rootPath: string
+    pathname: string
+  }
 
 const add = async(
   win: BrowserWindow,
@@ -94,6 +112,11 @@ const add = async(
         return
       }
     }
+    win.webContents.send(EVENT_NAME[type], {
+      type: 'add',
+      change: file
+    })
+  } else if (type === 'dir' && hasViewableAssetExtension(pathname)) {
     win.webContents.send(EVENT_NAME[type], {
       type: 'add',
       change: file
@@ -187,6 +210,26 @@ const unlinkDir = (win: BrowserWindow, pathname: string, type: WatchType): void 
 }
 
 class Watcher {
+  private static _taps = new Set<(event: WatcherTapEvent) => void>()
+
+  /** Observes every directory watcher of the app; returns the unsubscribe function. */
+  static addTap(listener: (event: WatcherTapEvent) => void): () => void {
+    Watcher._taps.add(listener)
+    return () => {
+      Watcher._taps.delete(listener)
+    }
+  }
+
+  private static _emitTap(event: WatcherTapEvent): void {
+    for (const listener of Watcher._taps) {
+      try {
+        listener(event)
+      } catch (error) {
+        log.error('Watcher tap failed:', error)
+      }
+    }
+  }
+
   private _preferences: Preference
   private _ignoreChangeEvents: IgnoreEntry[]
   watchers: Record<string, WatcherEntry>
@@ -225,7 +268,7 @@ class Watcher {
         if (fileInfo.isDirectory()) {
           return false
         }
-        return !hasMarkdownExtension(pathname)
+        return !hasMarkdownExtension(pathname) && !hasViewableAssetExtension(pathname)
       },
       ignoreInitial: type === 'file',
       persistent: true,
@@ -345,6 +388,21 @@ class Watcher {
         }
       })
 
+    const windowId = win.id
+    if (type === 'dir') {
+      watcher.on('all', (event: string, pathname: string) => {
+        if (
+          event === 'add' ||
+          event === 'change' ||
+          event === 'unlink' ||
+          event === 'addDir' ||
+          event === 'unlinkDir'
+        ) {
+          Watcher._emitTap({ type: event, windowId, rootPath: watchPath, pathname })
+        }
+      })
+    }
+
     const closeFn = (): void => {
       disposed = true
       if (this.watchers[id]) {
@@ -355,6 +413,9 @@ class Watcher {
         renameTimer = null
       }
       watcher.close()
+      if (type === 'dir') {
+        Watcher._emitTap({ type: 'unwatch', windowId, rootPath: watchPath })
+      }
     }
 
     this.watchers[id] = {
@@ -363,6 +424,9 @@ class Watcher {
       pathname: watchPath,
       type,
       close: closeFn
+    }
+    if (type === 'dir') {
+      Watcher._emitTap({ type: 'watch', windowId, rootPath: watchPath })
     }
 
     return closeFn
@@ -374,6 +438,9 @@ class Watcher {
       if (w.win === win && w.pathname === watchPath && w.type === type) {
         w.watcher.close()
         delete this.watchers[id]
+        if (w.type === 'dir') {
+          Watcher._emitTap({ type: 'unwatch', windowId: win.id, rootPath: w.pathname })
+        }
         break
       }
     }
@@ -387,6 +454,9 @@ class Watcher {
       if (w.win.id === windowId) {
         watchers.push(w.watcher)
         watchIds.push(id)
+        if (w.type === 'dir') {
+          Watcher._emitTap({ type: 'unwatch', windowId, rootPath: w.pathname })
+        }
       }
     }
     if (watchers.length) {
