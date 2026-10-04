@@ -1,9 +1,8 @@
-import path from 'path'
 import type { BrowserWindow } from 'electron'
 import { TypedEmitter } from '@shared/types/typedEmitter'
 import type Accessor from '../app/accessor'
 import { getThemeBackgroundColor } from '../../common/theme'
-
+import { MT_APP_RENDERER_URL } from '../protocol/mtApp'
 /**
  * A MarkText window.
  * @property id Identifier (= browserWindow.id) or null during initialization.
@@ -122,7 +121,7 @@ class BaseWindow extends TypedEmitter<BaseWindowEvents> {
     // must not point a built app at the dev server URL (#5053).
     const baseUrl = import.meta.env.DEV
       ? process.env['ELECTRON_RENDERER_URL']!
-      : `file://${path.join(__dirname, '../renderer/index.html')}` // <-- This points to the path inside the packed ASAR archive, hence it is always correct
+      : MT_APP_RENDERER_URL
 
     const url = new URL(baseUrl)
     url.searchParams.set('udp', paths.userDataPath)

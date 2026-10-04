@@ -114,6 +114,7 @@ import { SpellChecker } from '@/spellchecker'
 import { isMac, animatedScrollTo } from '@/util'
 import { moveImageToFolder, uploadImage } from '@/util/fileSystem'
 import { guessClipboardFilePath } from '@/util/clipboard'
+import { toMtFileUrl } from 'common/mtFileUrl'
 import { dataURLToFile } from '@/util/dataURLToFile'
 import { getCssForOptions, getHtmlToc, type PdfCssOptions, type HtmlTocOptions } from '@/util/pdf'
 import {
@@ -1815,7 +1816,8 @@ onMounted(() => {
     // Without these, local-file drag-drop, screenshot/binary clipboard paste, and
     // copy-to-assets on a pasted image file silently no-op or insert raw paths.
     imageAction: muyaImageAction,
-    getPathForFile: (file: File) => window.electron.webUtils.getPathForFile(file)
+    getPathForFile: (file: File) => window.electron.webUtils.getPathForFile(file),
+    localImageUrl: toMtFileUrl
   }
 
   if (/dark/i.test(theme.value)) {

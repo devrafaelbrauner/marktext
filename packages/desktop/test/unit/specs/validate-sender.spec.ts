@@ -76,3 +76,16 @@ describe('isAppRendererUrl (packaged file renderer)', () => {
     expect(isAppRendererUrl(base.replace('file://', 'http://localhost'), base)).toBe(false)
   })
 })
+
+describe('isAppRendererUrl (packaged mt-app renderer)', () => {
+  const base = 'mt-app://bundle/index.html'
+
+  it('matches the exact page regardless of query and hash', () => {
+    expect(isAppRendererUrl(`${base}?wid=3&type=editor#x`, base)).toBe(true)
+  })
+
+  it('rejects another file on the same origin and a remote host', () => {
+    expect(isAppRendererUrl('mt-app://bundle/evil.html', base)).toBe(false)
+    expect(isAppRendererUrl('mt-app://attacker/index.html', base)).toBe(false)
+  })
+})

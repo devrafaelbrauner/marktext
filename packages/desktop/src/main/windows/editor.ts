@@ -58,6 +58,7 @@ class EditorWindow extends BaseWindow {
   // used to find the best window to open new files in.
   private _openedRootDirectory: string | null
   private _openedFiles: string[] | null
+  private _openedAssetFiles: string[]
 
   public bufferStoreInfo: BufferStoreInfo | null
 
@@ -78,6 +79,7 @@ class EditorWindow extends BaseWindow {
     // used to find the best window to open new files in.
     this._openedRootDirectory = ''
     this._openedFiles = []
+    this._openedAssetFiles = []
 
     this.bufferStoreInfo = null
   }
@@ -450,6 +452,8 @@ class EditorWindow extends BaseWindow {
     if (index !== -1) {
       _openedFiles!.splice(index, 1)
     }
+    const assetIndex = this._openedAssetFiles.indexOf(pathname)
+    if (assetIndex !== -1) this._openedAssetFiles.splice(assetIndex, 1)
     ipcMain.emit('watcher-unwatch-file', browserWindow, pathname)
   }
 
@@ -491,6 +495,7 @@ class EditorWindow extends BaseWindow {
     this._assetsToOpen = []
     this._openedRootDirectory = ''
     this._openedFiles = []
+    this._openedAssetFiles = []
 
     browserWindow!.webContents.once('did-finish-load', () => {
       this.lifecycle = WindowLifecycle.READY
@@ -524,10 +529,15 @@ class EditorWindow extends BaseWindow {
     this._assetsToOpen = null
     this._openedRootDirectory = null
     this._openedFiles = null
+    this._openedAssetFiles = []
   }
 
   get openedRootDirectory(): string | null {
     return this._openedRootDirectory
+  }
+
+  getOpenedFilePaths(): string[] {
+    return [...(this._openedFiles ?? []), ...this._openedAssetFiles]
   }
 
   // --- private ---------------------------------
@@ -553,6 +563,9 @@ class EditorWindow extends BaseWindow {
   }
 
   private _openAssetTab(request: AssetTabRequest, selected: boolean): void {
+    if (request.pathname && !this._openedAssetFiles.includes(request.pathname)) {
+      this._openedAssetFiles.push(request.pathname)
+    }
     if (this.lifecycle === WindowLifecycle.READY) {
       this.browserWindow!.webContents.send('mt::open-asset-tab', request, selected)
     } else {

@@ -17,6 +17,14 @@ import { setPlantumlServerSource } from './ipc/diagram'
 import { startMainPluginHost } from './plugins'
 import EditorWindow from './windows/editor'
 import { setupVaultIndex } from './vaultIndex'
+import { registerPrivilegedSchemes, installProtocolHandlers } from './protocol/register'
+import { setFsAccessAccessor } from './security/fsAccess'
+
+registerPrivilegedSchemes()
+// `protocol.handle` needs the default session, so it installs in a `ready`
+// listener registered here, ahead of `App.init`'s own `ready` listener that
+// opens the first window. (`app.whenReady().then` would run after it.)
+app.on('ready', () => installProtocolHandlers())
 
 // Set version strings into global and process.versions
 process.env.MARKTEXT_VERSION = MARKTEXT_VERSION
@@ -100,6 +108,7 @@ app.on('browser-window-created', (_, window) => {
 let accessor: Accessor
 try {
   accessor = new Accessor(appEnvironment)
+  setFsAccessAccessor(accessor)
 } catch (err) {
   const errorObj = err instanceof Error ? err : new Error(String(err))
   const msgHint = errorObj.message.includes('Config schema violation')

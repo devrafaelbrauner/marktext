@@ -1,3 +1,4 @@
+import { toInAppImageSrc } from 'common/mtFileUrl'
 import { resolveLocalImageSrc } from '../util/resolveImageSrc'
 
 class MarkdownPrint {
@@ -30,7 +31,7 @@ class MarkdownPrint {
       const images = printContainer.getElementsByTagName('img')
       for (const image of Array.from(images)) {
         const rawSrc = image.getAttribute('src') ?? ''
-        image.src = resolveLocalImageSrc(rawSrc)
+        image.src = toInAppImageSrc(resolveLocalImageSrc(rawSrc))
       }
     }
 

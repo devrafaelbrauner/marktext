@@ -3,7 +3,7 @@ import fsPromises from 'fs/promises'
 import { exec } from 'child_process'
 import dayjs from 'dayjs'
 import log from 'electron-log'
-import { app, BrowserWindow, clipboard, dialog, nativeTheme, ipcMain, session } from 'electron'
+import { app, BrowserWindow, clipboard, nativeTheme, ipcMain, session } from 'electron'
 import type { BrowserWindowConstructorOptions } from 'electron'
 import { isChildOfDirectory } from 'common/filesystem/paths'
 import type { IUserPreferences } from '@shared/types/preferences'
@@ -20,6 +20,7 @@ import { watchers } from '../utils/imagePathAutoComplement'
 import { onInternalChannel } from '../utils/internalIpc'
 import { setUploaderSettingsSource } from '../ipc/uploader'
 import { WindowType } from '../windows/base'
+import { showOpenDialogScoped } from '../security/pathGrants'
 import EditorWindow from '../windows/editor'
 import SettingWindow from '../windows/setting'
 import { setLanguage } from '../i18n'
@@ -781,7 +782,7 @@ class App {
       const win = BrowserWindow.fromWebContents(e.sender)
       if (!win) return
 
-      const { filePaths } = await dialog.showOpenDialog(win, {
+      const { filePaths } = await showOpenDialogScoped(win, {
         defaultPath: defaultDirectoryToOpen,
         properties: ['openDirectory', 'createDirectory']
       })
