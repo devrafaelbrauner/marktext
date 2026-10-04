@@ -1,3 +1,5 @@
+import { locales as kanbanLocales } from '@plugins/kanban/locales'
+import { manifest as kanbanManifest } from '@plugins/kanban/manifest'
 import type { RendererPluginEntry } from './host/manager'
 
 /**
@@ -6,4 +8,10 @@ import type { RendererPluginEntry } from './host/manager'
  * loads its code lazily, e.g.
  * `{ ...info, load: () => import('@plugins/<id>/renderer').then((m) => m.default) }`.
  */
-export const BUILTIN_RENDERER_PLUGINS: RendererPluginEntry[] = []
+export const BUILTIN_RENDERER_PLUGINS: RendererPluginEntry[] = [
+  {
+    manifest: kanbanManifest,
+    locales: kanbanLocales,
+    load: () => import('@plugins/kanban/renderer').then((m) => m.default)
+  }
+]

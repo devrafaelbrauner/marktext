@@ -1,0 +1,87 @@
+{
+  "name": "Quadros Kanban",
+  "description": "Abre quadros do Obsidian Kanban (notas com \"kanban-plugin: board\" no front matter) como quadros com colunas e cartões, e deixa os %% comentários %% esmaecidos no editor.",
+  "view": {
+    "title": "Quadro Kanban"
+  },
+  "commands": {
+    "newBoard": "Novo quadro Kanban"
+  },
+  "newBoard": {
+    "title": "Novo quadro Kanban",
+    "nameLabel": "Nome do quadro",
+    "defaultName": "Kanban",
+    "create": "Criar",
+    "lanes": {
+      "todo": "A fazer",
+      "doing": "Fazendo",
+      "done": "Concluído"
+    },
+    "noFolder": "Abra uma pasta ou salve o arquivo atual primeiro: o quadro é criado ao lado dele.",
+    "failed": "Não foi possível criar o quadro: {message}"
+  },
+  "dialog": {
+    "cancel": "Cancelar",
+    "ok": "OK"
+  },
+  "board": {
+    "label": "Quadro Kanban {name}",
+    "addLane": "Adicionar coluna",
+    "laneNamePlaceholder": "Nome da coluna",
+    "empty": "Este quadro ainda não tem colunas.",
+    "filterPlaceholder": "Filtrar cartões",
+    "clearFilter": "Limpar filtro",
+    "archive": "Arquivo ({count})",
+    "archiveTitle": "Cartões arquivados",
+    "archiveEmpty": "Nenhum cartão arquivado.",
+    "closeArchive": "Fechar arquivo",
+    "restore": "Restaurar",
+    "restoreTo": "Restaurar em {lane}",
+    "parseHint": "Os cartões são os itens de lista abaixo do título de cada coluna."
+  },
+  "lane": {
+    "menu": "Ações da coluna {title}",
+    "dragHandle": "Arraste para reordenar a coluna {title}",
+    "rename": "Renomear",
+    "setLimit": "Definir limite WIP…",
+    "limitLabel": "Número máximo de cartões (0 para sem limite)",
+    "markComplete": "Marcar os cartões desta coluna como concluídos",
+    "unmarkComplete": "Deixar de marcar os cartões como concluídos",
+    "moveLeft": "Mover coluna para a esquerda",
+    "moveRight": "Mover coluna para a direita",
+    "delete": "Excluir coluna",
+    "deleteTitle": "Excluir coluna",
+    "deleteConfirm": "Excluir a coluna \"{title}\" e seus {count} cartão(ões)?",
+    "deleteAction": "Excluir",
+    "count": "{count} cartão(ões)",
+    "countWithLimit": "{count} de no máximo {max} cartões",
+    "overLimit": "Acima do limite WIP",
+    "complete": "Os cartões aqui estão concluídos",
+    "addCard": "Adicionar cartão",
+    "addCardPlaceholder": "Adicionar cartão…",
+    "cardsLabel": "Cartões de {title}",
+    "renameLabel": "Nome da coluna",
+    "addCardHint": "Enter adiciona o cartão, Shift+Enter quebra a linha"
+  },
+  "card": {
+    "menu": "Ações do cartão",
+    "edit": "Editar",
+    "editLabel": "Texto do cartão (Enter salva, Shift+Enter quebra a linha, Esc cancela)",
+    "save": "Salvar",
+    "complete": "Marcar como concluído",
+    "incomplete": "Marcar como não concluído",
+    "moveTo": "Mover para…",
+    "moveUp": "Mover para cima",
+    "moveDown": "Mover para baixo",
+    "archive": "Arquivar",
+    "delete": "Excluir",
+    "deleteConfirm": "Excluir este cartão?",
+    "toggleLabel": "Concluído",
+    "overdue": "Atrasado",
+    "openLink": "Abrir {target}",
+    "keyboardHint": "Enter edita, Alt+setas move o cartão"
+  },
+  "errors": {
+    "openLink": "Não foi possível abrir {target}: {message}"
+  }
+}
