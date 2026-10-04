@@ -1,0 +1,63 @@
+{
+  "name": "PDF Reader",
+  "description": "Opens PDF files in a tab with search, zoom, outline, thumbnails and links to individual pages.",
+  "view": {
+    "title": "PDF",
+    "label": "PDF viewer: {name}"
+  },
+  "commands": {
+    "copyPageLink": "PDF: Copy Link to This Page"
+  },
+  "notify": {
+    "linkCopied": "Copied {link}",
+    "noPdf": "Open a PDF to copy a link to one of its pages."
+  },
+  "loading": "Loading PDF…",
+  "error": {
+    "title": "Can't open this PDF",
+    "encrypted": "This PDF is password-protected. Password-protected PDFs aren't supported yet.",
+    "invalid": "The file is damaged or isn't a valid PDF.",
+    "tooLarge": "The file is too large to open in the viewer.",
+    "notFound": "The file no longer exists.",
+    "outsideVault": "Only PDFs inside the folder opened in this window can be shown here.",
+    "unknown": "Something went wrong while opening the file: {message}",
+    "openExternally": "Open in Default App"
+  },
+  "toolbar": {
+    "label": "PDF toolbar",
+    "sidebar": "Show or hide the sidebar",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "pageNumber": "Page number",
+    "pageCount": "of {count}",
+    "zoomOut": "Zoom out",
+    "zoomIn": "Zoom in",
+    "zoomLevel": "Zoom level",
+    "fitWidth": "Fit width",
+    "fitPage": "Fit page",
+    "darkPages": "Dark pages",
+    "find": "Find in document",
+    "copyLink": "Copy link to this page"
+  },
+  "find": {
+    "label": "Find in PDF",
+    "placeholder": "Find in PDF",
+    "previous": "Previous match",
+    "next": "Next match",
+    "close": "Close",
+    "count": "{current} of {total}",
+    "none": "No results",
+    "searching": "Searching…"
+  },
+  "sidebar": {
+    "label": "PDF sidebar",
+    "outline": "Outline",
+    "thumbnails": "Thumbnails",
+    "noOutline": "This PDF has no outline.",
+    "expand": "Expand",
+    "collapse": "Collapse"
+  },
+  "page": {
+    "label": "Page {page}"
+  }
+}

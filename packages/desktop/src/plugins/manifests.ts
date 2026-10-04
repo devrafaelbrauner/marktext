@@ -1,3 +1,5 @@
+import { locales as pdfReaderLocales } from '@plugins/pdf-reader/locales'
+import { manifest as pdfReaderManifest } from '@plugins/pdf-reader/manifest'
 import type { PluginLocales, PluginManifest } from '@shared/plugins/types'
 
 /**
@@ -13,4 +15,6 @@ export interface BuiltinPluginInfo {
   locales: PluginLocales
 }
 
-export const BUILTIN_PLUGINS: BuiltinPluginInfo[] = []
+export const BUILTIN_PLUGINS: BuiltinPluginInfo[] = [
+  { manifest: pdfReaderManifest, locales: pdfReaderLocales }
+]

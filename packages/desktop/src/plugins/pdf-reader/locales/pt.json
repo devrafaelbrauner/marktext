@@ -1,0 +1,63 @@
+{
+  "name": "Leitor de PDF",
+  "description": "Abre arquivos PDF em uma aba, com busca, zoom, sumário, miniaturas e links para páginas específicas.",
+  "view": {
+    "title": "PDF",
+    "label": "Leitor de PDF: {name}"
+  },
+  "commands": {
+    "copyPageLink": "PDF: Copiar link desta página"
+  },
+  "notify": {
+    "linkCopied": "Link copiado: {link}",
+    "noPdf": "Abra um PDF para copiar o link de uma das páginas."
+  },
+  "loading": "Carregando PDF…",
+  "error": {
+    "title": "Não foi possível abrir este PDF",
+    "encrypted": "Este PDF é protegido por senha. PDFs protegidos por senha ainda não são suportados.",
+    "invalid": "O arquivo está corrompido ou não é um PDF válido.",
+    "tooLarge": "O arquivo é grande demais para ser aberto no leitor.",
+    "notFound": "O arquivo não existe mais.",
+    "outsideVault": "Aqui só é possível exibir PDFs que estejam dentro da pasta aberta nesta janela.",
+    "unknown": "Ocorreu um erro ao abrir o arquivo: {message}",
+    "openExternally": "Abrir no aplicativo padrão"
+  },
+  "toolbar": {
+    "label": "Barra de ferramentas do PDF",
+    "sidebar": "Mostrar ou ocultar o painel lateral",
+    "previousPage": "Página anterior",
+    "nextPage": "Próxima página",
+    "pageNumber": "Número da página",
+    "pageCount": "de {count}",
+    "zoomOut": "Diminuir zoom",
+    "zoomIn": "Aumentar zoom",
+    "zoomLevel": "Nível de zoom",
+    "fitWidth": "Ajustar à largura",
+    "fitPage": "Ajustar à página",
+    "darkPages": "Páginas escuras",
+    "find": "Localizar no documento",
+    "copyLink": "Copiar link desta página"
+  },
+  "find": {
+    "label": "Localizar no PDF",
+    "placeholder": "Localizar no PDF",
+    "previous": "Resultado anterior",
+    "next": "Próximo resultado",
+    "close": "Fechar",
+    "count": "{current} de {total}",
+    "none": "Nenhum resultado",
+    "searching": "Pesquisando…"
+  },
+  "sidebar": {
+    "label": "Painel lateral do PDF",
+    "outline": "Sumário",
+    "thumbnails": "Miniaturas",
+    "noOutline": "Este PDF não tem sumário.",
+    "expand": "Expandir",
+    "collapse": "Recolher"
+  },
+  "page": {
+    "label": "Página {page}"
+  }
+}

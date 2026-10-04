@@ -1,3 +1,5 @@
+import { locales as pdfReaderLocales } from '@plugins/pdf-reader/locales'
+import { manifest as pdfReaderManifest } from '@plugins/pdf-reader/manifest'
 import type { RendererPluginEntry } from './host/manager'
 
 /**
@@ -6,4 +8,10 @@ import type { RendererPluginEntry } from './host/manager'
  * loads its code lazily, e.g.
  * `{ ...info, load: () => import('@plugins/<id>/renderer').then((m) => m.default) }`.
  */
-export const BUILTIN_RENDERER_PLUGINS: RendererPluginEntry[] = []
+export const BUILTIN_RENDERER_PLUGINS: RendererPluginEntry[] = [
+  {
+    manifest: pdfReaderManifest,
+    locales: pdfReaderLocales,
+    load: () => import('@plugins/pdf-reader/renderer').then((m) => m.default)
+  }
+]
