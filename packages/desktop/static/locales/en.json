@@ -124,7 +124,8 @@
       "toggleTableOfContents": "Toggle Table of Contents",
       "reloadImages": "Reload Images",
       "showDeveloperTools": "Show Developer Tools",
-      "reloadWindow": "Reload Window"
+      "reloadWindow": "Reload Window",
+      "toggleDocumentView": "Toggle Document View"
     },
     "format": {
       "format": "Format",
@@ -367,7 +368,8 @@
         "searcher": "Searcher",
         "watcher": "Watcher",
         "spelling": "Spelling",
-        "custom css": "Custom CSS"
+        "custom css": "Custom CSS",
+        "plugins": "Plugins"
       },
       "items": {
         "autoSave": "Automatically save the content being edited",
@@ -444,7 +446,8 @@
       "spelling": "Spelling",
       "theme": "Theme",
       "image": "Image",
-      "keybindings": "Keybindings"
+      "keybindings": "Keybindings",
+      "plugins": "Plugins"
     },
     "general": {
       "title": "General",
@@ -746,6 +749,53 @@
       "enableSpellChecking": "Enable spell checking",
       "hideMarksForErrors": "Hide marks for spelling errors",
       "title": "Spell Checker"
+    },
+    "plugins": {
+      "title": "Plugins",
+      "description": "Built-in plugins add features to MarkText. Disabled plugins do not run.",
+      "safeMode": "MarkText was started in safe mode (--safe): no plugin is running. You can still change their settings.",
+      "empty": "No plugins are available.",
+      "enabled": "Enabled",
+      "settings": "Settings",
+      "secretSet": "Configured",
+      "secretNotSet": "Not configured",
+      "secretPlaceholder": "Enter a new value",
+      "save": "Save",
+      "clear": "Clear",
+      "stringListPlaceholder": "One entry per line",
+      "saveFailed": "Could not save \"{setting}\": {message}",
+      "community": {
+        "title": "Community",
+        "description": "Community plugins run in a sandbox. They are installed disabled; enabling one asks you to allow the permissions it requests.",
+        "empty": "No community plugins installed.",
+        "installFolder": "Install from folder",
+        "installZip": "Install from .zip",
+        "uninstall": "Uninstall",
+        "uninstallConfirm": "Uninstall \"{name}\"? Its files will be deleted.",
+        "uninstallFailed": "Could not uninstall the plugin: {message}",
+        "author": "Author",
+        "consentTitle": "Allow \"{name}\"?",
+        "consentBody": "This plugin will be able to:",
+        "consentConfirm": "Enable",
+        "consentCancel": "Cancel",
+        "consentNone": "No special permissions. It can register commands, show notifications and use its settings.",
+        "safeMode": "Safe mode is on (--safe): community plugins stay off.",
+        "installFailed": "Could not install the plugin: {message}",
+        "enableFailed": "Could not change \"{name}\": {message}",
+        "installed": "Installed \"{name}\". It stays off until you enable it.",
+        "permission": {
+          "editorRead": "Read the open document",
+          "editorWrite": "Edit the open document",
+          "editorDecorate": "Underline text in the editor",
+          "vaultRead": "Read files in the open folder",
+          "vaultWrite": "Create and edit files in the open folder",
+          "metadataRead": "Read notes, links and tags",
+          "sidebar": "Add a sidebar panel",
+          "statusbar": "Add a status bar item",
+          "clipboard": "Copy text to the clipboard",
+          "network": "Connect to {host}"
+        }
+      }
     }
   },
   "about": {
@@ -866,7 +916,8 @@
       "reloadImages": "Reload Images",
       "textDirection": "Text Direction",
       "actualSize": "Actual Size",
-      "devToggleDeveloperTools": "Toggle Developer Tools"
+      "devToggleDeveloperTools": "Toggle Developer Tools",
+      "toggleDocumentView": "Toggle Document View"
     },
     "tabs": {
       "cycleForward": "Cycle Forward",
@@ -1000,6 +1051,18 @@
       "languageMissing": "Spellcheck language missing {languageCode}",
       "switchError": "Spellcheck switch error for {languageCode}, {error}",
       "title": "Spellcheck"
+    },
+    "tabView": {
+      "editor": "Markdown Editor",
+      "noViewer": "No viewer is available for this file.",
+      "openExternally": "Open in Default App",
+      "noDocumentViews": "No document view is available.",
+      "viewFailed": "This view could not be displayed."
     }
+  },
+  "pluginHost": {
+    "activationFailed": "Plugin \"{name}\" could not be started",
+    "commandFailed": "Command \"{command}\" failed",
+    "communityDisabled": "Community plugin \"{name}\" was disabled because it crashed or failed to start."
   }
 }

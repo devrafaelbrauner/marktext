@@ -1,0 +1,27 @@
+{
+  "name": "Icons",
+  "description": "Insert Lucide icons with :lucide-name: shortcodes, a picker and autocomplete. Exported HTML and PDF show the icons as inline SVG.",
+  "settings": {
+    "exportMode": {
+      "label": "Icons in HTML/PDF export",
+      "description": "How icon shortcodes appear in exported HTML and PDF files.",
+      "svg": "Inline SVG icon",
+      "shortcode": "Shortcode text"
+    }
+  },
+  "commands": {
+    "insert": "Insert Icon"
+  },
+  "picker": {
+    "title": "Insert icon",
+    "search": "Search icons (name or keyword)",
+    "results": "{count} icons",
+    "empty": "No icon matches this search.",
+    "hint": "Arrow keys to choose, Enter to insert, Esc to close",
+    "close": "Close"
+  },
+  "errors": {
+    "loadFailed": "Could not load the icon set: {message}",
+    "noDocument": "Open a Markdown document to insert an icon."
+  }
+}

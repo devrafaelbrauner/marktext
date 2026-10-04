@@ -111,6 +111,10 @@ The `Muya` instance returned from `new Muya(el, options)` exposes:
 | `search(value, opts?)` | Run a search; `opts` includes `{ isRegexp, isCaseSensitive, isWholeWord, selectHighlight }`. |
 | `find('previous' \| 'next')` | Move the active match. |
 | `replace(value, { isSingle, isRegexp })` | Replace the active match or all matches. |
+| `setDecorations(layerId, ranges)` / `clearDecorations(layerId?)` | Replace / remove a layer of render-only marks (`IDecorationRange { path, start, end, className, data? }`). A block's marks are dropped when its text changes. |
+| `replaceRange({ path, start, end, expected, replacement })` | Replace a range of one block's text as its own undo step; returns `false` without changing anything when the range no longer reads `expected`. |
+| `insertText(text)` | Insert at the caret of the last selected block (replacing its selection) as its own undo step. |
+| `getCheckableBlocks(paths?)` | Paragraphs, headings and table cells with a LanguageTool-style `annotation` (`{ text }` / `{ markup, interpretAs? }` parts that join back to the block text). |
 | `selectAll()` | Select the entire document. |
 | `getTOC()` | Snapshot the current heading outline as `Array<{ level, text, slug }>`. |
 | `on(event, fn)` / `off(event, fn)` / `once(event, fn)` | Subscribe to editor events. |
@@ -130,6 +134,8 @@ Useful events emitted on the editor:
 | `json-change` | OT operations describing the latest document mutation. The full state can be read back via `muya.getState()` or serialized to Markdown via `muya.getMarkdown()`. |
 | `selection-change` | New selection (`{ anchor, focus, path }`). |
 | `focus` / `blur` | Fired when the contenteditable surface gains or loses focus. |
+| `decoration-click` | `{ layerId, range, rect, event }` on a plain primary click of a decorated span. |
+| `content-set` | No payload; fired at the end of `setContent`, after every decoration layer was cleared. |
 
 The full set of constructor options (font size, list defaults, math/footnote toggles, front matter delimiters, Mermaid/Vega themes, etc.) is described by `IMuyaOptions` in [`packages/core/src/types.ts`](./packages/core/src/types.ts); defaults live in `MUYA_DEFAULT_OPTIONS` in [`packages/core/src/config/index.ts`](./packages/core/src/config/index.ts).
 

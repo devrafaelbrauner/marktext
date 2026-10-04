@@ -124,7 +124,8 @@
       "toggleTableOfContents": "Inhoudsopgave in-/uitschakelen",
       "reloadImages": "Afbeeldingen herladen",
       "showDeveloperTools": "Ontwikkelaarshulpmiddelen tonen",
-      "reloadWindow": "Venster herladen"
+      "reloadWindow": "Venster herladen",
+      "toggleDocumentView": "Toggle Document View"
     },
     "format": {
       "format": "Opmaak",
@@ -367,7 +368,8 @@
         "searcher": "Zoeker",
         "watcher": "Watcher",
         "spelling": "Spelling",
-        "custom css": "Aangepaste CSS"
+        "custom css": "Aangepaste CSS",
+        "plugins": "Plugins"
       },
       "items": {
         "autoSave": "Automatisch de bewerkte inhoud opslaan",
@@ -444,7 +446,8 @@
       "spelling": "Spelling",
       "theme": "Thema",
       "image": "Afbeelding",
-      "keybindings": "Sneltoetsen"
+      "keybindings": "Sneltoetsen",
+      "plugins": "Plugins"
     },
     "general": {
       "title": "Algemeen",
@@ -746,6 +749,53 @@
       "enableSpellChecking": "Spellingcontrole inschakelen",
       "hideMarksForErrors": "Markering voor spelfouten verbergen",
       "title": "Spellingcontrole"
+    },
+    "plugins": {
+      "title": "Plugins",
+      "description": "Built-in plugins add features to MarkText. Disabled plugins do not run.",
+      "safeMode": "MarkText was started in safe mode (--safe): no plugin is running. You can still change their settings.",
+      "empty": "No plugins are available.",
+      "enabled": "Enabled",
+      "settings": "Settings",
+      "secretSet": "Configured",
+      "secretNotSet": "Not configured",
+      "secretPlaceholder": "Enter a new value",
+      "save": "Save",
+      "clear": "Clear",
+      "stringListPlaceholder": "One entry per line",
+      "saveFailed": "Could not save \"{setting}\": {message}",
+      "community": {
+        "title": "Community",
+        "description": "Community plugins run in a sandbox. They are installed disabled; enabling one asks you to allow the permissions it requests.",
+        "empty": "No community plugins installed.",
+        "installFolder": "Install from folder",
+        "installZip": "Install from .zip",
+        "uninstall": "Uninstall",
+        "uninstallConfirm": "Uninstall \"{name}\"? Its files will be deleted.",
+        "uninstallFailed": "Could not uninstall the plugin: {message}",
+        "author": "Author",
+        "consentTitle": "Allow \"{name}\"?",
+        "consentBody": "This plugin will be able to:",
+        "consentConfirm": "Enable",
+        "consentCancel": "Cancel",
+        "consentNone": "No special permissions. It can register commands, show notifications and use its settings.",
+        "safeMode": "Safe mode is on (--safe): community plugins stay off.",
+        "installFailed": "Could not install the plugin: {message}",
+        "enableFailed": "Could not change \"{name}\": {message}",
+        "installed": "Installed \"{name}\". It stays off until you enable it.",
+        "permission": {
+          "editorRead": "Read the open document",
+          "editorWrite": "Edit the open document",
+          "editorDecorate": "Underline text in the editor",
+          "vaultRead": "Read files in the open folder",
+          "vaultWrite": "Create and edit files in the open folder",
+          "metadataRead": "Read notes, links and tags",
+          "sidebar": "Add a sidebar panel",
+          "statusbar": "Add a status bar item",
+          "clipboard": "Copy text to the clipboard",
+          "network": "Connect to {host}"
+        }
+      }
     }
   },
   "about": {
@@ -866,7 +916,8 @@
       "reloadImages": "Afbeeldingen herladen",
       "textDirection": "Tekstrichting",
       "actualSize": "Werkelijke grootte",
-      "devToggleDeveloperTools": "Ontwikkelaarshulpmiddelen in-/uitschakelen"
+      "devToggleDeveloperTools": "Ontwikkelaarshulpmiddelen in-/uitschakelen",
+      "toggleDocumentView": "Toggle Document View"
     },
     "tabs": {
       "cycleForward": "Volgende tabblad",
@@ -1000,6 +1051,18 @@
       "languageMissing": "Spellingcontroletaal ontbreekt {languageCode}",
       "switchError": "Spellingcontrole wisselfout voor {languageCode}, {error}",
       "title": "Spellingcontrole"
+    },
+    "tabView": {
+      "editor": "Markdown Editor",
+      "noViewer": "No viewer is available for this file.",
+      "openExternally": "Open in Default App",
+      "noDocumentViews": "No document view is available.",
+      "viewFailed": "This view could not be displayed."
     }
+  },
+  "pluginHost": {
+    "activationFailed": "Plugin \"{name}\" could not be started",
+    "commandFailed": "Command \"{command}\" failed",
+    "communityDisabled": "Community plugin \"{name}\" was disabled because it crashed or failed to start."
   }
 }

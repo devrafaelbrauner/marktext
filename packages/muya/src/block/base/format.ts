@@ -16,6 +16,7 @@ import type Parent from './parent';
 import type TreeNode from './treeNode';
 import Content from '../../block/base/content';
 import { ScrollPage } from '../../block/scrollPage';
+import { isCompletionActive } from '../../completion';
 import {
     CLASS_NAMES,
     FORMAT_MARKER_MAP,
@@ -50,7 +51,7 @@ const INLINE_UPDATE_FRAGMENTS = [
     '(?:^|\n) {0,3}([*+-] {1,4})', // Bullet list
     '^(\\[[x ]\\] {1,4})', // Task list **match from beginning**
     '(?:^|\n) {0,3}(\\d{1,9}(?:\\.|\\)) {1,4})', // Order list
-    '(?:^|\n) {0,3}(#{1,6})(?=\\s+|$)', // ATX headings
+    '(?:^|\n) {0,3}(#{1,6})(?=\\s+|$)', // ATX headings (index ATX_FRAGMENT_INDEX)
     '^[\\s\\S]+?\\n {0,3}(={3,}|-{3,})(?= +|$)', // Setext headings **match from beginning**
     '(?:^|\n) {0,3}(>).+', // Block quote
     '^( {4,})', // Indent code **match from beginning**
@@ -58,7 +59,18 @@ const INLINE_UPDATE_FRAGMENTS = [
     '(?:^|\n) {0,3}((?:\\* *\\* *\\*|- *- *-|_ *_ *_)[ *_-]*)(?=\n|$)', // Thematic break
 ];
 
+const ATX_FRAGMENT_INDEX = 3;
+
 const INLINE_UPDATE_REG = new RegExp(INLINE_UPDATE_FRAGMENTS.join('|'), 'i');
+
+// `atxHeadingRequiresSpace`: a lone `#` (or `#tag`) never promotes the block;
+// only `#` followed by a space or tab does.
+const INLINE_UPDATE_REG_ATX_SPACE = new RegExp(
+    INLINE_UPDATE_FRAGMENTS.map((fragment, i) =>
+        i === ATX_FRAGMENT_INDEX ? '(?:^|\n) {0,3}(#{1,6})(?=[ \\t])' : fragment,
+    ).join('|'),
+    'i',
+);
 
 function stripHardBreakMarker(line: string): string {
     const trimmed = line.replace(/[ \t]+$/, '');
@@ -581,6 +593,13 @@ class Format extends Content {
             this.setCursor(anchor.offset, focus.offset);
         }
 
+        // Let the completion picker (re)evaluate the trigger at the caret.
+        this.muya.eventCenter.emit('muya-completion', {
+            block: this,
+            anchor: anchor.offset,
+            focus: focus.offset,
+        });
+
         // Check not edit emoji
         const editEmoji = this._checkCursorInTokenType(
             this.text,
@@ -679,20 +698,32 @@ class Format extends Content {
             inputType !== 'insertFromPaste'
             && inputType !== 'deleteByCut'
         ) {
-            const emojiToken = this._checkCursorInTokenType(
-                this.text,
-                start.offset,
-                'emoji',
-            );
-            if (emojiToken && isEmojiToken(emojiToken)) {
-                const { content: emojiText } = emojiToken;
-                const reference = getCursorReference();
+            // A completion provider claiming the text before the caret (e.g.
+            // `:icon-`) keeps the emoji picker closed while its list is open.
+            this.muya.eventCenter.emit('muya-completion', {
+                block: this,
+                anchor: start.offset,
+                focus: end.offset,
+            });
+            if (isCompletionActive(this.muya)) {
+                this.muya.eventCenter.emit('muya-emoji-picker', { emojiText: '' });
+            }
+            else {
+                const emojiToken = this._checkCursorInTokenType(
+                    this.text,
+                    start.offset,
+                    'emoji',
+                );
+                if (emojiToken && isEmojiToken(emojiToken)) {
+                    const { content: emojiText } = emojiToken;
+                    const reference = getCursorReference();
 
-                this.muya.eventCenter.emit('muya-emoji-picker', {
-                    reference,
-                    emojiText,
-                    block: this,
-                });
+                    this.muya.eventCenter.emit('muya-emoji-picker', {
+                        reference,
+                        emojiText,
+                        block: this,
+                    });
+                }
             }
         }
 
@@ -719,7 +750,9 @@ class Format extends Content {
             blockquote,
             indentedCodeBlock,
             thematicBreak,
-        ] = text.match(INLINE_UPDATE_REG) || [];
+        ] = text.match(
+            this.muya.options.atxHeadingRequiresSpace ? INLINE_UPDATE_REG_ATX_SPACE : INLINE_UPDATE_REG,
+        ) || [];
 
         switch (true) {
             case !!thematicBreak
@@ -1065,8 +1098,12 @@ class Format extends Content {
         const postParagraphLines = [];
         let atxLineHasPushed = false;
 
+        const atxLineReg = muya.options.atxHeadingRequiresSpace
+            ? /^ {0,3}#{1,6}(?=[ \t])/
+            : /^ {0,3}#{1,6}(?=\s+|$)/;
+
         for (const l of lines) {
-            if (/^ {0,3}#{1,6}(?=\s+|$)/.test(l) && !atxLineHasPushed) {
+            if (atxLineReg.test(l) && !atxLineHasPushed) {
                 atxLine = l;
                 atxLineHasPushed = true;
             }

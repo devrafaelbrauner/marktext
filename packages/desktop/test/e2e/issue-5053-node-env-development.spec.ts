@@ -9,7 +9,9 @@ import { launchElectron } from './helpers'
 test('a built app ignores NODE_ENV=development from the environment', async() => {
   const { app, page } = await launchElectron([], { env: { NODE_ENV: 'development' } })
   try {
-    expect(page.url()).toMatch(/^file:\/\//)
+    // Hardening boots the packaged renderer from mt-app://bundle instead of
+    // file:// so workers/fonts stay same-origin with webSecurity on.
+    expect(page.url()).toMatch(/^(file|mt-app):\/\//)
 
     const { userData, hasSingleInstanceLock } = await app.evaluate(({ app }) => ({
       userData: app.getPath('userData'),

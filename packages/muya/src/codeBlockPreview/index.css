@@ -1,0 +1,23 @@
+.mu-code-block .mu-code-block-preview {
+    display: block;
+    margin-top: 0.5em;
+    padding-top: 0.5em;
+
+    font-family: var(--mu-font-family, inherit);
+    white-space: normal;
+
+    border-top: 1px dashed var(--editor-color-10);
+
+    cursor: default;
+
+    user-select: text;
+}
+
+.mu-code-block .mu-code-block-preview:empty {
+    display: none;
+}
+
+.mu-code-block .mu-code-block-preview-error {
+    color: var(--delete-color);
+    white-space: pre-wrap;
+}

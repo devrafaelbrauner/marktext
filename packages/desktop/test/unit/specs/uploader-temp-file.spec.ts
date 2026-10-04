@@ -14,6 +14,8 @@ vi.mock('electron', () => ({
     handle: (channel: string, fn: Handler) => handlers.set(channel, fn)
   }
 }))
+// Sender validation is covered by validate-sender.spec; here the caller is the app.
+vi.mock('main_renderer/security/validateSender', () => ({ validateSender: () => true }))
 
 const PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
@@ -24,6 +26,8 @@ let binDir: string
 let argvLog: string
 let copyPath: string
 let originalPath: string | undefined
+// What the main-side data center says; tests switch it per case.
+const uploaderSettings = { currentUploader: 'picgo', cliScript: '' }
 
 // The stand-in uploader below is a POSIX shell script, and the argv-vs-shell
 // behaviour under test is the non-Windows branch of uploadByPicgo, so the whole
@@ -62,7 +66,8 @@ beforeAll(async() => {
   originalPath = process.env.PATH
   process.env.PATH = `${binDir}${path.delimiter}${originalPath ?? ''}`
 
-  const { registerUploaderHandlers } = await import('main_renderer/ipc/uploader')
+  const { registerUploaderHandlers, setUploaderSettingsSource } = await import('main_renderer/ipc/uploader')
+  setUploaderSettingsSource(async() => uploaderSettings)
   registerUploaderHandlers()
 })
 
@@ -73,6 +78,8 @@ afterAll(async() => {
 
 beforeEach(async() => {
   await fs.writeFile(argvLog, '')
+  uploaderSettings.currentUploader = 'picgo'
+  uploaderSettings.cliScript = ''
 })
 
 const upload = async(req: unknown) => {
@@ -89,8 +96,7 @@ describe.skipIf(skipOnWindows)('uploader: clipboard image handed to the uploader
     const url = await upload({
       pathname: '/tmp/notes/a.md',
       image: { data: new Uint8Array(PNG), name: 'image.png' },
-      isPath: false,
-      preferences: { currentUploader: 'picgo', cliScript: '' }
+      isPath: false
     })
 
     const [handed] = await uploadedPaths()
@@ -102,8 +108,7 @@ describe.skipIf(skipOnWindows)('uploader: clipboard image handed to the uploader
     await upload({
       pathname: '/tmp/notes/a.md',
       image: { data: new Uint8Array(PNG), name: 'image.png' },
-      isPath: false,
-      preferences: { currentUploader: 'picgo', cliScript: '' }
+      isPath: false
     })
     // The fake uploader copies what it was handed, because the handler unlinks
     // the temp file as soon as the upload resolves.
@@ -114,8 +119,7 @@ describe.skipIf(skipOnWindows)('uploader: clipboard image handed to the uploader
     await upload({
       pathname: '/tmp/notes/a.md',
       image: { data: new Uint8Array(PNG), name: 'image.png' },
-      isPath: false,
-      preferences: { currentUploader: 'picgo', cliScript: '' }
+      isPath: false
     })
     const [handed] = await uploadedPaths()
     expect(await fs.pathExists(handed)).toBe(false)
@@ -126,14 +130,12 @@ describe.skipIf(skipOnWindows)('uploader: clipboard image handed to the uploader
       upload({
         pathname: '/tmp/notes/a.md',
         image: { data: new Uint8Array(PNG), name: 'image.png' },
-        isPath: false,
-        preferences: { currentUploader: 'picgo', cliScript: '' }
+        isPath: false
       }),
       upload({
         pathname: '/tmp/notes/a.md',
         image: { data: new Uint8Array(Buffer.concat([PNG, Buffer.from([0])])), name: 'image.png' },
-        isPath: false,
-        preferences: { currentUploader: 'picgo', cliScript: '' }
+        isPath: false
       })
     ])
     const handed = await uploadedPaths()
@@ -153,12 +155,44 @@ describe.skipIf(skipOnWindows)('uploader: local image path handed to picgo (#336
     await upload({
       pathname: path.join(dir, 'note.md'),
       image: weird,
-      isPath: true,
-      preferences: { currentUploader: 'picgo', cliScript: '' }
+      isPath: true
     })
 
     const [handed] = await uploadedPaths()
     expect(handed).toBe(weird)
     await fs.remove(dir)
+  })
+})
+
+describe.skipIf(skipOnWindows)('uploader: settings come from the main process only', () => {
+  it('ignores a cliScript and uploader smuggled into the request', async() => {
+    const marker = path.join(binDir, 'evil-ran')
+    const evil = path.join(binDir, 'evil.sh')
+    await fs.writeFile(evil, `#!/bin/sh\ntouch "${marker}"\necho https://evil.example/x.png\n`, { mode: 0o755 })
+
+    const url = await upload({
+      pathname: '/tmp/notes/a.md',
+      image: { data: new Uint8Array(PNG), name: 'image.png' },
+      isPath: false,
+      preferences: { currentUploader: 'cliScript', cliScript: evil }
+    })
+
+    expect(url).toBe('https://cdn.example.com/uploaded.png')
+    expect(await fs.pathExists(marker)).toBe(false)
+    expect(await uploadedPaths()).toHaveLength(1)
+  })
+
+  it('runs the cliScript configured in the data center', async() => {
+    uploaderSettings.currentUploader = 'cliScript'
+    uploaderSettings.cliScript = await writeFakeUploader('configured-upload.sh')
+
+    await upload({
+      pathname: '/tmp/notes/a.md',
+      image: { data: new Uint8Array(PNG), name: 'image.png' },
+      isPath: false
+    })
+
+    const [handed] = await uploadedPaths()
+    expect(handed).toMatch(/\.png$/)
   })
 })

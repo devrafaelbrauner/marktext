@@ -11,7 +11,14 @@ import {
 } from 'electron'
 import log from 'electron-log'
 import { isDirectory, isFile, exists } from 'common/filesystem'
-import { MARKDOWN_EXTENSIONS, isDangerousExecutableFile, isMarkdownFile } from 'common/filesystem/paths'
+import {
+  MARKDOWN_EXTENSIONS,
+  getLocalLinkTabOptions,
+  isMarkdownFile,
+  isViewableAssetFile
+} from 'common/filesystem/paths'
+import { confirmOpenPath } from '../../security/confirmOpenPath'
+import { showOpenDialogScoped, showSaveDialogScoped } from '../../security/pathGrants'
 import { checkUpdates, userSetting } from './marktext'
 import { showTabBar } from './view'
 import { COMMANDS } from '../../commands'
@@ -107,7 +114,7 @@ const handleResponseForExport = async(e: IpcMainEvent, payload: ExportPayload): 
   const nakedFilename = sanitizeFilename(pathname ? path.basename(pathname, '.md') : title)
 
   const defaultPath = path.join(dirname, `${nakedFilename}${extension}`)
-  const { filePath, canceled } = await dialog.showSaveDialog(win, {
+  const { filePath, canceled } = await showSaveDialogScoped(win, {
     defaultPath,
     filters: getExportExtensionFilter(type)
   })
@@ -202,7 +209,7 @@ const handlePandocExport = async(e: IpcMainEvent, payload: PandocExportPayload):
   let filePath = ''
   // Awaited inside the try, so a save the OS refuses becomes a notification.
   try {
-    const { filePath: chosen, canceled } = await dialog.showSaveDialog(win, {
+    const { filePath: chosen, canceled } = await showSaveDialogScoped(win, {
       defaultPath: path.join(sourceDir ?? getPath('documents'), `${stem}${format.extension}`),
       filters: [{ name: format.label, extensions: [format.extension.slice(1)] }]
     })
@@ -304,7 +311,7 @@ const handleResponseForSave = async(
   let filePath = pathname
 
   if (!filePath) {
-    const { filePath: dialogPath, canceled } = await dialog.showSaveDialog(win, {
+    const { filePath: dialogPath, canceled } = await showSaveDialogScoped(win, {
       defaultPath: path.join(defaultPath || getPath('documents'), `${recommendFilename}.md`)
     })
 
@@ -484,7 +491,7 @@ ipcMain.on(
     // on disk nevertheless but is already tracked by MarkText.
     const alreadyExistOnDisk = !!pathname
 
-    let { filePath, canceled } = await dialog.showSaveDialog(win, {
+    let { filePath, canceled } = await showSaveDialogScoped(win, {
       defaultPath:
         pathname || path.join(defaultPath || getPath('documents'), `${recommendFilename}.md`)
     })
@@ -592,7 +599,7 @@ ipcMain.on('mt::window::drop', async(e, fileList: string[]) => {
     return
   }
   for (const file of fileList) {
-    if (isMarkdownFile(file)) {
+    if (isMarkdownFile(file) || isViewableAssetFile(file)) {
       openFileOrFolder(win, file)
       continue
     }
@@ -634,7 +641,8 @@ ipcMain.on('mt::rename', async(e, { id, pathname, newPathname }: RenamePayload) 
       e.sender.send('mt::set-pathname', {
         id,
         pathname: newPathname,
-        filename: path.basename(newPathname)
+        filename: path.basename(newPathname),
+        oldPathname: pathname
       })
     })
   }
@@ -664,7 +672,7 @@ ipcMain.on(
     if (!win) {
       return
     }
-    const { filePath, canceled } = await dialog.showSaveDialog(win, {
+    const { filePath, canceled } = await showSaveDialogScoped(win, {
       buttonLabel: 'Move to',
       nameFieldLabel: 'Filename:',
       defaultPath: pathname
@@ -681,7 +689,8 @@ ipcMain.on(
         e.sender.send('mt::set-pathname', {
           id,
           pathname: filePath,
-          filename: path.basename(filePath)
+          filename: path.basename(filePath),
+          oldPathname: pathname
         })
       })
     }
@@ -693,7 +702,7 @@ ipcMain.on('mt::ask-for-open-project-in-sidebar', async(e) => {
   if (!win) {
     return
   }
-  const { filePaths } = await dialog.showOpenDialog(win, {
+  const { filePaths } = await showOpenDialogScoped(win, {
     properties: ['openDirectory', 'createDirectory']
   })
 
@@ -742,28 +751,15 @@ ipcMain.on('mt::format-link-click', async(e, { data, dirname }: FormatLinkPayloa
 
   const { pathname, anchor } = resolveLocalLinkTarget(urlCandidate, dirname ?? '')
   if (pathname) {
-    if (isMarkdownFile(pathname)) {
+    const tabOptions = getLocalLinkTabOptions(pathname, anchor)
+    if (tabOptions) {
       const innerWin = BrowserWindow.fromWebContents(e.sender)
       if (innerWin) {
-        openFileOrFolder(innerWin, pathname, { anchor })
+        openFileOrFolder(innerWin, pathname, tabOptions)
       }
     } else {
-      // A link in an untrusted document could point at a co-located script or
-      // executable; opening it via the OS shell would run code silently (#3575).
-      if (isDangerousExecutableFile(pathname)) {
-        const { response } = await dialog.showMessageBox(win, {
-          type: 'warning',
-          buttons: [t('dialog.cancel'), t('dialog.openAnyway')],
-          defaultId: 0,
-          cancelId: 0,
-          noLink: true,
-          title: t('dialog.unsafeFileTitle'),
-          message: t('dialog.unsafeFileMessage'),
-          detail: t('dialog.unsafeFileDetail', { name: path.basename(pathname) })
-        })
-        if (response !== 1) {
-          return
-        }
+      if (!(await confirmOpenPath(win, pathname))) {
+        return
       }
       shell.openPath(pathname)
     }
@@ -827,7 +823,7 @@ export const importFile = async(win: BrowserWindow | null): Promise<void> => {
     return
   }
 
-  const { filePaths } = await dialog.showOpenDialog(win, {
+  const { filePaths } = await showOpenDialogScoped(win, {
     properties: ['openFile'],
     filters: [
       {
@@ -852,7 +848,7 @@ export const openFile = async(win: BrowserWindow | null): Promise<void> => {
   if (!win) {
     return
   }
-  const { filePaths } = await dialog.showOpenDialog(win, {
+  const { filePaths } = await showOpenDialogScoped(win, {
     properties: ['openFile', 'multiSelections'],
     filters: [
       {
@@ -871,7 +867,7 @@ export const openFolder = async(win: BrowserWindow | null): Promise<void> => {
   if (!win) {
     return
   }
-  const { filePaths } = await dialog.showOpenDialog(win, {
+  const { filePaths } = await showOpenDialogScoped(win, {
     properties: ['openDirectory', 'createDirectory']
   })
 

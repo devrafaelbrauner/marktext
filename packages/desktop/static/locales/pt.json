@@ -124,7 +124,8 @@
       "toggleTableOfContents": "Alternar Índice",
       "reloadImages": "Recarregar Imagens",
       "showDeveloperTools": "Mostrar Ferramentas de Desenvolvedor",
-      "reloadWindow": "Recarregar Janela"
+      "reloadWindow": "Recarregar Janela",
+      "toggleDocumentView": "Alternar visualização do documento"
     },
     "format": {
       "format": "Formato",
@@ -367,7 +368,8 @@
         "searcher": "Pesquisador",
         "watcher": "Observador",
         "spelling": "Ortografia",
-        "custom css": "CSS personalizado"
+        "custom css": "CSS personalizado",
+        "plugins": "Plugins"
       },
       "items": {
         "autoSave": "Salvar automaticamente o conteúdo sendo editado",
@@ -444,7 +446,8 @@
       "spelling": "Ortografia",
       "theme": "Tema",
       "image": "Imagem",
-      "keybindings": "Atalhos de Teclado"
+      "keybindings": "Atalhos de Teclado",
+      "plugins": "Plugins"
     },
     "general": {
       "title": "Geral",
@@ -746,6 +749,53 @@
       "enableSpellChecking": "Habilitar verificação ortográfica",
       "hideMarksForErrors": "Ocultar marcas para erros ortográficos",
       "title": "Corretor Ortográfico"
+    },
+    "plugins": {
+      "title": "Plugins",
+      "description": "Os plugins integrados adicionam recursos ao MarkText. Plugins desativados não são executados.",
+      "safeMode": "O MarkText foi iniciado no modo de segurança (--safe): nenhum plugin está em execução. Você ainda pode alterar as configurações deles.",
+      "empty": "Nenhum plugin disponível.",
+      "enabled": "Ativado",
+      "settings": "Configurações",
+      "secretSet": "configurado",
+      "secretNotSet": "não configurado",
+      "secretPlaceholder": "Digite um novo valor",
+      "save": "Salvar",
+      "clear": "Limpar",
+      "stringListPlaceholder": "Uma entrada por linha",
+      "saveFailed": "Não foi possível salvar \"{setting}\": {message}",
+      "community": {
+        "title": "Comunidade",
+        "description": "Plugins da comunidade rodam em uma sandbox. Eles são instalados desativados; ao ativar, o MarkText pede permissão para o que eles solicitam.",
+        "empty": "Nenhum plugin da comunidade instalado.",
+        "installFolder": "Instalar de uma pasta",
+        "installZip": "Instalar de um .zip",
+        "uninstall": "Desinstalar",
+        "uninstallConfirm": "Desinstalar \"{name}\"? Os arquivos serão apagados.",
+        "uninstallFailed": "Não foi possível desinstalar o plugin: {message}",
+        "author": "Autor",
+        "consentTitle": "Permitir \"{name}\"?",
+        "consentBody": "Este plugin poderá:",
+        "consentConfirm": "Ativar",
+        "consentCancel": "Cancelar",
+        "consentNone": "Nenhuma permissão especial. Ele pode registrar comandos, mostrar notificações e usar suas configurações.",
+        "safeMode": "O modo seguro está ativo (--safe): plugins da comunidade permanecem desligados.",
+        "installFailed": "Não foi possível instalar o plugin: {message}",
+        "enableFailed": "Não foi possível alterar \"{name}\": {message}",
+        "installed": "\"{name}\" foi instalado. Ele permanece desligado até você ativá-lo.",
+        "permission": {
+          "editorRead": "Ler o documento aberto",
+          "editorWrite": "Editar o documento aberto",
+          "editorDecorate": "Sublinhar texto no editor",
+          "vaultRead": "Ler arquivos da pasta aberta",
+          "vaultWrite": "Criar e editar arquivos da pasta aberta",
+          "metadataRead": "Ler notas, links e tags",
+          "sidebar": "Adicionar um painel na barra lateral",
+          "statusbar": "Adicionar um item na barra de status",
+          "clipboard": "Copiar texto para a área de transferência",
+          "network": "Conectar a {host}"
+        }
+      }
     }
   },
   "about": {
@@ -866,7 +916,8 @@
       "reloadImages": "Recarregar Imagens",
       "textDirection": "Direção do Texto",
       "actualSize": "Tamanho real",
-      "devToggleDeveloperTools": "Alternar ferramentas de desenvolvedor"
+      "devToggleDeveloperTools": "Alternar ferramentas de desenvolvedor",
+      "toggleDocumentView": "Alternar visualização do documento"
     },
     "tabs": {
       "cycleForward": "Ciclar para Frente",
@@ -1000,6 +1051,18 @@
       "languageMissing": "Idioma do corretor não encontrado {languageCode}",
       "switchError": "Erro ao alternar corretor para {languageCode}, {error}",
       "title": "Verificação Ortográfica"
+    },
+    "tabView": {
+      "editor": "Editor Markdown",
+      "noViewer": "Nenhum visualizador está disponível para este arquivo.",
+      "openExternally": "Abrir no aplicativo padrão",
+      "noDocumentViews": "Nenhuma visualização de documento está disponível.",
+      "viewFailed": "Não foi possível exibir esta visualização."
     }
+  },
+  "pluginHost": {
+    "activationFailed": "Não foi possível iniciar o plugin \"{name}\"",
+    "commandFailed": "O comando \"{command}\" falhou",
+    "communityDisabled": "O plugin da comunidade \"{name}\" foi desativado porque travou ou não iniciou."
   }
 }

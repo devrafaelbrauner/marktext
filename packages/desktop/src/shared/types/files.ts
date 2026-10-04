@@ -88,6 +88,12 @@ export interface IFileState {
   // Muya block tree; only populated for the actively edited tab.
   blocks?: unknown
   isMixedLineEndings?: boolean
+  /** 'asset' tabs show a non-markdown file (e.g. PDF) through a registered tab view and never reach the editor engine. */
+  kind: 'markdown' | 'asset'
+  /** Id of the registered tab view showing this tab, or null for the editor (always set for asset tabs). */
+  viewId: string | null
+  /** Asset tabs: fragment of the link that opened the file (e.g. 'page=3'), or null. */
+  subpath: string | null
 }
 
 /**
@@ -114,7 +120,15 @@ export interface TabOptions {
   selected?: boolean
   /** Link fragment to reveal once the tab is active, e.g. `setup` from `other.md#setup`. */
   anchor?: string
+  /** Fragment handed to an asset tab view, e.g. `page=3` from `doc.pdf#page=3`. */
+  subpath?: string
   [key: string]: unknown
+}
+
+/** Payload of `mt::open-asset-tab`: a viewable asset to show in an in-app tab. */
+export interface AssetTabRequest {
+  pathname: string
+  subpath: string | null
 }
 
 export interface SaveOptions {

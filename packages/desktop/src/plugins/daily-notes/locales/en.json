@@ -1,0 +1,52 @@
+{
+  "name": "Calendar and daily notes",
+  "description": "Obsidian-compatible daily notes with a calendar in the sidebar.",
+  "settings": {
+    "folder": {
+      "label": "Daily notes folder",
+      "description": "Folder of the vault where new daily notes are created. Leave empty to use the vault root."
+    },
+    "format": {
+      "label": "Date format",
+      "description": "File name of each daily note, with Obsidian (moment) tokens such as YYYY, MM and DD. Use / to create subfolders, e.g. YYYY/MM/YYYY-MM-DD."
+    },
+    "template": {
+      "label": "Template file",
+      "description": "Vault path of a note used as the starting content, e.g. Templates/Daily. Obsidian variables in double braces are filled in: date, date:FORMAT, time, time:FORMAT, title, yesterday and tomorrow."
+    },
+    "weekStart": {
+      "label": "First day of the week",
+      "description": "Day the calendar weeks start on.",
+      "sunday": "Sunday",
+      "monday": "Monday"
+    },
+    "openOnStartup": {
+      "label": "Open today's note on startup",
+      "description": "When a window opens with a folder, open today's daily note."
+    }
+  },
+  "commands": {
+    "openToday": "Open today's daily note",
+    "openPrevious": "Open previous daily note",
+    "openNext": "Open next daily note",
+    "openCalendar": "Open calendar"
+  },
+  "panel": {
+    "title": "Calendar",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "today": "Today",
+    "goToToday": "Go to today",
+    "hasNote": "daily note, {count} words",
+    "noFolder": "Open a folder to use daily notes."
+  },
+  "notify": {
+    "noFolder": "Open a folder to use daily notes.",
+    "notDailyNote": "The active note is not a daily note.",
+    "noPrevious": "There is no earlier daily note.",
+    "noNext": "There is no later daily note.",
+    "invalidFormat": "The date format \"{format}\" does not produce a file name. Check the daily notes settings.",
+    "templateMissing": "Could not read the template \"{path}\". The daily note was created empty.",
+    "openFailed": "Could not open the daily note: {message}"
+  }
+}

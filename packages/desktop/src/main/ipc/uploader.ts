@@ -6,6 +6,8 @@ import { ipcMain } from 'electron'
 import { isImageFile } from 'common/filesystem/paths'
 import { ensureShellEnvPath } from '../app/envPath'
 import { resolveCommand } from '../utils/resolveCommand'
+import { validateSender } from '../security/validateSender'
+import { grantTempDir } from '../security/pathGrants'
 
 // Strip ANSI SGR color codes (CSI parameter ... 'm') from picgo output before
 // trying to parse it. \x1b is the ESC byte.
@@ -102,6 +104,7 @@ const writeBinaryToTmp = async(
 ): Promise<string> => {
   const buf = data instanceof Uint8Array ? Buffer.from(data) : Buffer.from(data || [])
   const dir = await fs.mkdtemp(path.join(tmpdir(), 'marktext-upload-'))
+  grantTempDir(dir)
   const tmpPath = path.join(dir, `${Date.now()}${suffix}`)
   await fs.writeFile(tmpPath, buf)
   return tmpPath
@@ -149,19 +152,35 @@ interface UploadRequest {
   pathname: string
   image: string | BufferImagePayload
   isPath: boolean
-  preferences: { currentUploader: string; cliScript: string }
+}
+
+export interface UploaderSettings {
+  currentUploader: string
+  cliScript: string
+}
+
+// Which uploader runs, and which script, is decided by the main-side data
+// center only: a renderer-supplied `cliScript` would be an arbitrary-exec
+// primitive for any page that reaches this channel.
+let settingsSource: (() => Promise<UploaderSettings>) | null = null
+
+export const setUploaderSettingsSource = (source: () => Promise<UploaderSettings>): void => {
+  settingsSource = source
 }
 
 export const registerUploaderHandlers = (): void => {
-  ipcMain.handle('mt::uploader::upload', async(_event, req: UploadRequest) => {
-    const { pathname, image, isPath, preferences } = req
+  ipcMain.handle('mt::uploader::upload', async(event, req: UploadRequest) => {
+    if (!validateSender(event)) throw new Error('IPC sender rejected')
+    if (!settingsSource) throw new Error('Uploader settings are not available yet')
+    const settings = await settingsSource()
+    const { pathname, image, isPath } = req
     if (isPath) {
       const dir = path.dirname(pathname)
       const imagePath = path.resolve(dir, image as string)
       const isImg = isImageFile(imagePath)
       if (!isImg) return image
-      return uploadFromPath(imagePath, preferences)
+      return uploadFromPath(imagePath, settings)
     }
-    return uploadFromBuffer(image as BufferImagePayload, preferences)
+    return uploadFromBuffer(image as BufferImagePayload, settings)
   })
 }

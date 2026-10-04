@@ -21,6 +21,9 @@ export interface IMuyaOptions {
     frontMatter: boolean;
     frontmatterType: string; // '-' | '+' | ';' | '{';
     mermaidTheme: string;
+    /** Mermaid theme that wins over `mermaidTheme` (the app's light/dark default); null/absent = use `mermaidTheme`. */
+    mermaidThemeOverride?: string | null;
+    mermaidLook?: 'classic' | 'handDrawn';
     vegaTheme: string;
     plantumlServer: string;
     sequenceTheme: 'hand' | 'simple';
@@ -38,6 +41,7 @@ export interface IMuyaOptions {
     softNewlineAsSpace: boolean;
     autoMoveCheckedToEnd: boolean;
     disableHtml: boolean;
+    atxHeadingRequiresSpace: boolean;
     locale: {
         name: string;
         resource: {
@@ -90,6 +94,13 @@ export interface IMuyaOptions {
      * file into the document. Return `''` when no path is available.
      */
     getPathForFile?: (file: File) => string;
+    /**
+     * Turn an absolute local image path into the URL the host can load.
+     * Absent, the engine keeps emitting `file://` URLs. Desktop passes a
+     * function that emits `mt-file:` so images load with webSecurity on.
+     * Export stays on `file://` and does not use this option.
+     */
+    localImageUrl?: (absolutePath: string) => string;
 }
 
 /**

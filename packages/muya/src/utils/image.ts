@@ -77,6 +77,8 @@ function encodeDirnameForUrl(dirname: string): string {
         .replace(/#/g, '%23');
 }
 
+
+
 function localPathToFileUrl(src: string): string {
     const normalized = src.replace(/\\/g, '/');
 
@@ -89,7 +91,26 @@ function localPathToFileUrl(src: string): string {
     return `file://${normalized}`;
 }
 
-export function getImageSrc(src: string) {
+function fileUrlToLocalPath(src: string): string | null {
+    try {
+        const url = new URL(src);
+        if (url.protocol !== 'file:')
+            return null;
+        if (url.hostname && url.hostname !== 'localhost')
+            return `//${url.hostname}${decodeURIComponent(url.pathname)}`;
+        let pathname = decodeURIComponent(url.pathname);
+        if (/^\/[a-z]:\//i.test(pathname))
+            pathname = pathname.slice(1);
+        return pathname;
+    }
+    catch {
+        return null;
+    }
+}
+
+export function getImageSrc(src: string, localImageUrl?: (absolutePath: string) => string) {
+    const toUrl = (absolutePath: string): string =>
+        localImageUrl ? localImageUrl(absolutePath) : localPathToFileUrl(absolutePath);
     const EXT_REG = /\.(?:jpeg|jpg|png|gif|svg|webp)(?=\?|$)/i;
     // http[s] (domain or IPv4 or localhost or IPv6) [port] /not-white-space
     const URL_REG
@@ -109,21 +130,44 @@ export function getImageSrc(src: string) {
         const baseUrl
             = typeof window !== 'undefined' ? window.DIRNAME : undefined;
         if (isUrl) {
+            if (localImageUrl && isFileUrl) {
+                const absolute = fileUrlToLocalPath(src);
+                return {
+                    isUnknownType: false,
+                    src: absolute ? localImageUrl(absolute) : '',
+                };
+            }
             return {
                 isUnknownType: false,
                 src,
             };
         }
         else if (!isAbsoluteLocal && baseUrl) {
+            const resolved = resolveRelativePath(encodeDirnameForUrl(baseUrl), src);
+            // The host `mt-file:` builder encodes its input exactly once, but
+            // the resolved path mixes levels: the directory arrives pre-escaped
+            // (`#` as `%23`) while the markdown tail keeps its own escapes
+            // (`%20`). Normalize one level back to the raw path first, per
+            // segment so a stray `%` in one name cannot corrupt the rest.
+            const absolute = localImageUrl
+                ? resolved.split('/').map((segment) => {
+                    try {
+                        return decodeURIComponent(segment);
+                    }
+                    catch {
+                        return segment;
+                    }
+                }).join('/')
+                : resolved;
             return {
                 isUnknownType: false,
-                src: localPathToFileUrl(resolveRelativePath(encodeDirnameForUrl(baseUrl), src)),
+                src: toUrl(absolute),
             };
         }
         else {
             return {
                 isUnknownType: false,
-                src: localPathToFileUrl(src),
+                src: toUrl(src),
             };
         }
     }

@@ -1,4 +1,5 @@
 import equal from 'deep-equal'
+import { wordCount as getWordCount } from '@muyajs/core'
 import bus from '../bus'
 import { getUniqueId, deepClone } from '../util'
 import listToTree, { type ListItem, type TreeNode } from '../util/listToTree'
@@ -10,6 +11,7 @@ import {
 } from './help'
 import notice from '../services/notification'
 import {
+  DocumentViewCommand,
   FileEncodingCommand,
   LineEndingCommand,
   QuickOpenCommand,
@@ -22,6 +24,15 @@ import { useLayoutStore } from './layout'
 import { useMainStore } from '.'
 import { t } from '../i18n'
 import { debouncedSendBufferedState, sendBufferedState } from './bufferedState'
+import { isIndexCursor } from '../util/cursor'
+import { notifyFileRenamed } from '../plugins/host/fileRenames'
+import {
+  findMatchingMarkdownView,
+  getAssetViewForPath,
+  getTabView,
+  isTabViewsReady,
+  whenTabViewsReady
+} from '../plugins/registries/tabViews'
 import type {
   IFileState,
   FileNotification,
@@ -149,6 +160,30 @@ export interface EditorState {
 }
 
 const autoSaveTimers = new Map<string, ReturnType<typeof setTimeout>>()
+
+// Handoff caret for leaving a view when no source-position caret was captured.
+const DOCUMENT_START_CURSOR = { anchor: { line: 0, ch: 0 }, focus: { line: 0, ch: 0 } }
+
+// Background tabs whose markdown was replaced (`UPDATE_TAB_MARKDOWN_BY_PATH`)
+// after the engine saved their undo history: tab id → the markdown that history
+// ends at. Consumed when the tab is activated again (`LOAD_TAB_CONTENT`).
+const engineBaseByTab = new Map<string, string>()
+
+// Moves the engine document of the active tab to `tab.markdown` as one undo
+// step. Unlike a disk reload it keeps the tab's save baseline, so the change
+// reads as unsaved and undoing it back to the saved text reads as saved.
+const emitUndoableReload = (tab: IFileState): void => {
+  const { id, markdown, cursor, scrollTop } = tab
+  bus.emit('file-changed', {
+    id,
+    markdown,
+    cursor,
+    renderCursor: true,
+    scrollTop,
+    isReload: true,
+    keepSavedBaseline: true
+  })
+}
 
 export const useEditorStore = defineStore('editor', {
   state: (): EditorState => ({
@@ -366,6 +401,7 @@ export const useEditorStore = defineStore('editor', {
         })
         return
       }
+      if (tab.kind === 'asset') return
 
       // Backup few entries that we need to restore later.
       const oldId = tab.id
@@ -390,10 +426,12 @@ export const useEditorStore = defineStore('editor', {
       }
 
       // Update file content and restore some entries.
+      const oldViewId = tab.viewId
       Object.assign(tab, newFileState)
       tab.id = oldId
       tab.notifications = oldNotifications
       tab.scrollTop = oldScrollTop
+      tab.viewId = oldViewId
       if (oldHistory) {
         tab.history = oldHistory
       }
@@ -504,7 +542,7 @@ export const useEditorStore = defineStore('editor', {
     },
 
     SEARCH(value: IFileState['searchMatches']): void {
-      if (!this.currentFile) return
+      if (!this.currentFile || this.currentFile.kind === 'asset') return
       this.currentFile.searchMatches = deepClone(value) // deep clone to trigger state changes
     },
 
@@ -547,7 +585,7 @@ export const useEditorStore = defineStore('editor', {
     },
 
     FILE_SAVE(): void {
-      if (!this.currentFile) return
+      if (!this.currentFile || this.currentFile.kind === 'asset') return
       this.flushActiveEditor()
       const projectStore = useProjectStore()
       const { id, filename, pathname, markdown } = this.currentFile
@@ -577,7 +615,7 @@ export const useEditorStore = defineStore('editor', {
     },
 
     FILE_SAVE_AS(): void {
-      if (!this.currentFile) return
+      if (!this.currentFile || this.currentFile.kind === 'asset') return
       this.flushActiveEditor()
       const projectStore = useProjectStore()
       const { id, filename, pathname, markdown } = this.currentFile
@@ -635,6 +673,9 @@ export const useEditorStore = defineStore('editor', {
           Object.assign(tab, { filename, pathname, isSaved: true })
           debouncedSendBufferedState()
         }
+        if (fileInfo.oldPathname && pathname) {
+          notifyFileRenamed({ oldPath: fileInfo.oldPathname, newPath: pathname, isDirectory: false })
+        }
       })
 
       window.electron.ipcRenderer.on('mt::tab-saved', (_, tabId) => {
@@ -689,7 +730,7 @@ export const useEditorStore = defineStore('editor', {
           })
           .then(() => {
             const unsavedFiles = this.tabs
-              .filter((file) => !file.isSaved)
+              .filter((file) => file.kind !== 'asset' && !file.isSaved)
               .map((file) => {
                 const { id, filename, pathname, markdown } = file
                 const options = getOptionsFromState(file)
@@ -725,7 +766,7 @@ export const useEditorStore = defineStore('editor', {
       const { tabs } = this
       const projectStore = useProjectStore()
       const unsavedFiles = tabs
-        .filter((file) => !(file.isSaved && /[^\n]/.test(file.markdown)))
+        .filter((file) => file.kind !== 'asset' && !(file.isSaved && /[^\n]/.test(file.markdown)))
         .map((file) => {
           const { id, filename, pathname, markdown } = file
           const options = getOptionsFromState(file)
@@ -752,7 +793,7 @@ export const useEditorStore = defineStore('editor', {
     },
 
     MOVE_FILE_TO(): void {
-      if (!this.currentFile) return
+      if (!this.currentFile || this.currentFile.kind === 'asset') return
       this.flushActiveEditor()
       const projectStore = useProjectStore()
       const { id, filename, pathname, markdown } = this.currentFile
@@ -795,7 +836,7 @@ export const useEditorStore = defineStore('editor', {
     },
 
     RESPONSE_FOR_RENAME(): void {
-      if (!this.currentFile) return
+      if (!this.currentFile || this.currentFile.kind === 'asset') return
       this.flushActiveEditor()
       const projectStore = useProjectStore()
       const { id, filename, pathname, markdown } = this.currentFile
@@ -820,7 +861,7 @@ export const useEditorStore = defineStore('editor', {
 
     // ask for main process to rename this file to a new name `newFilename`
     RENAME(newFilename: string): void {
-      if (!this.currentFile) return
+      if (!this.currentFile || this.currentFile.kind === 'asset') return
       const { id, pathname, filename } = this.currentFile
       if (typeof filename === 'string' && filename !== newFilename) {
         const newPathname = window.path.join(window.path.dirname(pathname), newFilename)
@@ -834,21 +875,25 @@ export const useEditorStore = defineStore('editor', {
     },
 
     /**
-     * Update the pathname/filename of any tab whose pathname matches `src`.
-     * Invoked from the sidebar rename flow (project.ts:RENAME_IN_SIDEBAR).
+     * Points the tabs showing `src`, or (when `src` is a folder) any file
+     * inside it, at their new location under `dest`. Invoked from the sidebar
+     * rename and cut/paste flows (project.ts).
      */
     RENAME_IF_NEEDED({ src, dest }: { src: string; dest: string }): void {
       this.tabs.forEach((tab) => {
-        if (tab.pathname === src) {
-          tab.pathname = dest
-          tab.filename = window.path.basename(dest)
-        }
+        const { pathname } = tab
+        if (!pathname || !pathname.startsWith(src)) return
+        const rest = pathname.slice(src.length)
+        if (rest !== '' && rest[0] !== '/' && rest[0] !== '\\') return
+        tab.pathname = dest + rest
+        tab.filename = window.path.basename(tab.pathname)
       })
-      // Keep DIRNAME in sync when the active tab is the one being renamed,
-      // so link resolution / dirname-based lookups don't keep using the old
-      // folder until the user switches tabs.
-      if (this.currentFile != null && this.currentFile.pathname === dest) {
-        window.DIRNAME = window.path.dirname(dest)
+      // Keep DIRNAME in sync when the active tab moved, so link resolution /
+      // dirname-based lookups don't keep using the old folder until the user
+      // switches tabs.
+      const current = this.currentFile?.pathname
+      if (current && (current === dest || current.startsWith(dest))) {
+        window.DIRNAME = window.path.dirname(current)
       }
       debouncedSendBufferedState()
     },
@@ -857,8 +902,7 @@ export const useEditorStore = defineStore('editor', {
       const oldCurrentFile = this.currentFile
       let didUpdateCurrentFile = false
       if (oldCurrentFile == null || oldCurrentFile.id !== currentFile.id) {
-        const { id, markdown, cursor, history, pathname, scrollTop, blocks, muyaIndexCursor } =
-          currentFile
+        const { pathname } = currentFile
         // Must run while `currentFile` still points at the outgoing tab, so its
         // flushed edit is attributed to that tab and not lost on switch (#2938).
         if (oldCurrentFile) {
@@ -876,21 +920,43 @@ export const useEditorStore = defineStore('editor', {
           this.updateTabIdToIndex()
         }
 
-        bus.emit('file-changed', {
-          id,
-          markdown,
-          cursor,
-          muyaIndexCursor,
-          renderCursor: true,
-          history,
-          scrollTop,
-          blocks
-        })
+        this.LOAD_TAB_CONTENT(currentFile)
       }
 
       this.UPDATE_LINE_ENDING_MENU()
       if (didUpdateCurrentFile) {
         debouncedSendBufferedState()
+      }
+    },
+
+    /**
+     * Hands the newly activated tab to the editor engine. Asset tabs never reach
+     * the engine; their TOC is empty. A tab whose markdown was replaced while in
+     * the background is first loaded at the content its saved engine history
+     * ends at, then moved to the new content as one undoable reload.
+     */
+    LOAD_TAB_CONTENT(tab: IFileState): void {
+      if (tab.kind === 'asset') {
+        this.listToc = []
+        this.toc = []
+        return
+      }
+
+      const { id, markdown, cursor, history, scrollTop, blocks, muyaIndexCursor } = tab
+      const engineBase = engineBaseByTab.get(id)
+      engineBaseByTab.delete(id)
+      bus.emit('file-changed', {
+        id,
+        markdown: engineBase ?? markdown,
+        cursor,
+        muyaIndexCursor,
+        renderCursor: true,
+        history,
+        scrollTop,
+        blocks
+      })
+      if (engineBase !== undefined && engineBase !== markdown) {
+        emitUndoableReload(tab)
       }
     },
 
@@ -920,6 +986,7 @@ export const useEditorStore = defineStore('editor', {
           'cmd::register-command',
           new TrailingNewlineCommand(this)
         )
+        bus.emit('cmd::register-command', new DocumentViewCommand(this))
 
         setTimeout(() => {
           window.electron.ipcRenderer.send('mt::request-keybindings')
@@ -993,6 +1060,7 @@ export const useEditorStore = defineStore('editor', {
           (payload as { selected?: boolean; markdown?: string } | undefined) ?? {}
         this.NEW_UNTITLED_TAB({ markdown, selected })
       })
+      this.LISTEN_FOR_ASSET_TAB()
     },
 
     CLOSE_TAB(file: IFileState | null = null): void {
@@ -1052,6 +1120,7 @@ export const useEditorStore = defineStore('editor', {
         if (timer) clearTimeout(timer)
         autoSaveTimers.delete(file.id)
       }
+      engineBaseByTab.delete(file.id)
 
       this.updateTabIdToIndex() // Update before sending it out to prevent stale mappings.
 
@@ -1061,19 +1130,8 @@ export const useEditorStore = defineStore('editor', {
         this.currentFile = fileState
         this.selectionWordCount = null
         if (fileState && typeof fileState.markdown === 'string') {
-          const { id, markdown, cursor, history, pathname, scrollTop, blocks, muyaIndexCursor } =
-            fileState
-          window.DIRNAME = pathname ? window.path.dirname(pathname) : ''
-          bus.emit('file-changed', {
-            id,
-            markdown,
-            cursor,
-            muyaIndexCursor,
-            renderCursor: true,
-            history,
-            scrollTop,
-            blocks
-          })
+          window.DIRNAME = fileState.pathname ? window.path.dirname(fileState.pathname) : ''
+          this.LOAD_TAB_CONTENT(fileState)
         } else {
           window.DIRNAME = ''
         }
@@ -1137,6 +1195,7 @@ export const useEditorStore = defineStore('editor', {
         }
 
         this.tabs.splice(index, 1)
+        engineBaseByTab.delete(id)
         if (this.currentFile?.id === id) {
           this.currentFile = null
           this.selectionWordCount = null
@@ -1154,19 +1213,9 @@ export const useEditorStore = defineStore('editor', {
           this.tabs[tabIndex] ?? this.tabs[tabIndex - 1] ?? this.tabs[0] ?? null
         this.selectionWordCount = null
         if (this.currentFile && typeof this.currentFile.markdown === 'string') {
-          const { id, markdown, cursor, history, pathname, scrollTop, blocks, muyaIndexCursor } =
-            this.currentFile
+          const { pathname } = this.currentFile
           window.DIRNAME = pathname ? window.path.dirname(pathname) : ''
-          bus.emit('file-changed', {
-            id,
-            markdown,
-            cursor,
-            muyaIndexCursor,
-            renderCursor: true,
-            history,
-            scrollTop,
-            blocks
-          })
+          this.LOAD_TAB_CONTENT(this.currentFile)
         }
       }
 
@@ -1369,6 +1418,11 @@ export const useEditorStore = defineStore('editor', {
         )
       )
       const { id, cursor } = docState
+      if (isTabViewsReady()) {
+        docState.viewId = findMatchingMarkdownView(docState.markdown)?.view.id ?? null
+      } else {
+        whenTabViewsReady().then(() => this.AUTO_SELECT_MARKDOWN_VIEW(id))
+      }
 
       if (selected) {
         this.UPDATE_CURRENT_FILE(docState)
@@ -1403,10 +1457,141 @@ export const useEditorStore = defineStore('editor', {
       }
     },
 
+    /**
+     * Opens `pathname` in an asset tab when a tab view is registered for its
+     * extension; otherwise the OS default application opens it. An already open
+     * tab is focused and receives `subpath` when one is given. Resolves to
+     * whether the file is shown in-app.
+     */
+    async OPEN_ASSET_TAB({
+      pathname,
+      subpath = null,
+      selected = true
+    }: {
+      pathname: string
+      subpath?: string | null
+      selected?: boolean
+    }): Promise<boolean> {
+      await whenTabViewsReady()
+
+      const existingTab = this.tabs.find(
+        (t) => t.kind === 'asset' && window.fileUtils.isSamePathSync(t.pathname, pathname)
+      )
+      if (existingTab) {
+        if (subpath) existingTab.subpath = subpath
+        if (selected) this.UPDATE_CURRENT_FILE(existingTab)
+        return true
+      }
+
+      const registered = getAssetViewForPath(pathname)
+      if (!registered) {
+        await window.electron.shell.openPath(pathname)
+        return false
+      }
+
+      const { currentFile } = this
+      if (currentFile && currentFile.isSaved && !currentFile.pathname) {
+        // Replace the pristine untitled tab, as opening a markdown file does.
+        this.FORCE_CLOSE_TAB(currentFile)
+      } else {
+        this.SHOW_TAB_VIEW(false)
+      }
+
+      const tab = createDocumentState({
+        kind: 'asset',
+        pathname,
+        filename: window.path.basename(pathname),
+        viewId: registered.view.id,
+        subpath
+      })
+      if (selected) {
+        this.UPDATE_CURRENT_FILE(tab)
+      } else {
+        this.tabs.push(tab)
+        this.updateTabIdToIndex()
+        debouncedSendBufferedState()
+      }
+      return true
+    },
+
+    LISTEN_FOR_ASSET_TAB(): void {
+      window.electron.ipcRenderer.on('mt::open-asset-tab', (_, request, selected = true) => {
+        const { pathname, subpath } = request
+        this.OPEN_ASSET_TAB({ pathname, subpath, selected }).catch((err) => {
+          console.error('Cannot open asset tab:', err)
+        })
+      })
+    },
+
+    /**
+     * Shows a markdown tab in the registered markdown view `viewId`, or in the
+     * editor for null. Follows the source-mode handoff: the engine is flushed
+     * before the view reads the markdown, and leaving the view hands the final
+     * markdown back to the engine as a single undo step.
+     */
+    SET_TAB_VIEW(tabId: string, viewId: string | null): void {
+      const tab = this.tabs.find((t) => t.id === tabId)
+      if (!tab || tab.kind !== 'markdown' || tab.viewId === viewId) return
+      if (viewId !== null && getTabView(viewId)?.view.kind !== 'markdown') return
+
+      const isActive = this.currentFile?.id === tabId
+      if (isActive && tab.viewId === null) {
+        this.flushActiveEditor()
+      }
+      tab.viewId = viewId
+      if (isActive && viewId === null) {
+        const { id, markdown, muyaIndexCursor } = tab
+        bus.emit('file-changed', {
+          id,
+          markdown,
+          muyaIndexCursor: isIndexCursor(muyaIndexCursor) ? muyaIndexCursor : DOCUMENT_START_CURSOR,
+          renderCursor: true
+        })
+      }
+      debouncedSendBufferedState()
+    },
+
+    /** Applies `matches` of the markdown views to a tab opened before the views were registered. */
+    AUTO_SELECT_MARKDOWN_VIEW(tabId: string): void {
+      const tab = this.tabs.find((t) => t.id === tabId)
+      if (!tab || tab.kind !== 'markdown' || tab.viewId !== null || !tab.isSaved) return
+      const match = findMatchingMarkdownView(tab.markdown)
+      if (match) this.SET_TAB_VIEW(tabId, match.view.id)
+    },
+
+    /**
+     * Replaces the markdown of the open tab showing `pathname` as an unsaved,
+     * undoable edit. Returns false when no markdown tab shows that file.
+     */
+    UPDATE_TAB_MARKDOWN_BY_PATH(pathname: string, markdown: string): boolean {
+      const tab = this.tabs.find(
+        (t) => t.kind === 'markdown' && window.fileUtils.isSamePathSync(t.pathname, pathname)
+      )
+      if (!tab) return false
+      if (tab.markdown === markdown) return true
+
+      const isActive = this.currentFile?.id === tab.id
+      if (isActive) {
+        this.flushActiveEditor()
+      } else if (!engineBaseByTab.has(tab.id)) {
+        engineBaseByTab.set(tab.id, tab.markdown)
+      }
+
+      tab.markdown = markdown
+      tab.wordCount = getWordCount(markdown)
+      tab.isSaved = false
+      // While a view is open it owns the text and hands it to the engine on leave.
+      if (isActive && tab.viewId === null) {
+        emitUndoableReload(tab)
+      }
+      debouncedSendBufferedState()
+      return true
+    },
+
     SET_SAVE_STATUS_WHEN_REMOVE({ pathname }: { pathname: string }): void {
       let didUpdateSaveStatus = false
       this.tabs.forEach((f) => {
-        if (f.pathname === pathname) {
+        if (f.pathname === pathname && f.kind !== 'asset') {
           f.isSaved = false
           didUpdateSaveStatus = true
         }
@@ -1466,6 +1651,9 @@ export const useEditorStore = defineStore('editor', {
 
       const tab = this.tabs[this.tabIdToIndex[id]!]
       if (!tab) return
+      // Asset tabs have no text. While a markdown view shows the tab the view owns
+      // the text, so engine changes (the ones carrying `history`) are stale.
+      if (tab.kind === 'asset' || (tab.viewId !== null && history !== undefined)) return
 
       const { filename, pathname, markdown: oldMarkdown, trimTrailingNewline } = tab
 
@@ -1588,7 +1776,7 @@ export const useEditorStore = defineStore('editor', {
       const index = this.tabIdToIndex[id]
       if (index == null) return
       const tab = this.tabs[index]
-      if (tab) tab.cursor = cursor
+      if (tab && tab.kind !== 'asset') tab.cursor = cursor
     },
 
     SELECTION_FORMATS(formats: SelectionFormat[]): void {
@@ -1601,7 +1789,7 @@ export const useEditorStore = defineStore('editor', {
     },
 
     EXPORT({ type, content, pageOptions }: ExportPayload): void {
-      if (this.currentFile === null) return
+      if (this.currentFile === null || this.currentFile.kind === 'asset') return
 
       const { filename, pathname } = this.currentFile
       window.electron.ipcRenderer.send('mt::response-export', {
@@ -1617,7 +1805,7 @@ export const useEditorStore = defineStore('editor', {
     // Reads `currentFile.markdown` after a flush, the way `FILE_SAVE` does: in source-code
     // mode CodeMirror writes straight to it, so `engine.getMarkdown()` would be stale (#5379).
     EXPORT_PANDOC(target: string): void {
-      if (this.currentFile === null) return
+      if (this.currentFile === null || this.currentFile.kind === 'asset') return
 
       this.flushActiveEditor()
       const { pathname, markdown } = this.currentFile
@@ -1718,7 +1906,9 @@ export const useEditorStore = defineStore('editor', {
         const { type, change } = payload
         const { tabs } = this
         const { pathname } = change
-        const tab = tabs.find((t) => window.fileUtils.isSamePathSync(t.pathname, pathname))
+        const tab = tabs.find(
+          (t) => t.kind !== 'asset' && window.fileUtils.isSamePathSync(t.pathname, pathname)
+        )
         if (tab) {
           const { id, isSaved, filename } = tab
           switch (type) {
@@ -2084,6 +2274,9 @@ interface BufferedTabState {
   wordCount: IFileState['wordCount']
   muyaIndexCursor: unknown
   scrollTop: number
+  kind: IFileState['kind']
+  viewId: string | null
+  subpath: string | null
 }
 
 const createBufferedTabState = (tab: Partial<IFileState> & { id: string }): BufferedTabState => {
@@ -2103,7 +2296,10 @@ const createBufferedTabState = (tab: Partial<IFileState> & { id: string }): Buff
     cursor: toSerializableValue(tab.cursor, defaultFileState.cursor),
     wordCount: toSerializableValue(tab.wordCount, defaultFileState.wordCount),
     muyaIndexCursor: toSerializableValue(tab.muyaIndexCursor, defaultFileState.muyaIndexCursor),
-    scrollTop: tab.scrollTop ?? defaultFileState.scrollTop
+    scrollTop: tab.scrollTop ?? defaultFileState.scrollTop,
+    kind: tab.kind === 'asset' ? 'asset' : 'markdown',
+    viewId: typeof tab.viewId === 'string' ? tab.viewId : null,
+    subpath: typeof tab.subpath === 'string' ? tab.subpath : null
   }
 }
 

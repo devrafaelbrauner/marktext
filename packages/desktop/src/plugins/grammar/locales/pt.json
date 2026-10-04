@@ -1,0 +1,157 @@
+{
+  "name": "Corretor gramatical (LanguageTool)",
+  "description": "Verifica ortografia, gramática e estilo enquanto você escreve, usando o LanguageTool Premium, a API pública gratuita ou um servidor próprio. Português do Brasil por padrão.",
+  "settings": {
+    "server": {
+      "label": "Servidor",
+      "description": "O LanguageTool Premium precisa do seu usuário e da chave de API. A API pública gratuita tem limites menores. Um servidor personalizado é um LanguageTool instalado por você.",
+      "premium": "LanguageTool Premium",
+      "free": "LanguageTool gratuito (API pública)",
+      "custom": "Servidor personalizado"
+    },
+    "serverUrl": {
+      "label": "URL do servidor personalizado",
+      "description": "Endereço base da API, terminando em /v2. Só é usado quando o servidor é “Servidor personalizado”. http sem criptografia só é permitido para este computador (localhost)."
+    },
+    "username": {
+      "label": "Usuário (e-mail)",
+      "description": "E-mail da sua conta LanguageTool Premium."
+    },
+    "apiKey": {
+      "label": "Chave de API",
+      "description": "Gerada na página da sua conta LanguageTool. Fica guardada criptografada e não é exibida novamente."
+    },
+    "language": {
+      "label": "Idioma",
+      "description": "Idioma dos seus textos. A ortografia só é verificada quando uma variante regional é escolhida.",
+      "options": {
+        "pt-BR": "Português (Brasil)",
+        "pt-PT": "Português (Portugal)",
+        "en-US": "Inglês (EUA)",
+        "en-GB": "Inglês (Reino Unido)",
+        "es": "Espanhol",
+        "fr": "Francês",
+        "de": "Alemão",
+        "it": "Italiano",
+        "nl": "Holandês",
+        "auto": "Detectar automaticamente"
+      }
+    },
+    "level": {
+      "label": "Rigor",
+      "description": "“Exigente” também aponta sugestões de estilo e tipografia.",
+      "default": "Padrão",
+      "picky": "Exigente"
+    },
+    "motherTongue": {
+      "label": "Língua materna",
+      "description": "Código da sua língua materna (por exemplo, pt-BR), usado para detectar falsos cognatos."
+    },
+    "checkOnType": {
+      "label": "Verificar enquanto digita",
+      "description": "Quando desligado, os documentos são verificados ao abrir e pelo comando “Verificar documento agora”."
+    },
+    "debounceMs": {
+      "label": "Espera após digitar (ms)",
+      "description": "Quanto tempo esperar depois da última tecla antes de verificar."
+    },
+    "disabledRules": {
+      "label": "Regras ignoradas",
+      "description": "IDs de regras do LanguageTool que nunca são apontadas (preenchido por “Ignorar regra”)."
+    },
+    "disabledCategories": {
+      "label": "Categorias ignoradas",
+      "description": "IDs de categorias do LanguageTool que nunca são apontadas, como TYPOGRAPHY ou STYLE."
+    },
+    "dictionary": {
+      "label": "Dicionário pessoal",
+      "description": "Palavras que nunca são apontadas como erro de ortografia. Com o Premium, elas também são sincronizadas com o seu dicionário do LanguageTool."
+    },
+    "disableNativeSpellcheck": {
+      "label": "Desligar o corretor ortográfico do sistema",
+      "description": "Evita sublinhados duplicados enquanto o corretor gramatical está ativo. Sua preferência de corretor volta quando esta opção é desligada ou o plugin é desativado."
+    },
+    "consentGiven": {
+      "label": "Permitir o envio de texto ao servidor",
+      "description": "O texto dos parágrafos é enviado ao servidor LanguageTool configurado para ser verificado. Front matter, código e fórmulas matemáticas nunca são enviados."
+    }
+  },
+  "status": {
+    "ok": "{language} ✓",
+    "one": "1 problema",
+    "many": "{count} problemas",
+    "checking": "Verificando…",
+    "quota": "Limite atingido",
+    "auth": "Erro de autenticação",
+    "network": "Sem conexão",
+    "server": "Erro no servidor",
+    "config": "Configurar",
+    "consent": "Permitir verificação",
+    "off": "Verificação desligada",
+    "skipped": "Não verificado",
+    "tooltip": {
+      "ok": "LanguageTool: nenhum problema encontrado",
+      "problems": "LanguageTool: mostrar os problemas",
+      "checking": "LanguageTool: verificando o documento",
+      "error": "LanguageTool: {message}",
+      "config": "LanguageTool: abrir as configurações do plugin",
+      "consent": "LanguageTool: permitir o envio de texto ao servidor",
+      "off": "LanguageTool: a verificação está desligada",
+      "skipped": "LanguageTool: este arquivo tem “languagetool: false” no front matter"
+    }
+  },
+  "errors": {
+    "quota": "O limite do LanguageTool foi atingido. A verificação volta sozinha em instantes.",
+    "auth": "O LanguageTool recusou o usuário ou a chave de API.",
+    "network": "Não foi possível conectar ao servidor do LanguageTool.",
+    "server": "O servidor do LanguageTool retornou um erro: {message}",
+    "config": "Escolha um servidor e preencha as configurações dele (o Premium precisa de usuário e chave de API; um servidor personalizado precisa de uma URL válida).",
+    "replaceFailed": "O texto mudou; a sugestão não foi aplicada.",
+    "dictionaryFailed": "Não foi possível salvar a palavra no dicionário."
+  },
+  "popover": {
+    "label": "Sugestão de escrita",
+    "suggestions": "Sugestões",
+    "noSuggestions": "Nenhuma sugestão",
+    "ignore": "Ignorar",
+    "ignoreRule": "Ignorar regra",
+    "addToDictionary": "Adicionar ao dicionário",
+    "moreInfo": "Mais informações",
+    "close": "Fechar"
+  },
+  "kinds": {
+    "spelling": "Ortografia",
+    "grammar": "Gramática",
+    "style": "Estilo"
+  },
+  "panel": {
+    "title": "Problemas",
+    "empty": "Nenhum problema encontrado.",
+    "checkNow": "Verificar agora",
+    "off": "A verificação está desligada.",
+    "skipped": "Este arquivo não é verificado (languagetool: false).",
+    "noDocument": "Abra um documento para verificá-lo.",
+    "consent": "A verificação precisa da sua permissão para enviar texto ao LanguageTool.",
+    "allow": "Permitir",
+    "openSettings": "Abrir configurações",
+    "count": "{count}"
+  },
+  "commands": {
+    "checkNow": "Gramática: Verificar documento agora",
+    "next": "Gramática: Ir para o próximo problema",
+    "toggle": "Gramática: Ligar/desligar a verificação"
+  },
+  "notify": {
+    "on": "Verificação gramatical ligada.",
+    "off": "Verificação gramatical desligada.",
+    "noProblems": "Nenhum problema encontrado."
+  },
+  "consent": {
+    "title": "Enviar texto ao LanguageTool?",
+    "body": "Para verificar ortografia e gramática, o texto dos seus parágrafos, títulos e células de tabela é enviado ao servidor LanguageTool abaixo. Front matter, código e fórmulas matemáticas nunca são enviados.",
+    "server": "Servidor: {server}",
+    "privacy": "O LanguageTool processa o texto apenas para verificá-lo. Você pode retirar esta permissão a qualquer momento em Preferências → Plugins.",
+    "accept": "Permitir e verificar",
+    "decline": "Agora não"
+  }
+}

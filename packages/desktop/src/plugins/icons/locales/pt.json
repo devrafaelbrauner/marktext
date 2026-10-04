@@ -1,0 +1,27 @@
+{
+  "name": "Ícones",
+  "description": "Insira ícones Lucide com códigos :lucide-nome:, um seletor e autocompletar. O HTML e o PDF exportados mostram os ícones como SVG.",
+  "settings": {
+    "exportMode": {
+      "label": "Ícones na exportação HTML/PDF",
+      "description": "Como os códigos de ícone aparecem nos arquivos HTML e PDF exportados.",
+      "svg": "Ícone SVG",
+      "shortcode": "Texto do código"
+    }
+  },
+  "commands": {
+    "insert": "Inserir ícone"
+  },
+  "picker": {
+    "title": "Inserir ícone",
+    "search": "Buscar ícones (nome ou palavra-chave)",
+    "results": "{count} ícones",
+    "empty": "Nenhum ícone corresponde à busca.",
+    "hint": "Setas para escolher, Enter para inserir, Esc para fechar",
+    "close": "Fechar"
+  },
+  "errors": {
+    "loadFailed": "Não foi possível carregar os ícones: {message}",
+    "noDocument": "Abra um documento Markdown para inserir um ícone."
+  }
+}

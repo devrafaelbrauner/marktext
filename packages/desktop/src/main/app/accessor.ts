@@ -6,6 +6,8 @@ import Keybindings from '../keyboard/shortcutHandler'
 import AppMenu from '../menu'
 import { loadMenuCommands } from '../menu/actions'
 import { CommandManager, loadDefaultCommands } from '../commands'
+import { createMainPluginHost } from '../plugins'
+import type { MainPluginHost } from '../plugins/host'
 import type { AppEnvironment } from './env'
 import type AppPaths from './paths'
 
@@ -19,6 +21,7 @@ class Accessor {
   public keybindings: Keybindings
   public menu: AppMenu
   public windowManager: WindowManager
+  public pluginHost: MainPluginHost
 
   /**
    * @param appEnvironment The application environment instance.
@@ -39,6 +42,7 @@ class Accessor {
     this.keybindings = new Keybindings(this.commandManager, appEnvironment)
     this.menu = new AppMenu(this.preferences, this.keybindings, userDataPath)
     this.windowManager = new WindowManager(this.menu, this.preferences, this.editorBufferStore)
+    this.pluginHost = createMainPluginHost(userDataPath, appEnvironment.safeMode)
   }
 
   private _loadCommands(): void {

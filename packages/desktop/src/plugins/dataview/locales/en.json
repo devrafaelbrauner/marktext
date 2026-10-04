@@ -1,0 +1,53 @@
+{
+  "name": "Dataview",
+  "description": "Shows the results of Dataview queries (TABLE, LIST and TASK) written in dataview code blocks, computed from the notes of the open folder.",
+  "table": {
+    "file": "File"
+  },
+  "status": {
+    "indexing": "Indexing…",
+    "noFolder": "Open a folder to run Dataview queries.",
+    "empty": "No results.",
+    "truncated": "Showing the first {shown} of {total} results.",
+    "failed": "The query could not run: {message}"
+  },
+  "task": {
+    "toggle": "Task: {text}",
+    "changed": "The task changed since the query ran. The results were refreshed.",
+    "conflict": "{file} changed on disk. The results were refreshed; try again.",
+    "writeFailed": "Could not update the task: {message}"
+  },
+  "link": {
+    "open": "Open {name}",
+    "unresolved": "{name} does not exist yet"
+  },
+  "errors": {
+    "location": "Line {line}, column {column}",
+    "invalidCharacter": "Unexpected character “{char}”.",
+    "unterminatedString": "Text without its closing quote.",
+    "unterminatedLink": "Link without its closing ]].",
+    "invalidLink": "Invalid link.",
+    "invalidTag": "Invalid tag.",
+    "expectedQueryType": "A query starts with TABLE, LIST or TASK.",
+    "unsupportedQueryType": "{type} queries are not supported. Use TABLE, LIST or TASK.",
+    "unsupportedCommand": "{command} is not supported. Use WHERE, SORT and LIMIT.",
+    "unexpectedToken": "Unexpected “{found}”; expected {expected}.",
+    "unexpectedEnd": "The query ends too early; expected {expected}.",
+    "expectedExpression": "Expected a value or a field, found “{found}”.",
+    "missingExpression": "A value or a field is missing here.",
+    "expectedField": "Expected a field name after the dot.",
+    "trailingInput": "Unexpected “{found}” after the end of the expression.",
+    "expectedSource": "Expected a source (a tag, a quoted folder or a link), found “{found}”.",
+    "fromNotFirst": "FROM may appear once, right after the query type.",
+    "invalidLimit": "LIMIT needs a whole number.",
+    "invalidDate": "Invalid date “{text}”.",
+    "invalidDuration": "Invalid duration “{text}”.",
+    "unknownFunction": "Unknown function “{name}”.",
+    "argumentCount": "{name}() takes {expected} argument(s), not {count}.",
+    "invalidOperation": "Cannot apply “{op}” to {left} and {right}.",
+    "invalidUnary": "Cannot apply “{op}” to {operand}.",
+    "invalidArgument": "{name}() does not accept a value of type {type}.",
+    "budgetExceeded": "The query takes too long to evaluate. Narrow it down with FROM or WHERE.",
+    "queryTooLong": "The query is longer than {max} characters."
+  }
+}

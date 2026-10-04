@@ -36,8 +36,25 @@ export function resolveEndpoint(node: Node, offset: number): IAnchorFocusInfo | 
     if (!block?.isContent() || !block.outMostBlock)
         return null;
 
+    // A DOM endpoint inside an element (e.g. a programmatic range collapsed
+    // after `span.mu-plain-text`) counts child nodes, not characters: convert
+    // it to the text length of the children before it. Positions inside a
+    // `contenteditable=false` inline image have no text equivalent; they keep
+    // the raw child offset, which `Format` corrects from the DOM itself.
+    let textOffset = offset;
+    if (isElement(node) && !node.closest(`.${CLASS_NAMES.MU_INLINE_IMAGE}`)) {
+        textOffset = 0;
+        const children = node.childNodes;
+        for (let i = 0; i < Math.min(offset, children.length); i++) {
+            textOffset += getTextContent(children[i], [
+                CLASS_NAMES.MU_MATH_RENDER,
+                CLASS_NAMES.MU_RUBY_RENDER,
+            ]).length;
+        }
+    }
+
     return {
-        offset: getOffsetOfParagraph(node, contentDOM) + offset,
+        offset: getOffsetOfParagraph(node, contentDOM) + textOffset,
         block,
         path: block.path,
     };

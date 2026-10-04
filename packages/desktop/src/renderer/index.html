@@ -6,11 +6,12 @@
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self';
-                  script-src 'self';
-                  style-src 'self' 'unsafe-inline';
-                  img-src * data: file:;
+      content="default-src 'self' mt-app:;
+                  script-src 'self' mt-app:;
+                  style-src 'self' 'unsafe-inline' mt-app:;
+                  img-src * data: file: mt-file: mt-app:;
                   font-src 'self' data:;
+                  frame-src mt-plugin:;
                   "
     />
   </head>

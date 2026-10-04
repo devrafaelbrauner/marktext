@@ -16,6 +16,7 @@ export default defineConfig({
       '@': resolve(__dirname, 'src/renderer/src'),
       common: resolve(__dirname, 'src/common'),
       '@shared': resolve(__dirname, 'src/shared'),
+      '@plugins': resolve(__dirname, 'src/plugins'),
       main_renderer: resolve(__dirname, 'src/main')
     },
     extensions: ['.mjs', '.ts', '.js', '.json']

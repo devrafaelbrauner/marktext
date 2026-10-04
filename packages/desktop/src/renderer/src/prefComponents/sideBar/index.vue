@@ -123,9 +123,9 @@ const handleCategoryItemClick = (item: CategoryItem): void => {
 
 const onIpcCategoryChange = (_event: unknown, category: unknown): void => {
   const categoryName = typeof category === 'string' ? category : ''
+  // Resolving (not suffix-matching) also accepts parameterized routes such as `plugins/<id>`.
   const validRoute =
-    categoryName &&
-    router.getRoutes().findIndex((r) => r.path.endsWith(`/${categoryName}`)) !== -1
+    categoryName && router.resolve(`/preference/${categoryName}`).matched.length > 0
   if (validRoute) {
     router.push({
       path: `/preference/${categoryName}`

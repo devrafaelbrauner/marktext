@@ -3,6 +3,7 @@ import githubMarkdownCss from 'github-markdown-css/github-markdown-light.css?inl
 import katexCss from 'katex/dist/katex.css?inline';
 import prismCss from 'prismjs/themes/prism.css?inline';
 import exportStyle from '../assets/styles/exportStyle.css?inline';
+import { resolveCodeBlockExports } from '../codeBlockPreview/export';
 import { EXPORT_DOMPURIFY_CONFIG } from '../config';
 import { isHTMLElement, sanitize, unescapeHTML } from '../utils';
 import loadRenderer from '../utils/diagram';
@@ -193,6 +194,7 @@ export class MarkdownToHtml {
     // render pure html by marked
     async renderHtml() {
         const footnote = this._muya?.options?.footnote ?? false;
+        const codeBlockExports = await resolveCodeBlockExports(this.markdown);
         let html = getHighlightHtml(this.markdown, {
             superSubScript: this._muya?.options?.superSubScript ?? true,
             footnote,
@@ -200,7 +202,7 @@ export class MarkdownToHtml {
             texMathSingleBackslash: this._muya?.options?.texMathSingleBackslash ?? false,
             texMathDoubleBackslash: this._muya?.options?.texMathDoubleBackslash ?? false,
             texMathDollars: this._muya?.options?.texMathDollars ?? true,
-        });
+        }, codeBlockExports);
 
         // Post-process footnotes into the standard GFM / pandoc shape (inline
         // numbered <sup> refs + bottom <section class="footnotes"> with

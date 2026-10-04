@@ -3,7 +3,7 @@ import fsPromises from 'fs/promises'
 import { exec } from 'child_process'
 import dayjs from 'dayjs'
 import log from 'electron-log'
-import { app, BrowserWindow, clipboard, dialog, nativeTheme, ipcMain } from 'electron'
+import { app, BrowserWindow, clipboard, nativeTheme, ipcMain, session } from 'electron'
 import type { BrowserWindowConstructorOptions } from 'electron'
 import { isChildOfDirectory } from 'common/filesystem/paths'
 import type { IUserPreferences } from '@shared/types/preferences'
@@ -18,7 +18,9 @@ import { dockMenu } from '../menu/templates'
 import registerSpellcheckerListeners from '../spellchecker'
 import { watchers } from '../utils/imagePathAutoComplement'
 import { onInternalChannel } from '../utils/internalIpc'
+import { setUploaderSettingsSource } from '../ipc/uploader'
 import { WindowType } from '../windows/base'
+import { showOpenDialogScoped } from '../security/pathGrants'
 import EditorWindow from '../windows/editor'
 import SettingWindow from '../windows/setting'
 import { setLanguage } from '../i18n'
@@ -187,9 +189,35 @@ class App {
     return path.join(screenshotFolderPath, fileName)
   }
 
+  /**
+   * Deny every web permission request and check on the default session. The
+   * renderer needs none: clipboard text is read and written through the main
+   * process (`mt::clipboard::*`; muya's `navigator.clipboard.readText`
+   * fallback is replaced by the `clipboardText` option), fullscreen is toggled
+   * via `BrowserWindow` IPC rather than the HTML Fullscreen API, there are no
+   * web notifications or media capture, and the spellchecker needs no
+   * permission. Untrusted content (rendered HTML, plugin views) thus gains
+   * nothing by asking.
+   */
+  private _restrictPermissions(): void {
+    const ses = session.defaultSession
+    ses.setPermissionRequestHandler((_wc, permission, respond) => {
+      log.warn(`Denied web permission request: ${permission}`)
+      respond(false)
+    })
+    ses.setPermissionCheckHandler(() => false)
+    ses.setDevicePermissionHandler(() => false)
+  }
+
   ready = (): void => {
     const { _args: args, _openFilesCache } = this
-    const { preferences, editorBufferStore } = this._accessor
+    const { preferences, editorBufferStore, dataCenter } = this._accessor
+
+    this._restrictPermissions()
+    setUploaderSettingsSource(async() => ({
+      currentUploader: String((await dataCenter.getItem('currentUploader')) ?? ''),
+      cliScript: String((await dataCenter.getItem('cliScript')) ?? '')
+    }))
 
     // Initialize language settings (detects the system language on first start)
     this._initializeLanguage()
@@ -754,7 +782,7 @@ class App {
       const win = BrowserWindow.fromWebContents(e.sender)
       if (!win) return
 
-      const { filePaths } = await dialog.showOpenDialog(win, {
+      const { filePaths } = await showOpenDialogScoped(win, {
         defaultPath: defaultDirectoryToOpen,
         properties: ['openDirectory', 'createDirectory']
       })

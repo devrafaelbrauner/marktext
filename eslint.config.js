@@ -34,7 +34,8 @@ export default [
       // Playwright writes these next to its config (packages/desktop/), not at
       // the repo root, so they need the `**/` prefix to be ignored at all.
       '**/test-results/**',
-      '**/playwright-report/**'
+      '**/playwright-report/**',
+      'packages/desktop/test/fixtures/community-plugins/**'
     ]
   },
 

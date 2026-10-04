@@ -457,17 +457,21 @@ export default class ExportMarkdown {
 
     private _serializeDiagramBlock(state: IDiagramState, indent: string) {
         const result = [];
-        const {
-            text,
-            meta: { type },
-        } = state;
+        const { text, meta } = state;
+        const info = meta.info ?? meta.type;
+        // Same fence rules as `_serializeCodeBlock`.
+        const fenceChar: '`' | '~'
+            = meta.fenceChar === '~' || info.includes('`') ? '~' : '`';
+        const fence = fenceChar.repeat(
+            this._codeFenceLength(text, meta.fenceLength, fenceChar),
+        );
         const lines = text.split('\n');
-        result.push(`${indent}\`\`\`${type}\n`);
+        result.push(`${indent}${fence}${info}\n`);
 
         for (const line of lines)
             result.push(`${indent}${line}\n`);
 
-        result.push(`${indent}\`\`\`\n`);
+        result.push(`${indent}${fence}\n`);
 
         return result.join('');
     }

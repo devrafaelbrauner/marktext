@@ -5,15 +5,10 @@ import * as os from 'node:os'
 import * as path from 'node:path'
 import { launchElectron, waitForEditor, waitForMenuReady } from './helpers'
 
-// Checklist 122 — integration coverage for the Phase G "G1" blocker: a
-// relative-path image (`![](assets/cat.png)`) in a saved document must resolve
-// to a DIRNAME-anchored `file://` URL so Chromium can load it off disk. The
-// engine-unit half is pinned by packages/muya/src/utils/__tests__/image.spec.ts
-// (getImageSrc). This spec drives the REAL built Electron app: it saves a doc
-// next to a sibling `assets/cat.png`, opens it (so the renderer populates
-// `window.DIRNAME` from the document directory), and asserts the rendered
-// `<img>` src is `file://<docDir>/assets/cat.png` — not the broken,
-// non-anchored `file://assets/cat.png` form the migration regressed to.
+// A relative-path image (`![](assets/cat.png)`) in a saved document must resolve
+// to a DIRNAME-anchored `mt-file:` URL so Chromium can load it with webSecurity
+// on. This spec drives the built app and asserts the rendered `<img>` src is
+// `mt-file://local/<docDir>/assets/cat.png`, not a non-anchored path.
 
 // A 1x1 transparent PNG so `loadImage` resolves (the engine swaps the wrapper
 // to `.mu-image-success` only when the file actually loads off disk).
@@ -44,7 +39,7 @@ test.afterAll(() => {
   }
 })
 
-test.describe('Relative-path image resolves to a DIRNAME-anchored file:// URL', () => {
+test.describe('Relative-path image resolves to a DIRNAME-anchored mt-file URL', () => {
   let app: ElectronApplication | null = null
   let page: Page
   let docDir: string
@@ -75,13 +70,10 @@ test.describe('Relative-path image resolves to a DIRNAME-anchored file:// URL', 
     expect(dirname.replace(/\\/g, '/')).toBe(docDir.replace(/\\/g, '/'))
   })
 
-  test('renders an <img> whose src is file://<docDir>/assets/cat.png', async() => {
+  test('renders an <img> whose src is mt-file://local/<docDir>/assets/cat.png', async() => {
     const imgLocator = page.locator('.editor-component .mu-image-container img')
     await imgLocator.first().waitFor({ state: 'attached', timeout: 10000 })
 
-    // Wait for loadImageAsync to settle: a successful off-disk load swaps the
-    // wrapper to `.mu-image-success` and sets the <img> src to the resolved
-    // (optionally cache-busted) file:// URL.
     await expect
       .poll(async() => page.locator('.editor-component .mu-inline-image.mu-image-success').count(), {
         timeout: 10000
@@ -90,34 +82,20 @@ test.describe('Relative-path image resolves to a DIRNAME-anchored file:// URL', 
 
     const src = await imgLocator.first().getAttribute('src')
     expect(src).not.toBeNull()
-    const value = src as string
-
-    // DIRNAME-anchored: must be a real file:// URL, never the regressed
-    // non-anchored `file://assets/cat.png` (no leading slash after file://).
-    expect(value.startsWith('file://')).toBe(true)
-    expect(value).not.toContain('file://file://')
-
-    // Strip any cache-busting query (`?mucache=…`/`&mucache=…`) the engine
-    // appends to local files, then assert the path ends with the anchored
-    // relative path and contains the document directory.
-    const withoutQuery = value.split('?')[0]
-    expect(withoutQuery.endsWith('assets/cat.png')).toBe(true)
-    const expectedSrc = `file://${docDir.replace(/\\/g, '/')}/assets/cat.png`
-    expect(withoutQuery).toBe(expectedSrc)
+    const url = new URL(src as string)
+    expect(url.protocol).toBe('mt-file:')
+    expect(url.hostname).toBe('local')
+    expect(url.pathname).toBe(`${docDir.replace(/\\/g, '/')}/assets/cat.png`)
   })
 
-  test('the anchored file:// URL points at a file that exists on disk', async() => {
+  test('the anchored mt-file URL points at a file that exists on disk', async() => {
     const src = await page
       .locator('.editor-component .mu-image-container img')
       .first()
       .getAttribute('src')
-    expect(src).not.toBeNull()
-    const withoutQuery = (src as string).split('?')[0]
-    // Convert the file:// URL back to a filesystem path and confirm the engine
-    // resolved it to the on-disk sibling we wrote in setup.
-    const onDiskPath = withoutQuery.replace(/^file:\/\//, '')
-    expect(fs.existsSync(onDiskPath)).toBe(true)
-    expect(onDiskPath).toBe(path.join(docDir, 'assets', 'cat.png').replace(/\\/g, '/'))
+    const url = new URL(src as string)
+    expect(fs.existsSync(url.pathname)).toBe(true)
+    expect(url.pathname).toBe(path.join(docDir, 'assets', 'cat.png').replace(/\\/g, '/'))
   })
 })
 
@@ -155,6 +133,11 @@ test.describe('Relative-path image in a directory named with URL delimiters (#52
       .getAttribute('src')
     expect(src).not.toBeNull()
     const url = new URL(src as string)
+    expect(url.protocol).toBe('mt-file:')
+    expect(url.hostname).toBe('local')
+    expect(url.hash).toBe('')
+    // `URL.pathname` keeps percent-escapes: decode once to get the file path.
+    // The engine appends `?mucache=` to local loads; only `mt-file:` may do so.
     expect(decodeURIComponent(url.pathname)).toBe(
       path.join(docDir, 'assets', 'cat.png').replace(/\\/g, '/')
     )

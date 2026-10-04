@@ -15,11 +15,14 @@ vi.mock('electron', () => ({
     handle: (channel: string, fn: Handler) => handlers.set(channel, fn)
   }
 }))
+// Sender validation is covered by validate-sender.spec; here the caller is the app.
+vi.mock('main_renderer/security/validateSender', () => ({ validateSender: () => true }))
 
 const skipOnWindows = process.platform === 'win32'
 const origPlatform = process.platform
 
 let tmpDir: string
+const uploaderSettings = { currentUploader: 'picgo', cliScript: '' }
 let originalPath: string | undefined
 let originalShell: string | undefined
 let originalHome: string | undefined
@@ -46,8 +49,9 @@ beforeAll(async() => {
   setPlatform('freebsd')
 
   const { registerCmdHandlers } = await import('main_renderer/ipc/cmd')
-  const { registerUploaderHandlers } = await import('main_renderer/ipc/uploader')
+  const { registerUploaderHandlers, setUploaderSettingsSource } = await import('main_renderer/ipc/uploader')
   registerCmdHandlers()
+  setUploaderSettingsSource(async() => uploaderSettings)
   registerUploaderHandlers()
 })
 
@@ -75,8 +79,7 @@ describe.skipIf(skipOnWindows)('picgo found through the login shell (#5518)', ()
     const url = await call('mt::uploader::upload', {
       pathname: '/tmp/notes/a.md',
       image: { data: new Uint8Array(PNG), name: 'image.png' },
-      isPath: false,
-      preferences: { currentUploader: 'picgo', cliScript: '' }
+      isPath: false
     })
 
     expect(url).toBe('https://cdn.example.com/uploaded.png')

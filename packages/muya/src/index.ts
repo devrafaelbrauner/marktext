@@ -1,5 +1,14 @@
+export type { TBlockPath } from './block/types';
+export { registerCodeBlockRenderer } from './codeBlockPreview/registry';
+export type { ICodeBlockRenderContext, ICodeBlockRenderer } from './codeBlockPreview/registry';
+export { registerCompletionProvider } from './completion';
+export type { ICompletionItem, ICompletionProvider } from './completion';
+export type { IDecorationClickPayload, IDecorationRange } from './editor/decorations';
+export type { IRangeEdit } from './editor/index';
 export type { ISerializedHistory } from './history';
 export type { ILocale } from './i18n/types';
+export { registerInlineSyntax } from './inlineRenderer/customSyntax';
+export type { IInlineSyntaxMatch, IInlineSyntaxRule, TInlineSyntaxPrecedence } from './inlineRenderer/customSyntax';
 
 export { de, en, es, fr, ja, ko, nl, pt, ru, tr, zhCN, zhTW } from './locales';
 export { Muya } from './muya';
@@ -14,6 +23,7 @@ export type { TState } from './state/types';
 export type { IMuyaOptions } from './types';
 
 export { CodeBlockLanguageSelector } from './ui/codeBlockLanguageSelector';
+export { CompletionPicker } from './ui/completionPicker';
 // Export ui tools.
 export { EmojiSelector } from './ui/emojiSelector';
 export { FootnoteTool } from './ui/footnoteTool';
@@ -33,6 +43,7 @@ export { default as TableChessboard } from './ui/tableChessboard';
 export { TableColumnToolbar } from './ui/tableColumnToolbar';
 export { TableDragBar } from './ui/tableDragBar';
 export { TableRowColumMenu } from './ui/tableRowColumMenu';
+export type { ICheckableBlock, TAnnotationPart } from './utils/annotation';
 export { renderDiagramForExport } from './utils/diagram/render';
 export type { IExportRenderOptions } from './utils/diagram/render';
 export type { IImageInfo } from './utils/image';

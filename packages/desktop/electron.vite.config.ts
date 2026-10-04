@@ -1,4 +1,5 @@
-import { resolve, dirname } from 'path'
+import { resolve, dirname, join, extname } from 'path'
+import { createReadStream, readdirSync, readFileSync, statSync } from 'fs'
 import type { PluginOption } from 'vite'
 import { defineConfig } from 'electron-vite'
 import vue from '@vitejs/plugin-vue'
@@ -9,6 +10,43 @@ import { fileURLToPath } from 'url'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
+
+// pdf.js (PDF reader plugin) loads CMaps, standard fonts, wasm image decoders
+// and ICC profiles at run time from directory URLs, so they cannot go through
+// the module graph. They are served under `pdfjs/<dir>/` next to index.html:
+// by the dev server in dev, as emitted assets in the build.
+const PDFJS_ROOT = resolve(__dirname, 'node_modules/pdfjs-dist')
+const PDFJS_ASSET_DIRS = ['cmaps', 'standard_fonts', 'wasm', 'iccs']
+const PDFJS_CONTENT_TYPES: Record<string, string> = {
+  '.js': 'text/javascript',
+  '.wasm': 'application/wasm',
+  '.ttf': 'font/ttf'
+}
+
+const pdfjsAssets = (): PluginOption => ({
+  name: 'marktext:pdfjs-assets',
+  configureServer(server) {
+    server.middlewares.use('/pdfjs', (req, res, next) => {
+      const [dir, file, ...rest] = decodeURIComponent((req.url ?? '').split('?')[0]).split('/').filter(Boolean)
+      if (rest.length > 0 || !PDFJS_ASSET_DIRS.includes(dir) || !file || file.startsWith('.')) return next()
+      const fullPath = join(PDFJS_ROOT, dir, file)
+      try {
+        if (!statSync(fullPath).isFile()) return next()
+      } catch {
+        return next()
+      }
+      res.setHeader('Content-Type', PDFJS_CONTENT_TYPES[extname(file)] ?? 'application/octet-stream')
+      createReadStream(fullPath).pipe(res)
+    })
+  },
+  generateBundle() {
+    for (const dir of PDFJS_ASSET_DIRS) {
+      for (const file of readdirSync(join(PDFJS_ROOT, dir))) {
+        this.emitFile({ type: 'asset', fileName: `pdfjs/${dir}/${file}`, source: readFileSync(join(PDFJS_ROOT, dir, file)) })
+      }
+    }
+  }
+})
 
 export default defineConfig({
   main: {
@@ -25,6 +63,14 @@ export default defineConfig({
         // ERR_PACKAGE_PATH_NOT_EXPORTED at startup.
         exclude: ['electron-store', 'plist'],
         include: ['native-keymap']
+      },
+      rollupOptions: {
+        // The vault index runs in an Electron utility process forked from
+        // out/main/vaultIndexWorker.js (see src/main/vaultIndex/index.ts).
+        input: {
+          index: resolve(__dirname, 'src/main/index.ts'),
+          vaultIndexWorker: resolve(__dirname, 'src/main/vaultIndex/worker/entry.ts')
+        }
       }
     },
     define: {
@@ -35,7 +81,8 @@ export default defineConfig({
       alias: {
         '@': resolve(__dirname, 'src/renderer/src'),
         common: resolve(__dirname, 'src/common'),
-        '@shared': resolve(__dirname, 'src/shared')
+        '@shared': resolve(__dirname, 'src/shared'),
+        '@plugins': resolve(__dirname, 'src/plugins')
       },
       extensions: ['.mjs', '.ts', '.js', '.json']
     }
@@ -54,7 +101,8 @@ export default defineConfig({
       alias: {
         '@': resolve(__dirname, 'src/renderer/src'),
         common: resolve(__dirname, 'src/common'),
-        '@shared': resolve(__dirname, 'src/shared')
+        '@shared': resolve(__dirname, 'src/shared'),
+        '@plugins': resolve(__dirname, 'src/plugins')
       },
       extensions: ['.mjs', '.ts', '.js', '.json']
     }
@@ -80,6 +128,7 @@ export default defineConfig({
         '@': resolve(__dirname, 'src/renderer/src'),
         common: resolve(__dirname, 'src/common'),
         '@shared': resolve(__dirname, 'src/shared'),
+        '@plugins': resolve(__dirname, 'src/plugins'),
         path: 'pathe'
       },
       extensions: ['.mjs', '.ts', '.js', '.json', '.vue']
@@ -92,7 +141,7 @@ export default defineConfig({
         }
       }
     },
-    plugins: [vue(), svgLoader()] as PluginOption[],
+    plugins: [vue(), svgLoader(), pdfjsAssets()] as PluginOption[],
     css: {
       postcss: {
         plugins: [

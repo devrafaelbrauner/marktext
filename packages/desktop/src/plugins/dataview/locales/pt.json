@@ -1,0 +1,53 @@
+{
+  "name": "Dataview",
+  "description": "Mostra os resultados de consultas Dataview (TABLE, LIST e TASK) escritas em blocos de código dataview, calculados a partir das notas da pasta aberta.",
+  "table": {
+    "file": "Arquivo"
+  },
+  "status": {
+    "indexing": "Indexando…",
+    "noFolder": "Abra uma pasta para executar consultas Dataview.",
+    "empty": "Nenhum resultado.",
+    "truncated": "Mostrando os primeiros {shown} de {total} resultados.",
+    "failed": "Não foi possível executar a consulta: {message}"
+  },
+  "task": {
+    "toggle": "Tarefa: {text}",
+    "changed": "A tarefa mudou desde a execução da consulta. Os resultados foram atualizados.",
+    "conflict": "{file} foi alterado no disco. Os resultados foram atualizados; tente de novo.",
+    "writeFailed": "Não foi possível atualizar a tarefa: {message}"
+  },
+  "link": {
+    "open": "Abrir {name}",
+    "unresolved": "{name} ainda não existe"
+  },
+  "errors": {
+    "location": "Linha {line}, coluna {column}",
+    "invalidCharacter": "Caractere inesperado “{char}”.",
+    "unterminatedString": "Texto sem as aspas de fechamento.",
+    "unterminatedLink": "Link sem o ]] de fechamento.",
+    "invalidLink": "Link inválido.",
+    "invalidTag": "Tag inválida.",
+    "expectedQueryType": "Uma consulta começa com TABLE, LIST ou TASK.",
+    "unsupportedQueryType": "Consultas {type} não são suportadas. Use TABLE, LIST ou TASK.",
+    "unsupportedCommand": "{command} não é suportado. Use WHERE, SORT e LIMIT.",
+    "unexpectedToken": "“{found}” inesperado; era esperado {expected}.",
+    "unexpectedEnd": "A consulta termina antes da hora; era esperado {expected}.",
+    "expectedExpression": "Era esperado um valor ou um campo, mas foi encontrado “{found}”.",
+    "missingExpression": "Falta um valor ou um campo aqui.",
+    "expectedField": "Era esperado o nome de um campo depois do ponto.",
+    "trailingInput": "“{found}” inesperado depois do fim da expressão.",
+    "expectedSource": "Era esperada uma origem (uma tag, uma pasta entre aspas ou um link), mas foi encontrado “{found}”.",
+    "fromNotFirst": "FROM só pode aparecer uma vez, logo depois do tipo da consulta.",
+    "invalidLimit": "LIMIT precisa de um número inteiro.",
+    "invalidDate": "Data inválida “{text}”.",
+    "invalidDuration": "Duração inválida “{text}”.",
+    "unknownFunction": "Função desconhecida “{name}”.",
+    "argumentCount": "{name}() recebe {expected} argumento(s), não {count}.",
+    "invalidOperation": "Não é possível aplicar “{op}” a {left} e {right}.",
+    "invalidUnary": "Não é possível aplicar “{op}” a {operand}.",
+    "invalidArgument": "{name}() não aceita um valor do tipo {type}.",
+    "budgetExceeded": "A consulta demora demais para ser avaliada. Restrinja-a com FROM ou WHERE.",
+    "queryTooLong": "A consulta tem mais de {max} caracteres."
+  }
+}

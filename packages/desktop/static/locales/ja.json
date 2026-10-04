@@ -124,7 +124,8 @@
       "toggleTableOfContents": "目次の切り替え",
       "reloadImages": "画像の再読み込み",
       "showDeveloperTools": "開発者ツールの表示",
-      "reloadWindow": "ウィンドウの再読み込み"
+      "reloadWindow": "ウィンドウの再読み込み",
+      "toggleDocumentView": "Toggle Document View"
     },
     "format": {
       "format": "フォーマット",
@@ -367,7 +368,8 @@
         "searcher": "検索",
         "watcher": "ウォッチャー",
         "spelling": "スペリング",
-        "custom css": "カスタム CSS"
+        "custom css": "カスタム CSS",
+        "plugins": "Plugins"
       },
       "items": {
         "autoSave": "編集中のコンテンツを自動保存",
@@ -444,7 +446,8 @@
       "spelling": "スペルチェック",
       "theme": "テーマ",
       "image": "画像",
-      "keybindings": "キーバインド"
+      "keybindings": "キーバインド",
+      "plugins": "Plugins"
     },
     "general": {
       "title": "全般",
@@ -746,6 +749,53 @@
       "enableSpellChecking": "スペルチェックを有効",
       "hideMarksForErrors": "スペルエラーのマークを隠す",
       "title": "スペルチェック"
+    },
+    "plugins": {
+      "title": "Plugins",
+      "description": "Built-in plugins add features to MarkText. Disabled plugins do not run.",
+      "safeMode": "MarkText was started in safe mode (--safe): no plugin is running. You can still change their settings.",
+      "empty": "No plugins are available.",
+      "enabled": "Enabled",
+      "settings": "Settings",
+      "secretSet": "Configured",
+      "secretNotSet": "Not configured",
+      "secretPlaceholder": "Enter a new value",
+      "save": "Save",
+      "clear": "Clear",
+      "stringListPlaceholder": "One entry per line",
+      "saveFailed": "Could not save \"{setting}\": {message}",
+      "community": {
+        "title": "Community",
+        "description": "Community plugins run in a sandbox. They are installed disabled; enabling one asks you to allow the permissions it requests.",
+        "empty": "No community plugins installed.",
+        "installFolder": "Install from folder",
+        "installZip": "Install from .zip",
+        "uninstall": "Uninstall",
+        "uninstallConfirm": "Uninstall \"{name}\"? Its files will be deleted.",
+        "uninstallFailed": "Could not uninstall the plugin: {message}",
+        "author": "Author",
+        "consentTitle": "Allow \"{name}\"?",
+        "consentBody": "This plugin will be able to:",
+        "consentConfirm": "Enable",
+        "consentCancel": "Cancel",
+        "consentNone": "No special permissions. It can register commands, show notifications and use its settings.",
+        "safeMode": "Safe mode is on (--safe): community plugins stay off.",
+        "installFailed": "Could not install the plugin: {message}",
+        "enableFailed": "Could not change \"{name}\": {message}",
+        "installed": "Installed \"{name}\". It stays off until you enable it.",
+        "permission": {
+          "editorRead": "Read the open document",
+          "editorWrite": "Edit the open document",
+          "editorDecorate": "Underline text in the editor",
+          "vaultRead": "Read files in the open folder",
+          "vaultWrite": "Create and edit files in the open folder",
+          "metadataRead": "Read notes, links and tags",
+          "sidebar": "Add a sidebar panel",
+          "statusbar": "Add a status bar item",
+          "clipboard": "Copy text to the clipboard",
+          "network": "Connect to {host}"
+        }
+      }
     }
   },
   "about": {
@@ -866,7 +916,8 @@
       "reloadImages": "画像を再読み込み",
       "textDirection": "テキスト方向",
       "actualSize": "実際のサイズ",
-      "devToggleDeveloperTools": "開発者ツールの切り替え"
+      "devToggleDeveloperTools": "開発者ツールの切り替え",
+      "toggleDocumentView": "Toggle Document View"
     },
     "tabs": {
       "cycleForward": "前方に循環",
@@ -1000,6 +1051,18 @@
       "languageMissing": "スペルチェック言語が見つかりません {languageCode}",
       "switchError": "{languageCode} のスペルチェック切り替えエラー、{error}",
       "title": "スペルチェック"
+    },
+    "tabView": {
+      "editor": "Markdown Editor",
+      "noViewer": "No viewer is available for this file.",
+      "openExternally": "Open in Default App",
+      "noDocumentViews": "No document view is available.",
+      "viewFailed": "This view could not be displayed."
     }
+  },
+  "pluginHost": {
+    "activationFailed": "Plugin \"{name}\" could not be started",
+    "commandFailed": "Command \"{command}\" failed",
+    "communityDisabled": "Community plugin \"{name}\" was disabled because it crashed or failed to start."
   }
 }

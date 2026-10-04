@@ -32,6 +32,9 @@ export interface IRenderToStaticHTMLOptions {
  *    code blocks remain inert `<pre><code class="language-*">…</code></pre>`
  *    placeholders. Consumers that want live diagrams should keep using the
  *    async `MarkdownToHtml`.
+ *  - Registered inline syntax (`registerInlineSyntax`) renders through its
+ *    `exportHtml`; a registered code block renderer's `exportHtml` applies
+ *    only when it returns synchronously (`MarkdownToHtml` awaits it).
  *  - Returns the bare body HTML — no `<article class="markdown-body">` wrapper,
  *    no `<!DOCTYPE>` / `<head>` / styles. The spec runner compares raw block
  *    HTML against CommonMark / GFM expected output.

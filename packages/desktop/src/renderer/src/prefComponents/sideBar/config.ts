@@ -5,11 +5,14 @@ import {
   Brush as ThemeIcon,
   Picture as ImageIcon,
   Reading as SpellIcon,
-  Operation as KeyBindingIcon
+  Operation as KeyBindingIcon,
+  Connection as PluginsIcon
 } from '@element-plus/icons-vue'
 
 import preferences from '../../../../main/preferences/schema.json'
-import { t } from '../../i18n'
+import { t, translatePluginKey } from '../../i18n'
+import { BUILTIN_PLUGINS } from '@plugins/manifests'
+import type { PluginLocaleMessages } from '@shared/plugins/types'
 
 interface PrefCategory {
   name: string
@@ -107,6 +110,12 @@ export const getCategory = (): PrefCategory[] => [
     label: 'keybindings',
     icon: KeyBindingIcon,
     path: '/preference/keybindings'
+  },
+  {
+    name: t('preferences.categories.plugins'),
+    label: 'plugins',
+    icon: PluginsIcon,
+    path: '/preference/plugins'
   }
 ]
 
@@ -164,7 +173,8 @@ export const getTranslatedSearchContent: CachedTranslator = (() => {
         'spelling',
         'theme',
         'image',
-        'keybindings'
+        'keybindings',
+        'plugins'
       ]
       if (!validRoutes.includes(routeCategory)) routeCategory = 'general'
 
@@ -217,10 +227,41 @@ export const getTranslatedSearchContent: CachedTranslator = (() => {
         enum: emums
       })
     })
+    result.push(...getPluginSearchEntries())
     return result
   }) as CachedTranslator
   return fn
 })()
+
+const englishMessage = (messages: PluginLocaleMessages, key: string): string => {
+  let node: string | PluginLocaleMessages | undefined = messages
+  for (const part of key.split('.')) {
+    node = typeof node === 'object' ? node[part] : undefined
+  }
+  return typeof node === 'string' ? node : key
+}
+
+/** One entry per built-in plugin and per plugin setting, leading to that plugin's settings. */
+const getPluginSearchEntries = (): TranslatedSearchEntry[] => {
+  const category = t('preferences.categories.plugins')
+  const entries: TranslatedSearchEntry[] = []
+  for (const { manifest, locales } of BUILTIN_PLUGINS) {
+    const name = translatePluginKey(manifest.id, manifest.name)
+    const nameEn = englishMessage(locales.en, manifest.name)
+    const base = { category, categoryEn: 'Plugins', routeCategory: `plugins/${manifest.id}`, enum: undefined }
+    entries.push({ ...base, key: `plugins.${manifest.id}`, preference: name, preferenceEn: nameEn, description: '' })
+    for (const setting of manifest.settings ?? []) {
+      entries.push({
+        ...base,
+        key: `plugins.${manifest.id}.${setting.key}`,
+        preference: `${name}: ${translatePluginKey(manifest.id, setting.label)}`,
+        preferenceEn: `${nameEn}: ${englishMessage(locales.en, setting.label)}`,
+        description: ''
+      })
+    }
+  }
+  return entries
+}
 
 // Add language change listener
 export const setupLanguageChangeListener = (): void => {

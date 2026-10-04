@@ -46,6 +46,12 @@ export default function(keybindings: Keybindings): MenuItemConstructorOptions {
       }
     },
     {
+      label: t('menu.view.toggleDocumentView'),
+      click(_item, focusedWindow) {
+        actions.toggleDocumentView(focusedWindow as BrowserWindow | undefined)
+      }
+    },
+    {
       type: 'separator'
     },
     {

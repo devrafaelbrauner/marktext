@@ -1,0 +1,52 @@
+.mu-completion-picker-wrapper {
+    z-index: 100000;
+}
+
+.mu-completion-picker-wrapper .mu-completion-picker {
+    box-sizing: border-box;
+    min-width: 220px;
+    max-width: 420px;
+    max-height: 240px;
+    padding: 6px 0;
+    overflow-y: auto;
+
+    font-size: 14px;
+}
+
+.mu-completion-picker-wrapper .mu-completion-picker ul,
+.mu-completion-picker-wrapper .mu-completion-picker li {
+    margin: 0;
+    padding: 0;
+}
+
+.mu-completion-picker-wrapper .mu-completion-picker .item {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    height: 28px;
+    padding: 0 10px;
+
+    list-style: none;
+    cursor: pointer;
+}
+
+.mu-completion-picker-wrapper .mu-completion-picker .item:hover,
+.mu-completion-picker-wrapper .mu-completion-picker .item.active {
+    background-color: var(--float-hover-color);
+}
+
+.mu-completion-picker-wrapper .mu-completion-picker .label {
+    overflow: hidden;
+
+    color: var(--editor-color);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.mu-completion-picker-wrapper .mu-completion-picker .detail {
+    flex-shrink: 0;
+
+    color: var(--editor-color-50, gray);
+    font-size: 12px;
+}

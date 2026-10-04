@@ -27,6 +27,9 @@ abstract class BaseFloat {
     protected options: IBaseOptions;
     public status: boolean = false;
     public capturesContentKeydown = false;
+    // Floats that follow the caret (repositioned by autoUpdate) stay open while
+    // the editor scrolls to keep the caret visible during typing.
+    public hidesOnScroll = true;
     public floatBox: HTMLElement | null = null;
     public container: HTMLElement | null = null;
     private _lastScrollTop: number | null = null;
@@ -101,6 +104,7 @@ abstract class BaseFloat {
             // only when scroll distance great than 50px, then hide the float box.
             if (
                 this.status
+                && this.hidesOnScroll
                 && Math.abs(event.target.scrollTop - this._lastScrollTop) > 50
             ) {
                 this.hide();

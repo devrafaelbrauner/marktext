@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import { isSamePathSync, isImageFile } from 'common/filesystem/paths'
+import { validateSender } from '../security/validateSender'
 
 export const registerPathHandlers = (): void => {
   // The renderer's preload computes isChildOfDirectory / hasMarkdownExtension
@@ -8,5 +9,5 @@ export const registerPathHandlers = (): void => {
   ipcMain.on('mt::paths::is-same-sync', (event, a: string, b: string) => {
     event.returnValue = isSamePathSync(a, b, true)
   })
-  ipcMain.handle('mt::paths::is-image', (_e, p: string) => isImageFile(p))
+  ipcMain.handle('mt::paths::is-image', (e, p: string) => validateSender(e) && isImageFile(p))
 }

@@ -1,0 +1,49 @@
+{
+  "name": "Tags",
+  "description": "Obsidian-style #tags: highlighted in the editor, suggested as you type, listed in a sidebar panel and renamable across the folder.",
+  "commands": {
+    "rename": "Tags: Rename Tag…",
+    "showPanel": "Tags: Show Tags Panel"
+  },
+  "panel": {
+    "title": "Tags",
+    "filterPlaceholder": "Filter tags",
+    "clearFilter": "Clear filter",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all",
+    "rename": "Rename tag…",
+    "noFolder": "Open a folder to see its tags.",
+    "indexing": "Indexing notes…",
+    "empty": "No tags yet. Type # followed by a word in a note.",
+    "noMatch": "No tags match “{query}”.",
+    "notesTagged": "Notes with #{tag}",
+    "noNotes": "No note uses this tag anymore.",
+    "noteCount": "{count} notes",
+    "noteCountOne": "1 note",
+    "closeNotes": "Close note list",
+    "loadFailed": "Could not load the tags: {message}"
+  },
+  "rename": {
+    "title": "Rename tag",
+    "from": "Tag",
+    "to": "New name",
+    "nestedHint": "Nested tags (#{tag}/…) are renamed too.",
+    "preview": "Preview",
+    "apply": "Rename",
+    "cancel": "Cancel",
+    "back": "Back",
+    "invalidFrom": "“{tag}” is not a valid tag.",
+    "invalidTo": "Use letters, digits, _, - or / (for nesting), with at least one letter.",
+    "same": "The new name is the same as the current one.",
+    "scanning": "Looking for #{tag}…",
+    "nothing": "No note uses #{tag}.",
+    "summary": "#{from} → #{to}: {occurrences} occurrence(s) in {files} note(s).",
+    "occurrences": "{count}×",
+    "openInTab": "open in a tab",
+    "tabNote": "Notes open in a tab are changed in the tab and stay unsaved until you save them.",
+    "readFailed": "Skipped {file}: {message}",
+    "done": "Renamed #{from} to #{to} in {files} note(s).",
+    "conflicts": "Changed on disk after the preview, not renamed: {files}. Run the rename again to include them.",
+    "failed": "Could not rename in {files}: {message}"
+  }
+}

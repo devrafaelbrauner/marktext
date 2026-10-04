@@ -1,0 +1,113 @@
+{
+  "name": "Mermaid Plus",
+  "description": "Mermaid no estilo do Obsidian: temas, visual desenhado à mão, Ctrl/Cmd+clique em nós internal-link e comandos que inserem diagramas de exemplo.",
+  "settings": {
+    "theme": {
+      "label": "Tema dos diagramas",
+      "description": "Tema do Mermaid na pré-visualização. Automático acompanha o tema claro ou escuro do app.",
+      "auto": "Automático",
+      "default": "Padrão",
+      "neutral": "Neutro",
+      "forest": "Floresta",
+      "dark": "Escuro",
+      "base": "Base"
+    },
+    "look": {
+      "label": "Visual dos diagramas",
+      "description": "Desenhado à mão mostra os diagramas com traço de rascunho.",
+      "classic": "Clássico",
+      "handDrawn": "Desenhado à mão"
+    }
+  },
+  "commands": {
+    "flowchart": "Inserir diagrama: fluxograma",
+    "sequence": "Inserir diagrama: sequência",
+    "class": "Inserir diagrama: classes",
+    "state": "Inserir diagrama: estados",
+    "er": "Inserir diagrama: entidade-relacionamento",
+    "gantt": "Inserir diagrama: Gantt",
+    "pie": "Inserir diagrama: pizza",
+    "mindmap": "Inserir diagrama: mapa mental",
+    "timeline": "Inserir diagrama: linha do tempo",
+    "quadrant": "Inserir diagrama: quadrantes"
+  },
+  "notify": {
+    "unresolved": "Nenhuma nota chamada “{target}” nesta pasta.",
+    "noFolder": "Abra uma pasta para seguir links dos diagramas.",
+    "noParagraph": "Coloque o cursor em um parágrafo para inserir um diagrama."
+  },
+  "templates": {
+    "flowchart": {
+      "start": "Início",
+      "question": "Tudo pronto?",
+      "yes": "Sim",
+      "no": "Não",
+      "action": "Fazer o trabalho",
+      "end": "Fim"
+    },
+    "sequence": {
+      "alice": "Alice",
+      "bob": "Bruno",
+      "request": "Oi Bruno, tudo bem?",
+      "response": "Tudo ótimo, obrigado!"
+    },
+    "class": {
+      "animal": "Animal",
+      "dog": "Cachorro",
+      "name": "nome",
+      "move": "mover",
+      "bark": "latir"
+    },
+    "state": {
+      "draft": "Rascunho",
+      "review": "Em revisão",
+      "published": "Publicado",
+      "submit": "enviar",
+      "reject": "pedir ajustes",
+      "approve": "aprovar"
+    },
+    "er": {
+      "customer": "Cliente",
+      "order": "Pedido",
+      "item": "Item",
+      "places": "faz",
+      "contains": "contém",
+      "name": "nome",
+      "quantity": "quantidade"
+    },
+    "gantt": {
+      "title": "Plano do projeto",
+      "planning": "Planejamento",
+      "research": "Pesquisa",
+      "design": "Design",
+      "execution": "Execução",
+      "build": "Desenvolvimento"
+    },
+    "pie": { "title": "Uso do tempo", "a": "Escrita", "b": "Leitura", "c": "Reuniões" },
+    "mindmap": {
+      "root": "Ideia central",
+      "idea1": "Primeiro tema",
+      "detail": "Detalhe",
+      "idea2": "Segundo tema"
+    },
+    "timeline": {
+      "title": "Marcos",
+      "event1": "Início do projeto",
+      "event2": "Primeira versão",
+      "event3": "Rodada de feedback"
+    },
+    "quadrant": {
+      "title": "Prioridades",
+      "lowEffort": "Pouco esforço",
+      "highEffort": "Muito esforço",
+      "lowImpact": "Pouco impacto",
+      "highImpact": "Muito impacto",
+      "q1": "Planejar",
+      "q2": "Fazer já",
+      "q3": "Descartar",
+      "q4": "Delegar",
+      "itemA": "Tarefa A",
+      "itemB": "Tarefa B"
+    }
+  }
+}

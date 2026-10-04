@@ -10,10 +10,21 @@ import type {
   IpcMainEventChannels,
   BootInfo,
   PlantumlFetchResult,
-  SaveDialogRequest
+  PluginIpcResult,
+  SaveDialogRequest,
+  VaultIndexReadyState
 } from '@shared/types/ipc'
 import type { MenuTemplate, MenuPopupPosition } from '@shared/types/menu'
 import type { SerializedStat } from '@shared/types/files'
+import type {
+  BacklinkEntry,
+  FileMetadata,
+  PluginHostState,
+  PluginSettingValue,
+  TagCount,
+  VaultChangeEvent,
+  VaultFileEntry
+} from '@shared/plugins/types'
 
 declare global {
   // ---- Build-time defines (electron-vite `define`) ----
@@ -115,7 +126,6 @@ declare global {
   interface FileUtilsAPI {
     isFile(p: string): Promise<boolean>
     isDirectory(p: string): Promise<boolean>
-    emptyDir(p: string): Promise<void>
     copy(src: string, dest: string): Promise<void>
     copyWithContentHash(src: string, outputDir: string): Promise<string>
     ensureDir(p: string): Promise<void>
@@ -125,7 +135,6 @@ declare global {
     writeFile(p: string, data: string | Uint8Array): Promise<void>
     readFile(p: string, encoding?: string): Promise<string | Uint8Array>
     pathExists(p: string): Promise<boolean>
-    unlink(p: string): Promise<void>
     readdir(p: string): Promise<string[]>
     isExecutable(p: string): Promise<boolean>
     isChildOfDirectory(dir: string, child: string): boolean
@@ -182,6 +191,53 @@ declare global {
     list(): Promise<string[]>
   }
 
+  /** Plugin host bridge; failures resolve as `{ ok: false, error }` (see `PluginIpcResult`). */
+  interface PluginsAPI {
+    getState(): Promise<PluginHostState>
+    setEnabled(pluginId: string, enabled: boolean): Promise<PluginIpcResult<null>>
+    setSetting(pluginId: string, key: string, value: PluginSettingValue): Promise<PluginIpcResult<null>>
+    setSecret(pluginId: string, key: string, value: string | null): Promise<PluginIpcResult<null>>
+    invoke(pluginId: string, method: string, args: unknown[]): Promise<PluginIpcResult<unknown>>
+    openSettings(pluginId: string): void
+    onStateChanged(handler: (state: PluginHostState) => void): () => void
+    onEvent(handler: (pluginId: string, event: string, payload: unknown) => void): () => void
+  }
+
+  interface CommunityAPI {
+    install(kind: 'folder' | 'zip'): Promise<PluginIpcResult<{ id: string; name: string }>>
+    uninstall(pluginId: string): Promise<PluginIpcResult<null>>
+    setEnabled(pluginId: string, enabled: boolean): Promise<PluginIpcResult<null>>
+    fetch(
+      pluginId: string,
+      url: string,
+      init?: unknown
+    ): Promise<PluginIpcResult<{ status: number; ok: boolean; headers: Record<string, string>; body: string }>>
+  }
+  /** Plugin file access scoped by main to the window's vault; failures resolve as `{ ok: false, error }`. */
+  interface VaultAPI {
+    readText(p: string): Promise<PluginIpcResult<{ content: string; mtimeMs: number }>>
+    readBinary(p: string, maxBytes?: number): Promise<PluginIpcResult<Uint8Array>>
+    writeText(p: string, content: string, expectedMtimeMs?: number): Promise<PluginIpcResult<{ mtimeMs: number }>>
+    createText(p: string, content: string): Promise<PluginIpcResult<null>>
+    exists(p: string): Promise<PluginIpcResult<boolean>>
+    list(extensions?: string[]): Promise<PluginIpcResult<VaultFileEntry[]>>
+    setActiveFile(pathname: string | null): void
+  }
+
+  /** Vault metadata index of the window's opened folder; empty/null results without one. */
+  interface VaultIndexAPI {
+    isReady(): Promise<boolean>
+    getFile(p: string): Promise<FileMetadata | null>
+    listFiles(): Promise<FileMetadata[]>
+    resolveLink(target: string, sourcePath: string): Promise<string | null>
+    getBacklinks(p: string): Promise<BacklinkEntry[]>
+    getTags(): Promise<TagCount[]>
+    getFilesWithTag(tag: string, options?: { includeNested?: boolean }): Promise<string[]>
+    request(type: string, payload: unknown): Promise<unknown>
+    onChanged(handler: (event: VaultChangeEvent) => void): () => void
+    onReadyState(handler: (state: VaultIndexReadyState) => void): () => void
+  }
+
   interface ProcessShim {
     platform: NodeJS.Platform
     arch?: string
@@ -202,6 +258,10 @@ declare global {
     uploader: UploaderAPI
     fonts: FontsAPI
     diagram: DiagramAPI
+    plugins: PluginsAPI
+    community: CommunityAPI
+    vault: VaultAPI
+    vaultIndex: VaultIndexAPI
     process: ProcessShim
     rgPath: string
     // Set by the legacy editor store at runtime; consumed by muya internals.

@@ -12,10 +12,22 @@ export interface ISyntaxRenderOptions {
     outerClass?: string;
 }
 
+export interface IHighlightDecoration {
+    layerId: string;
+    /** Index of the range in its layer's stored list for this block. */
+    index: number;
+    className: string;
+    data?: Record<string, string>;
+}
+
 export interface IHighlight {
     start: number;
     end: number;
     active: boolean | undefined;
+    /** Decorations painted over the range, outermost first. */
+    decorations?: IHighlightDecoration[];
+    /** The range carries decorations only, no search match. */
+    decorationOnly?: boolean;
 }
 
 export type Labels = Map<
@@ -69,7 +81,8 @@ export type Token
         | HTMLTagToken
         | SoftLineBreakToken
         | HardLineBreakToken
-        | TailHeaderToken;
+        | TailHeaderToken
+        | CustomInlineToken;
 
 export interface IBaseToken {
     raw: string;
@@ -77,6 +90,18 @@ export interface IBaseToken {
     range: ITokenRange;
     highlights?: IHighlight[];
 }
+
+// Token of a rule added through `registerInlineSyntax`. `contentStart` /
+// `contentEnd` are absolute block offsets of the visible text; everything else
+// in `range` is marker.
+export type CustomInlineToken = IBaseToken & {
+    type: 'custom_inline';
+    name: string;
+    contentStart: number;
+    contentEnd: number;
+    data: Record<string, string>;
+    noSpellcheck: boolean;
+};
 
 export type BeginRuleToken = IBaseToken & {
     type: 'header' | 'hr' | 'code_fence' | 'multiple_math';

@@ -19,8 +19,9 @@ export default function backlashInToken(
 
     for (i = 0; i < len; i++) {
         const chunk = chunks[i];
+        // Decorations are not painted on escape backslashes inside tokens.
         const light = highlights.filter(light =>
-            union({ start: start + i, end: start + i + 1 }, light),
+            !light.decorationOnly && union({ start: start + i, end: start + i + 1 }, light),
         );
         let selector = 'span';
         if (light.length) {

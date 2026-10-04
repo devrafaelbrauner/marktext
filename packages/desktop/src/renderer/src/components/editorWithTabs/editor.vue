@@ -1,7 +1,7 @@
 <template>
   <div
     class="editor-wrapper"
-    :class="[{ typewriter: typewriter, focus: focus, source: sourceCode, 'viewer-open': viewerOpen }]"
+    :class="[{ typewriter: typewriter, focus: focus, source: engineHidden, 'viewer-open': viewerOpen }]"
     :dir="textDirection"
   >
     <div
@@ -64,12 +64,12 @@
         </div>
       </template>
     </el-dialog>
-    <editor-search v-if="!sourceCode" />
+    <editor-search v-if="!engineHidden" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, reactive, watch, onMounted, onBeforeUnmount, nextTick, markRaw } from 'vue'
+import { ref, shallowRef, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick, markRaw } from 'vue'
 import log from 'electron-log'
 import {
   Muya,
@@ -85,6 +85,7 @@ import {
   ParagraphFrontButton,
   ParagraphFrontMenu,
   ParagraphQuickInsertMenu,
+  CompletionPicker,
   PreviewToolBar,
   TableChessboard,
   TableColumnToolbar,
@@ -104,6 +105,7 @@ import { applyCursor, isIndexCursor } from '@/util/cursor'
 import EditorSearch from '../search/index.vue'
 import MediaViewer from '../mediaViewer/index.vue'
 import bus from '@/bus'
+import { engineHost } from '@/plugins/host'
 import { DEFAULT_EDITOR_FONT_FAMILY, DEFAULT_CODE_FONT_FAMILY } from '@/config'
 import notice from '@/services/notification'
 import Printer from '@/services/printService'
@@ -112,6 +114,7 @@ import { SpellChecker } from '@/spellchecker'
 import { isMac, animatedScrollTo } from '@/util'
 import { moveImageToFolder, uploadImage } from '@/util/fileSystem'
 import { guessClipboardFilePath } from '@/util/clipboard'
+import { toMtFileUrl } from 'common/mtFileUrl'
 import { dataURLToFile } from '@/util/dataURLToFile'
 import { getCssForOptions, getHtmlToc, type PdfCssOptions, type HtmlTocOptions } from '@/util/pdf'
 import {
@@ -231,6 +234,13 @@ const {
 
 // Editor store refs
 const { currentFile, tabs } = storeToRefs(editorStore)
+
+// Asset tabs and plugin markdown views hide the engine the way source mode does.
+const engineHidden = computed(
+  () =>
+    sourceCode.value ||
+    (!!currentFile.value && (currentFile.value.kind === 'asset' || currentFile.value.viewId !== null))
+)
 
 // Project store refs
 const { projectTree } = storeToRefs(projectStore)
@@ -462,7 +472,7 @@ watch(focus, (value) => {
 // WYSIWYG engine, so grey them out. On return to WYSIWYG, re-apply the menu
 // state for the CURRENT cursor context (a code block/table still disables some
 // items) rather than blanket-enabling everything (#3531).
-watch(sourceCode, (isSource) => {
+watch(engineHidden, (isSource) => {
   const windowId = window.marktext?.env?.windowId ?? -1
   if (isSource) {
     window.electron.ipcRenderer.send('mt::set-editor-format-menus-enabled', windowId, false)
@@ -721,8 +731,9 @@ watch(hideScrollbar, (value, oldValue) => {
 watch(spellcheckerEnabled, (value, oldValue) => {
   if (value === oldValue) return
 
-  // Set Muya's spellcheck container attribute.
-  editor.value?.setOptions({ spellcheckEnabled: value })
+  // Muya's spellcheck attribute; the engine host keeps it off while a plugin
+  // requests `disableNativeSpellcheck`.
+  engineHost.setSpellcheckPreference(value)
 
   // Disable native spell checker
   if (value) {
@@ -793,6 +804,23 @@ watch(
         preSourceModeSelection = editor.value.getSelection()
       }
     }
+  },
+  { flush: 'sync' }
+)
+
+// Entering a plugin markdown view from the editor on the same tab captures the
+// caret like entering source mode, so leaving the view hands the markdown back
+// as one undo step that restores this caret (see `SET_TAB_VIEW`).
+watch(
+  () => [currentFile.value?.id, currentFile.value?.viewId] as const,
+  ([id, viewId], [oldId, oldViewId]) => {
+    if (!id || id !== oldId || !viewId || oldViewId || sourceCode.value) return
+    if (!editor.value || !currentFile.value) return
+    mediaViewer.value?.close()
+    editor.value.hideAllFloatTools()
+    editor.value.flush()
+    currentFile.value.muyaIndexCursor = editor.value.getCursorOffset() ?? null
+    preSourceModeSelection = editor.value.getSelection()
   },
   { flush: 'sync' }
 )
@@ -869,12 +897,7 @@ const imageAction = async (
   switch (imageInsertAction.value) {
     case 'upload': {
       try {
-        // Pass the full preferences state object to avoid dereferencing non-existent .value
-        destImagePath = (await uploadImage(
-          currentPathname,
-          image,
-          preferencesStore.$state as unknown as import('@/util/fileSystem').UploadImagePreferences
-        )) as string
+        destImagePath = (await uploadImage(currentPathname, image)) as string
       } catch (err) {
         notice.notify({
           title: 'Upload Image',
@@ -974,7 +997,7 @@ const SELECTION_KEYS = new Set([
 ])
 
 const keyup = (event: KeyboardEvent) => {
-  if (!sourceCode.value && editor.value && SELECTION_KEYS.has(event.key)) {
+  if (!engineHidden.value && editor.value && SELECTION_KEYS.has(event.key)) {
     setSelectionWordCountFromText(editor.value.getSelectedText())
   }
 }
@@ -1035,7 +1058,7 @@ const replaceMisspelling = (payload: unknown) => {
 }
 
 const handleUndo = () => {
-  if (sourceCode.value) {
+  if (engineHidden.value) {
     return
   }
 
@@ -1045,7 +1068,7 @@ const handleUndo = () => {
 }
 
 const handleRedo = () => {
-  if (sourceCode.value) {
+  if (engineHidden.value) {
     return
   }
 
@@ -1055,7 +1078,7 @@ const handleRedo = () => {
 }
 
 const handleSelectAll = () => {
-  if (sourceCode.value) {
+  if (engineHidden.value) {
     return
   }
 
@@ -1090,7 +1113,7 @@ const handleCopyPaste = (type: unknown) => {
 }
 
 const insertImage = (src: unknown) => {
-  if (!sourceCode.value) {
+  if (!engineHidden.value) {
     editor.value && editor.value.insertImage({ src: src as string })
   }
 }
@@ -1293,7 +1316,7 @@ const handleExport = async (options: unknown) => {
   }
 
   const muya = editor.value
-  if (!muya) return
+  if (!muya || currentFile.value?.kind === 'asset') return
 
   const extraCss = await getCssForOptions(opts as unknown as PdfCssOptions)
   const htmlToc = getHtmlToc(muya.getTOC(), opts as unknown as HtmlTocOptions)
@@ -1410,7 +1433,7 @@ const handleEditParagraph = (type: unknown) => {
   // These commands act on the hidden WYSIWYG engine, so block them in
   // source-code mode (mirrors handleUndo/handleSelectAll) — otherwise e.g. the
   // Insert Table wizard opens and writes to the invisible editor (#3531).
-  if (sourceCode.value) {
+  if (engineHidden.value) {
     return
   }
   if (type === 'table') {
@@ -1433,7 +1456,7 @@ const handleEditParagraph = (type: unknown) => {
 
 // handle `duplicate`, `delete`, `create paragraph below`
 const handleParagraph = (type: unknown) => {
-  if (sourceCode.value) {
+  if (engineHidden.value) {
     return
   }
   if (editor.value) {
@@ -1454,7 +1477,7 @@ const handleParagraph = (type: unknown) => {
 }
 
 const handleInlineFormat = (type: unknown) => {
-  if (sourceCode.value) {
+  if (engineHidden.value) {
     return
   }
   editor.value && editor.value.format(type as string)
@@ -1514,6 +1537,9 @@ interface FileChangePayload {
   muyaIndexCursor?: unknown
   blocks?: unknown
   isReload?: boolean
+  // With `isReload`: an in-app edit of the whole document (vault write), not a
+  // disk reload, so the save baseline stays and the tab reads as unsaved.
+  keepSavedBaseline?: boolean
 }
 
 // listen for markdown change form source mode or change tabs etc
@@ -1525,7 +1551,8 @@ const handleFileChange = (payload: unknown) => {
     muyaIndexCursor,
     history: payloadHistory,
     scrollTop,
-    isReload
+    isReload,
+    keepSavedBaseline
   } = (payload ?? {}) as FileChangePayload
   if (!editor.value) return
   const container = getScrollContainer()
@@ -1577,7 +1604,7 @@ const handleFileChange = (payload: unknown) => {
       // `lastSavedHistoryId: 0`), so re-seed the save-tracking allocator BEFORE
       // applying: `replaceContent` fires a SYNCHRONOUS `json-change` that would
       // otherwise mark the tab dirty against the stale (pre-reload) baseline.
-      if (id) {
+      if (id && !keepSavedBaseline) {
         resetSyntheticHistory(id, newMarkdown)
       }
       editor.value.replaceContent(newMarkdown)
@@ -1741,6 +1768,7 @@ onMounted(() => {
     Muya.use(TableColumnToolbar)
     Muya.use(TableDragBar)
     Muya.use(TableRowColumMenu)
+    Muya.use(CompletionPicker)
   }
 
   const options: Partial<IMuyaOptions> = {
@@ -1777,7 +1805,7 @@ onMounted(() => {
     autoCheck: autoCheck.value,
     sequenceTheme: toSequenceTheme(sequenceTheme.value),
     plantumlServer: preferencesStore.plantumlServer,
-    spellcheckEnabled: spellcheckerEnabled.value,
+    spellcheckEnabled: engineHost.getEffectiveSpellcheck(spellcheckerEnabled.value),
     spellcheckHideMarks: spellcheckerNoUnderline.value,
     // Resolve the OS clipboard to a local file path on paste (image-from-file).
     clipboardFilePath: guessClipboardFilePath,
@@ -1788,7 +1816,8 @@ onMounted(() => {
     // Without these, local-file drag-drop, screenshot/binary clipboard paste, and
     // copy-to-assets on a pasted image file silently no-op or insert raw paths.
     imageAction: muyaImageAction,
-    getPathForFile: (file: File) => window.electron.webUtils.getPathForFile(file)
+    getPathForFile: (file: File) => window.electron.webUtils.getPathForFile(file),
+    localImageUrl: toMtFileUrl
   }
 
   if (/dark/i.test(theme.value)) {
@@ -1812,6 +1841,8 @@ onMounted(() => {
   // the document tree and instantiates the registered UI plugins).
   muya.init()
   editor.value = muya
+  engineHost.setSpellcheckPreference(spellcheckerEnabled.value)
+  engineHost.attach(muya)
   // The first document's content is set via constructor options, so no
   // `file-loaded` / `setMarkdownToEditor` runs for it — seed its TOC here.
   editorStore.UPDATE_TOC(muya.getTOC())
@@ -1988,7 +2019,7 @@ onMounted(() => {
     }
 
     selectionChange.value = changes
-    if (!sourceCode.value && editor.value) {
+    if (!engineHidden.value && editor.value) {
       setSelectionWordCountFromText(editor.value.getSelectedText())
     }
     // Persist the caret so a click/arrow-key move (which never fires
@@ -2006,6 +2037,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  engineHost.detach()
   bus.off('file-loaded', setMarkdownToEditor)
   bus.off('invalidate-image-cache', handleInvalidateImageCache)
   bus.off('undo', handleUndo)

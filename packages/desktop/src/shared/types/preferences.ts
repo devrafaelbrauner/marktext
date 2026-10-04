@@ -76,7 +76,8 @@ export interface IUserPreferences {
 }
 
 export interface LayoutState {
-  rightColumn: 'files' | 'search' | 'toc'
+  /** A built-in panel, or the id of a plugin sidebar panel (`ui.registerSidebarPanel`). */
+  rightColumn: 'files' | 'search' | 'toc' | (string & {})
   showSideBar: boolean
   showTabBar: boolean
   [key: string]: unknown

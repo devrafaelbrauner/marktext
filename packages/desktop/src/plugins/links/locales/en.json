@@ -1,0 +1,59 @@
+{
+  "name": "Links",
+  "description": "Obsidian-style [[wikilinks]] with completion, backlinks and automatic link updates when notes are renamed.",
+  "settings": {
+    "newLinkFormat": {
+      "label": "New link format",
+      "description": "How link completion writes the path of the linked note.",
+      "shortest": "Shortest path when possible",
+      "relative": "Relative to the current note",
+      "absolute": "Absolute path in the folder"
+    },
+    "updateLinksOnRename": {
+      "label": "Update links on rename",
+      "description": "Rewrite links in other notes when a note is renamed or moved in MarkText.",
+      "ask": "Ask every time",
+      "always": "Always",
+      "never": "Never"
+    }
+  },
+  "panel": {
+    "title": "Backlinks",
+    "noFile": "Open a note in the folder to see its backlinks.",
+    "noFolder": "Open a folder to see backlinks.",
+    "indexing": "Indexing the folder…",
+    "linked": "Linked mentions",
+    "unlinked": "Unlinked mentions",
+    "noLinked": "No notes link to this note.",
+    "noUnlinked": "No unlinked mentions found.",
+    "truncated": "Showing the first {count} unlinked mentions.",
+    "link": "Link",
+    "linkTitle": "Turn this mention into a link to {name}",
+    "openSource": "Open {name}",
+    "refresh": "Refresh",
+    "linkFailed": "Could not create the link: {message}",
+    "linkChanged": "The note changed since the mentions were found. The list was refreshed; try again.",
+    "count": "{count}"
+  },
+  "create": {
+    "title": "Note not found",
+    "message": "“{name}” does not exist yet. Create it?",
+    "confirm": "Create note",
+    "cancel": "Cancel",
+    "failed": "Could not create the note: {message}"
+  },
+  "open": {
+    "failed": "Could not open the link: {message}"
+  },
+  "rename": {
+    "title": "Update links?",
+    "message": "“{name}” was renamed. Update {count} link(s) in these notes?",
+    "confirm": "Update links",
+    "cancel": "Don't update",
+    "done": "Updated {count} link(s) in {files} note(s).",
+    "failed": "Could not update the links in {name}: {message}"
+  },
+  "commands": {
+    "showBacklinks": "Links: Show Backlinks"
+  }
+}

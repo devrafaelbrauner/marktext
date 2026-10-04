@@ -16,8 +16,10 @@ import type {
   IpcSyncChannels,
   IpcMainEventChannels,
   BootInfo,
-  SaveDialogRequest
+  SaveDialogRequest,
+  VaultIndexReadyState
 } from '@shared/types/ipc'
+import type { PluginHostState, PluginSettingValue, VaultChangeEvent } from '@shared/plugins/types'
 
 type RendererEventListener<K extends keyof IpcMainEventChannels> = (
   event: IpcRendererEvent,
@@ -91,7 +93,11 @@ const webFrameAPI = {
 }
 
 const webUtilsAPI = {
-  getPathForFile: (file: File): string => webUtils.getPathForFile(file)
+  getPathForFile: (file: File): string => {
+    const filePath = webUtils.getPathForFile(file)
+    if (filePath) send('mt::fs::grant-user-path', filePath)
+    return filePath
+  }
 }
 
 const windowControlAPI = {
@@ -160,7 +166,6 @@ const isSamePathSync = (pathA: string, pathB: string, isNormalized: boolean = fa
 const fileUtilsAPI = {
   isFile: (p: string) => invoke('mt::fs::is-file', p),
   isDirectory: (p: string) => invoke('mt::fs::is-directory', p),
-  emptyDir: (p: string) => invoke('mt::fs::empty-dir', p),
   copy: (src: string, dest: string) => invoke('mt::fs::copy', src, dest),
   copyWithContentHash: (src: string, outputDir: string) =>
     invoke('mt::fs::copy-with-content-hash', src, outputDir),
@@ -171,7 +176,6 @@ const fileUtilsAPI = {
   writeFile: (p: string, data: string | Uint8Array) => invoke('mt::fs::write-file', p, data),
   readFile: (p: string, encoding?: string) => invoke('mt::fs::read-file', p, encoding),
   pathExists: (p: string) => invoke('mt::fs::path-exists', p),
-  unlink: (p: string) => invoke('mt::fs::unlink', p),
   readdir: (p: string) => invoke('mt::fs::readdir', p),
   isExecutable: (p: string) => invoke('mt::fs::is-executable', p),
   // Pure-string predicates — synchronous, no IPC for the common case.
@@ -237,6 +241,70 @@ const dialogAPI = {
 const diagramAPI = {
   fetchPlantuml: (server: string, encoded: string, format: 'svg' | 'png') =>
     invoke('mt::diagram::fetch-plantuml', server, encoded, format)
+}
+
+const pluginsAPI = {
+  getState: () => invoke('mt::plugins::get-state'),
+  setEnabled: (pluginId: string, enabled: boolean) =>
+    invoke('mt::plugins::set-enabled', pluginId, enabled),
+  setSetting: (pluginId: string, key: string, value: PluginSettingValue) =>
+    invoke('mt::plugins::set-setting', pluginId, key, value),
+  setSecret: (pluginId: string, key: string, value: string | null) =>
+    invoke('mt::plugins::set-secret', pluginId, key, value),
+  invoke: (pluginId: string, method: string, args: unknown[]) =>
+    invoke('mt::plugins::invoke', pluginId, method, args),
+  openSettings: (pluginId: string) => send('mt::plugins::open-settings', pluginId),
+  onStateChanged: (handler: (state: PluginHostState) => void) => {
+    const sub = (_e: IpcRendererEvent, state: PluginHostState) => handler(state)
+    ipcRenderer.on('mt::plugins::state-changed', sub)
+    return () => ipcRenderer.removeListener('mt::plugins::state-changed', sub)
+  },
+  onEvent: (handler: (pluginId: string, event: string, payload: unknown) => void) => {
+    const sub = (_e: IpcRendererEvent, pluginId: string, event: string, payload: unknown) =>
+      handler(pluginId, event, payload)
+    ipcRenderer.on('mt::plugins::event', sub)
+    return () => ipcRenderer.removeListener('mt::plugins::event', sub)
+  }
+}
+
+const communityAPI = {
+  install: (kind: 'folder' | 'zip') => invoke('mt::community::install', kind),
+  uninstall: (pluginId: string) => invoke('mt::community::uninstall', pluginId),
+  setEnabled: (pluginId: string, enabled: boolean) => invoke('mt::community::set-enabled', pluginId, enabled),
+  fetch: (pluginId: string, url: string, init?: unknown) => invoke('mt::community::fetch', pluginId, url, init)
+}
+const vaultAPI = {
+  readText: (p: string) => invoke('mt::vault::read-text', p),
+  readBinary: (p: string, maxBytes?: number) => invoke('mt::vault::read-binary', p, maxBytes),
+  writeText: (p: string, content: string, expectedMtimeMs?: number) =>
+    invoke('mt::vault::write-text', p, content, expectedMtimeMs),
+  createText: (p: string, content: string) => invoke('mt::vault::create-text', p, content),
+  exists: (p: string) => invoke('mt::vault::exists', p),
+  list: (extensions?: string[]) => invoke('mt::vault::list', extensions),
+  setActiveFile: (pathname: string | null) => send('mt::vault::set-active-file', pathname)
+}
+
+const vaultIndexAPI = {
+  isReady: () => invoke('mt::index::is-ready'),
+  getFile: (p: string) => invoke('mt::index::get-file', p),
+  listFiles: () => invoke('mt::index::list-files'),
+  resolveLink: (target: string, sourcePath: string) =>
+    invoke('mt::index::resolve-link', target, sourcePath),
+  getBacklinks: (p: string) => invoke('mt::index::backlinks', p),
+  getTags: () => invoke('mt::index::tags'),
+  getFilesWithTag: (tag: string, options?: { includeNested?: boolean }) =>
+    invoke('mt::index::files-with-tag', tag, options),
+  request: (type: string, payload: unknown) => invoke('mt::index::request', type, payload),
+  onChanged: (handler: (event: VaultChangeEvent) => void) => {
+    const sub = (_e: IpcRendererEvent, event: VaultChangeEvent) => handler(event)
+    ipcRenderer.on('mt::index::changed', sub)
+    return () => ipcRenderer.removeListener('mt::index::changed', sub)
+  },
+  onReadyState: (handler: (state: VaultIndexReadyState) => void) => {
+    const sub = (_e: IpcRendererEvent, state: VaultIndexReadyState) => handler(state)
+    ipcRenderer.on('mt::index::ready', sub)
+    return () => ipcRenderer.removeListener('mt::index::ready', sub)
+  }
 }
 
 const electronAPI = {
@@ -309,6 +377,10 @@ try {
   contextBridge.exposeInMainWorld('uploader', uploaderAPI)
   contextBridge.exposeInMainWorld('fonts', fontsAPI)
   contextBridge.exposeInMainWorld('diagram', diagramAPI)
+  contextBridge.exposeInMainWorld('plugins', pluginsAPI)
+  contextBridge.exposeInMainWorld('community', communityAPI)
+  contextBridge.exposeInMainWorld('vault', vaultAPI)
+  contextBridge.exposeInMainWorld('vaultIndex', vaultIndexAPI)
 } catch (error) {
   console.error(error)
 }

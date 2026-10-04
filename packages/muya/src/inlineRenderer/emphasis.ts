@@ -1,5 +1,6 @@
 import type { InlineRules } from './rules';
 import type { ITokenizerFacOptions, Labels } from './types';
+import { hasInlineSyntaxRules, matchInlineSyntax } from './customSyntax';
 import { BACKSLASH_MATH_RULES, linkValidateRules } from './rules';
 import {
     CJK_REG,
@@ -130,10 +131,21 @@ function inertRunLength(src: string, index: number, context: IScanContext): numb
 
 function collectRuns(src: string, context: IScanContext): IDelimiterRun[] {
     const runs: IDelimiterRun[] = [];
+    const hasCustomRules = hasInlineSyntaxRules();
     let i = 0;
 
     while (i < src.length) {
         const char = src[i];
+
+        // `beforeEmphasis` rules run right after the backslash handlers in the
+        // lexer, so the delimiters inside their tokens (`[[a_b_c]]`) are inert.
+        if (hasCustomRules && char !== '\\') {
+            const hit = matchInlineSyntax('beforeEmphasis', src.substring(i), src[i - 1] ?? '');
+            if (hit) {
+                i += hit.match.length;
+                continue;
+            }
+        }
 
         if (char === '*' || char === '_') {
             let length = 1;

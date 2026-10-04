@@ -1,6 +1,7 @@
 import type Format from '../block/base/format';
 import type { Muya } from '../muya';
 import { BLOCK_DOM_PROPERTY, CLASS_NAMES } from '../config';
+import { CUSTOM_INLINE_NAME_ATTR } from '../inlineRenderer/renderer/customInline';
 import { findContentDOM } from '../selection/dom';
 import { getLinkInfo } from '../utils/getLinkInfo';
 
@@ -160,6 +161,20 @@ export function attachLinkMouseHandlers(muya: Muya): void {
         // clicked, and returns a superset (`{ href, raw, text, range }`).
         if (!isModifierClick(event))
             return;
+
+        // A `registerInlineSyntax` token: `formatType` is the rule name and
+        // `data` its match data. Checked first so a token inside a link wins.
+        const customToken = event.target.closest<HTMLElement>(`[${CUSTOM_INLINE_NAME_ATTR}]`);
+        if (customToken && domNode.contains(customToken)) {
+            const { muInlineSyntax: formatType, ...data } = customToken.dataset;
+            eventCenter.emit('format-click', {
+                event,
+                formatType,
+                data,
+            });
+
+            return;
+        }
 
         const wrapper = findLinkWrapper(event.target);
         if (!wrapper) {
