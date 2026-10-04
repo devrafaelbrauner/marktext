@@ -179,6 +179,18 @@ export interface CompletionProvider {
 export interface EngineOptionRequests {
   /** `#` only becomes an ATX heading once followed by whitespace (keeps `#tag` at a paragraph start a paragraph). */
   atxHeadingRequiresSpace?: boolean
+  /**
+   * Mermaid rendering of the live preview. Not ORed: the most recently made
+   * request carrying `mermaid` wins. Without one, diagrams follow the app
+   * theme (light/dark) with the classic look.
+   */
+  mermaid?: MermaidEngineOptions
+}
+
+export interface MermaidEngineOptions {
+  /** Mermaid theme; absent = follow the app theme. */
+  theme?: 'default' | 'neutral' | 'forest' | 'dark' | 'base'
+  look?: 'classic' | 'handDrawn'
 }
 
 // ---------------------------------------------------------------------------

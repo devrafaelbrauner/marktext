@@ -1,0 +1,107 @@
+{
+  "name": "Mermaid Plus",
+  "description": "Obsidian-style Mermaid: themes, hand-drawn look, Ctrl/Cmd-click on internal-link nodes and commands that insert example diagrams.",
+  "settings": {
+    "theme": {
+      "label": "Diagram theme",
+      "description": "Mermaid theme of the live preview. Automatic follows the app's light or dark theme.",
+      "auto": "Automatic",
+      "default": "Default",
+      "neutral": "Neutral",
+      "forest": "Forest",
+      "dark": "Dark",
+      "base": "Base"
+    },
+    "look": {
+      "label": "Diagram look",
+      "description": "Hand-drawn renders diagrams in a sketchy style.",
+      "classic": "Classic",
+      "handDrawn": "Hand-drawn"
+    }
+  },
+  "commands": {
+    "flowchart": "Insert diagram: Flowchart",
+    "sequence": "Insert diagram: Sequence",
+    "class": "Insert diagram: Class",
+    "state": "Insert diagram: State",
+    "er": "Insert diagram: Entity relationship",
+    "gantt": "Insert diagram: Gantt",
+    "pie": "Insert diagram: Pie chart",
+    "mindmap": "Insert diagram: Mind map",
+    "timeline": "Insert diagram: Timeline",
+    "quadrant": "Insert diagram: Quadrant chart"
+  },
+  "notify": {
+    "unresolved": "No note named “{target}” in this folder.",
+    "noFolder": "Open a folder to follow links from diagrams.",
+    "noParagraph": "Place the cursor in a paragraph to insert a diagram."
+  },
+  "templates": {
+    "flowchart": {
+      "start": "Start",
+      "question": "Ready?",
+      "yes": "Yes",
+      "no": "No",
+      "action": "Do the work",
+      "end": "Done"
+    },
+    "sequence": {
+      "alice": "Alice",
+      "bob": "Bob",
+      "request": "Hello Bob, how are you?",
+      "response": "Great, thanks!"
+    },
+    "class": { "animal": "Animal", "dog": "Dog", "name": "name", "move": "move", "bark": "bark" },
+    "state": {
+      "draft": "Draft",
+      "review": "In review",
+      "published": "Published",
+      "submit": "submit",
+      "reject": "request changes",
+      "approve": "approve"
+    },
+    "er": {
+      "customer": "Customer",
+      "order": "Order",
+      "item": "Item",
+      "places": "places",
+      "contains": "contains",
+      "name": "name",
+      "quantity": "quantity"
+    },
+    "gantt": {
+      "title": "Project plan",
+      "planning": "Planning",
+      "research": "Research",
+      "design": "Design",
+      "execution": "Execution",
+      "build": "Build"
+    },
+    "pie": { "title": "Time spent", "a": "Writing", "b": "Reading", "c": "Meetings" },
+    "mindmap": {
+      "root": "Main idea",
+      "idea1": "First topic",
+      "detail": "Detail",
+      "idea2": "Second topic"
+    },
+    "timeline": {
+      "title": "Milestones",
+      "event1": "Project started",
+      "event2": "First release",
+      "event3": "Feedback round"
+    },
+    "quadrant": {
+      "title": "Priorities",
+      "lowEffort": "Low effort",
+      "highEffort": "High effort",
+      "lowImpact": "Low impact",
+      "highImpact": "High impact",
+      "q1": "Plan",
+      "q2": "Do now",
+      "q3": "Skip",
+      "q4": "Delegate",
+      "itemA": "Task A",
+      "itemB": "Task B"
+    }
+  }
+}

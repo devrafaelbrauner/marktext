@@ -330,6 +330,8 @@ export const MUYA_DEFAULT_OPTIONS = {
     listIndentation: 1,
     frontmatterType: '-',
     mermaidTheme: 'default', // dark / forest / default
+    mermaidThemeOverride: null as string | null,
+    mermaidLook: 'classic' as 'classic' | 'handDrawn',
     vegaTheme: 'latimes', // excel / ggplot2 / quartz / vox / fivethirtyeight / dark / latimes
     plantumlServer: 'https://www.plantuml.com/plantuml',
     sequenceTheme: 'hand' as 'hand' | 'simple', // hand / simple

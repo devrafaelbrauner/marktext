@@ -171,6 +171,12 @@ export interface IFrontmatterState {
 export interface IDiagramMeta {
     lang: string; // 'yaml' | 'json';
     type: 'mermaid' | 'plantuml' | 'vega-lite' | 'flowchart' | 'sequence';
+    // The parsed fence, so serialization writes it back unchanged. `info` is
+    // the whole info string (its first word is `type`); absent for diagrams
+    // created in the editor, which serialize as ```type.
+    fenceChar?: '`' | '~';
+    fenceLength?: number;
+    info?: string;
 }
 
 export interface IDiagramState {

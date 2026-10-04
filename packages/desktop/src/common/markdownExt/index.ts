@@ -23,8 +23,16 @@ export {
 } from './inlineFields'
 export { lineOfOffset, maskDocument, type MaskedDocument } from './mask'
 export { findMarkdownLinks, parseLinkDestination, type LinkDestination, type MarkdownLinkMatch } from './markdownLinks'
-export { parseNote, type NoteMetadata, type ParsedLink } from './parseNote'
+export { findBodyTags, parseNote, type NoteMetadata, type ParsedLink } from './parseNote'
 export { createLinkResolver, resolveLinkTarget, type LinkResolver } from './resolve'
-export { findTags, isHexColour, isTagBoundary, matchTag, normalizeTag, type TagMatch } from './tags'
+export {
+  findTags,
+  isHexColour,
+  isTagBoundary,
+  matchTag,
+  normalizeTag,
+  TAG_CHARS_SOURCE,
+  type TagMatch
+} from './tags'
 export { countWords, getDailyNoteDate, toPlainText } from './text'
 export { matchWikilink, parseWikilink, parseWikilinkContent, WIKILINK_SOURCE, type ParsedWikilink } from './wikilinks'

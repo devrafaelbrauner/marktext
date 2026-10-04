@@ -1,0 +1,52 @@
+{
+  "name": "Calendário e notas diárias",
+  "description": "Notas diárias compatíveis com o Obsidian, com um calendário na barra lateral.",
+  "settings": {
+    "folder": {
+      "label": "Pasta das notas diárias",
+      "description": "Pasta do cofre onde as novas notas diárias são criadas. Deixe em branco para usar a raiz do cofre."
+    },
+    "format": {
+      "label": "Formato da data",
+      "description": "Nome do arquivo de cada nota diária, com os códigos do Obsidian (moment), como YYYY, MM e DD. Use / para criar subpastas, por exemplo YYYY/MM/YYYY-MM-DD."
+    },
+    "template": {
+      "label": "Arquivo de modelo",
+      "description": "Caminho no cofre de uma nota usada como conteúdo inicial, por exemplo Modelos/Diária. As variáveis do Obsidian entre chaves duplas são preenchidas: date, date:FORMATO, time, time:FORMATO, title, yesterday e tomorrow."
+    },
+    "weekStart": {
+      "label": "Primeiro dia da semana",
+      "description": "Dia em que as semanas do calendário começam.",
+      "sunday": "Domingo",
+      "monday": "Segunda-feira"
+    },
+    "openOnStartup": {
+      "label": "Abrir a nota de hoje ao iniciar",
+      "description": "Quando uma janela abrir com uma pasta, abre a nota diária de hoje."
+    }
+  },
+  "commands": {
+    "openToday": "Abrir nota de hoje",
+    "openPrevious": "Nota diária anterior",
+    "openNext": "Próxima nota diária",
+    "openCalendar": "Abrir calendário"
+  },
+  "panel": {
+    "title": "Calendário",
+    "previousMonth": "Mês anterior",
+    "nextMonth": "Próximo mês",
+    "today": "Hoje",
+    "goToToday": "Ir para hoje",
+    "hasNote": "nota diária, {count} palavras",
+    "noFolder": "Abra uma pasta para usar as notas diárias."
+  },
+  "notify": {
+    "noFolder": "Abra uma pasta para usar as notas diárias.",
+    "notDailyNote": "A nota ativa não é uma nota diária.",
+    "noPrevious": "Não há nota diária anterior.",
+    "noNext": "Não há nota diária posterior.",
+    "invalidFormat": "O formato de data \"{format}\" não gera um nome de arquivo. Confira as configurações das notas diárias.",
+    "templateMissing": "Não foi possível ler o modelo \"{path}\". A nota diária foi criada em branco.",
+    "openFailed": "Não foi possível abrir a nota diária: {message}"
+  }
+}

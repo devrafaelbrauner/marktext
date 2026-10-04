@@ -64,6 +64,11 @@ export interface LaunchOptions {
   // Preferences seeded into the throwaway user data directory before launch.
   // Preference.init() fills in every key that is left out.
   preferences?: Record<string, unknown>
+  // Plugin state seeded as `plugins.json` (`{ enabled: { id: bool }, settings: { id: { key: value } } }`).
+  plugins?: {
+    enabled?: Record<string, boolean>
+    settings?: Record<string, Record<string, unknown>>
+  }
 }
 
 export const launchElectron = async(
@@ -80,6 +85,14 @@ export const launchElectron = async(
     fs.writeFileSync(
       path.join(userDataDir, 'preferences.json'),
       JSON.stringify(options.preferences, null, 2),
+      'utf-8'
+    )
+  }
+  if (options.plugins) {
+    fs.mkdirSync(userDataDir, { recursive: true })
+    fs.writeFileSync(
+      path.join(userDataDir, 'plugins.json'),
+      JSON.stringify({ enabled: {}, settings: {}, ...options.plugins }, null, 2),
       'utf-8'
     )
   }

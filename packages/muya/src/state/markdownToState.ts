@@ -468,7 +468,7 @@ export class MarkdownToState {
 
         const diagramType = diagramTypeOfLang(lang);
         if (diagramType)
-            return createDiagramState(diagramType, value);
+            return createDiagramState(diagramType, value, { fenceChar, fenceLength, info });
 
         // walkTokens (utils/marked/walkTokens.ts) writes
         // codeBlockStyle = 'fenced' for fenced blocks and

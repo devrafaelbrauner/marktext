@@ -1,5 +1,7 @@
 import type Content from './block/base/content';
 import type Parent from './block/base/parent';
+import type DiagramBlock from './block/extra/diagram';
+import type DiagramPreview from './block/extra/diagram/diagramPreview';
 import type { TBlockPath } from './block/types';
 import type { IDecorationRange } from './editor/decorations';
 import type { IRangeEdit } from './editor/index';
@@ -133,6 +135,9 @@ const HEADING_LEVEL_BLOCK_NAMES = new Set(['paragraph', 'atx-heading', 'setext-h
 // block under tex_math_gfm, front matter, footnote definitions), which
 // a render-only rebuild from the already-parsed state cannot reflect — the
 // document must be re-parsed from markdown. See setOptions below.
+// Options read by the mermaid renderer; changing one re-renders mermaid diagrams.
+const MERMAID_OPTIONS: (keyof IMuyaOptions)[] = ['mermaidTheme', 'mermaidThemeOverride', 'mermaidLook'];
+
 const PARSE_AFFECTING_OPTIONS = new Set<keyof IMuyaOptions>([
     'texMathGfm',
     'texMathDollars',
@@ -379,6 +384,7 @@ export class Muya {
     }
 
     setOptions(options: Partial<IMuyaOptions>, forceRender = false) {
+        const mermaidChanged = MERMAID_OPTIONS.some(key => key in options && options[key] !== this.options[key]);
         Object.assign(this.options, options);
 
         if ('spellcheckEnabled' in options)
@@ -400,6 +406,9 @@ export class Muya {
 
         applyAppearance(this.domNode, options);
 
+        if (mermaidChanged)
+            this._rerenderMermaidDiagrams();
+
         if (!forceRender)
             return;
 
@@ -409,6 +418,18 @@ export class Muya {
         }
 
         this._forceRender();
+    }
+
+    private _rerenderMermaidDiagrams() {
+        this.editor.scrollPage?.depthFirstTraverse((node) => {
+            if (node.blockName !== 'diagram')
+                return;
+            // blockName identifies the block class.
+            const diagram = node as DiagramBlock;
+            const preview = diagram.attachments.head as DiagramPreview | null;
+            if (diagram.meta.type === 'mermaid')
+                void preview?.update();
+        });
     }
 
     private _forceRender() {

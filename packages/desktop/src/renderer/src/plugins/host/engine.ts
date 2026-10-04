@@ -15,6 +15,7 @@ import type {
   Disposable,
   EngineOptionRequests,
   InlineSyntaxRule,
+  MermaidEngineOptions,
   RangeEdit
 } from '../types'
 
@@ -263,13 +264,18 @@ export class EngineHost {
     }
   }
 
-  /** Effective engine options: each switch is on when any active request asks for it. */
-  getEngineOptions(): Required<EngineOptionRequests> {
+  /**
+   * Effective engine options: each switch is on when any active request asks
+   * for it; `mermaid` comes from the latest active request that sets it.
+   */
+  getEngineOptions(): Required<Omit<EngineOptionRequests, 'mermaid'>> & Pick<EngineOptionRequests, 'mermaid'> {
     let atxHeadingRequiresSpace = false
+    let mermaid: MermaidEngineOptions | undefined
     for (const request of this.optionRequests) {
       atxHeadingRequiresSpace ||= !!request.atxHeadingRequiresSpace
+      if (request.mermaid) mermaid = request.mermaid
     }
-    return { atxHeadingRequiresSpace }
+    return mermaid ? { atxHeadingRequiresSpace, mermaid } : { atxHeadingRequiresSpace }
   }
 
   /**
@@ -286,7 +292,12 @@ export class EngineHost {
   }
 
   private applyEngineOptions(): void {
-    this.muya?.setOptions(this.getEngineOptions())
+    const { atxHeadingRequiresSpace, mermaid } = this.getEngineOptions()
+    this.muya?.setOptions({
+      atxHeadingRequiresSpace,
+      mermaidThemeOverride: mermaid?.theme ?? null,
+      mermaidLook: mermaid?.look ?? 'classic'
+    })
   }
 
   private addKeyed<T>(map: Map<string, ListenerSet<T>>, key: string, listener: Listener<T>): Disposable {

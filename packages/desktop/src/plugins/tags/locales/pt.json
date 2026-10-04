@@ -1,0 +1,49 @@
+{
+  "name": "Tags",
+  "description": "#tags no estilo do Obsidian: destacadas no editor, sugeridas enquanto você digita, listadas em um painel da barra lateral e renomeáveis em todas as notas da pasta.",
+  "commands": {
+    "rename": "Tags: Renomear Tag…",
+    "showPanel": "Tags: Mostrar Painel de Tags"
+  },
+  "panel": {
+    "title": "Tags",
+    "filterPlaceholder": "Filtrar tags",
+    "clearFilter": "Limpar filtro",
+    "expandAll": "Expandir tudo",
+    "collapseAll": "Recolher tudo",
+    "rename": "Renomear tag…",
+    "noFolder": "Abra uma pasta para ver as tags dela.",
+    "indexing": "Indexando as notas…",
+    "empty": "Nenhuma tag ainda. Digite # seguido de uma palavra em uma nota.",
+    "noMatch": "Nenhuma tag corresponde a “{query}”.",
+    "notesTagged": "Notas com #{tag}",
+    "noNotes": "Nenhuma nota usa mais esta tag.",
+    "noteCount": "{count} notas",
+    "noteCountOne": "1 nota",
+    "closeNotes": "Fechar a lista de notas",
+    "loadFailed": "Não foi possível carregar as tags: {message}"
+  },
+  "rename": {
+    "title": "Renomear tag",
+    "from": "Tag",
+    "to": "Novo nome",
+    "nestedHint": "As tags aninhadas (#{tag}/…) também são renomeadas.",
+    "preview": "Pré-visualizar",
+    "apply": "Renomear",
+    "cancel": "Cancelar",
+    "back": "Voltar",
+    "invalidFrom": "“{tag}” não é uma tag válida.",
+    "invalidTo": "Use letras, números, _, - ou / (para aninhar), com pelo menos uma letra.",
+    "same": "O novo nome é igual ao atual.",
+    "scanning": "Procurando #{tag}…",
+    "nothing": "Nenhuma nota usa #{tag}.",
+    "summary": "#{from} → #{to}: {occurrences} ocorrência(s) em {files} nota(s).",
+    "occurrences": "{count}×",
+    "openInTab": "aberta em uma aba",
+    "tabNote": "Notas abertas em uma aba são alteradas na própria aba e ficam sem salvar até você salvá-las.",
+    "readFailed": "{file} foi ignorada: {message}",
+    "done": "#{from} renomeada para #{to} em {files} nota(s).",
+    "conflicts": "Alteradas no disco depois da pré-visualização, não renomeadas: {files}. Renomeie de novo para incluí-las.",
+    "failed": "Não foi possível renomear em {files}: {message}"
+  }
+}

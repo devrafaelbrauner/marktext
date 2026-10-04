@@ -116,6 +116,7 @@ export interface IRenderOptions {
     target: HTMLElement;
     vegaTheme: string;
     mermaidTheme: string;
+    mermaidLook?: 'classic' | 'handDrawn';
     plantumlServer: string;
     sequenceTheme: 'hand' | 'simple';
 }
@@ -147,6 +148,7 @@ export async function renderDiagram({
     target,
     vegaTheme,
     mermaidTheme,
+    mermaidLook = 'classic',
     plantumlServer,
     sequenceTheme,
 }: IRenderOptions) {
@@ -183,6 +185,7 @@ export async function renderDiagram({
             startOnLoad: false,
             securityLevel: 'strict',
             theme: mermaidTheme,
+            look: mermaidLook,
         });
         await render.parse(code);
         const { svg, bindFunctions } = await render.render(

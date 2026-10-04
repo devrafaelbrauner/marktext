@@ -3,10 +3,14 @@
  * (nesting) and emoji. A tag needs at least one letter or emoji, so `#2026`
  * and `#2026-10` are not tags.
  */
-// ZWJ and VS16 (emoji sequences) sit outside the class: inside it they would combine with neighbours.
-const TAG_CHARS = '(?:[\\p{L}\\p{M}\\p{N}_\\-/\\p{Extended_Pictographic}]|\\u200D|\\uFE0F)+'
-const TAG_AT_START = new RegExp(`^#(${TAG_CHARS})`, 'u')
-const TAG_GLOBAL = new RegExp(`#(${TAG_CHARS})`, 'gu')
+/**
+ * Regular expression source (for the `u` flag) of one or more tag body
+ * characters. ZWJ and VS16 (emoji sequences) sit outside the class: inside it
+ * they would combine with neighbours.
+ */
+export const TAG_CHARS_SOURCE = '(?:[\\p{L}\\p{M}\\p{N}_\\-/\\p{Extended_Pictographic}]|\\u200D|\\uFE0F)+'
+const TAG_AT_START = new RegExp(`^#(${TAG_CHARS_SOURCE})`, 'u')
+const TAG_GLOBAL = new RegExp(`#(${TAG_CHARS_SOURCE})`, 'gu')
 const HAS_LETTER = /[\p{L}\p{Extended_Pictographic}]/u
 const HEX_COLOUR = /^(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i
 const BOUNDARY = /[\s\p{P}\p{S}]/u

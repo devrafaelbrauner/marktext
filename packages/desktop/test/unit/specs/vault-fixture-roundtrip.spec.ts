@@ -6,10 +6,7 @@ import ExportMarkdown from '@muyajs/core/state/stateToMarkdown'
 
 // The fixture vault doubles as sample content for the editor-facing plugins,
 // so every note must survive muya's markdown → state → markdown unchanged.
-// Exception: muya serializes diagram blocks with backtick fences, so the
-// `~~~mermaid` note (kept to exercise tilde-fenced diagrams) is not identical.
 const VAULT = path.resolve(__dirname, '../../fixtures/vault')
-const TILDE_DIAGRAM_NOTES = [path.join('Diagrams', 'Flow.md')]
 
 const listMarkdown = (dir: string): string[] =>
   fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -33,14 +30,13 @@ const roundTrip = (markdown: string): string => {
 
 describe('fixture vault', () => {
   const notes = listMarkdown(VAULT)
-  const canonical = notes.filter((note) => !TILDE_DIAGRAM_NOTES.includes(path.relative(VAULT, note)))
 
   it('holds an Obsidian-like vault of 15–25 notes', () => {
     expect(notes.length).toBeGreaterThanOrEqual(15)
     expect(notes.length).toBeLessThanOrEqual(25)
   })
 
-  it.each(canonical.map((note) => [path.relative(VAULT, note), note]))('%s round-trips through muya unchanged', (_name, note) => {
+  it.each(notes.map((note) => [path.relative(VAULT, note), note]))('%s round-trips through muya unchanged', (_name, note) => {
     const markdown = fs.readFileSync(note, 'utf8')
     expect(roundTrip(markdown)).toBe(markdown)
   })

@@ -1,4 +1,14 @@
 import type { PluginLocales, PluginManifest } from '@shared/plugins/types'
+import { locales as dailyNotesLocales } from './daily-notes/locales'
+import { manifest as dailyNotesManifest } from './daily-notes/manifest'
+import { locales as dataviewLocales } from './dataview/locales'
+import { manifest as dataviewManifest } from './dataview/manifest'
+import { locales as iconsLocales } from './icons/locales'
+import { manifest as iconsManifest } from './icons/manifest'
+import { locales as mermaidPlusLocales } from './mermaid-plus/locales'
+import { manifest as mermaidPlusManifest } from './mermaid-plus/manifest'
+import { locales as tagsLocales } from './tags/locales'
+import { manifest as tagsManifest } from './tags/manifest'
 
 /**
  * Manifest and UI strings of one built-in plugin. Both processes read this
@@ -13,4 +23,10 @@ export interface BuiltinPluginInfo {
   locales: PluginLocales
 }
 
-export const BUILTIN_PLUGINS: BuiltinPluginInfo[] = []
+export const BUILTIN_PLUGINS: BuiltinPluginInfo[] = [
+  { manifest: iconsManifest, locales: iconsLocales },
+  { manifest: dailyNotesManifest, locales: dailyNotesLocales },
+  { manifest: mermaidPlusManifest, locales: mermaidPlusLocales },
+  { manifest: tagsManifest, locales: tagsLocales },
+  { manifest: dataviewManifest, locales: dataviewLocales }
+]

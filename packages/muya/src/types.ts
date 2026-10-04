@@ -21,6 +21,9 @@ export interface IMuyaOptions {
     frontMatter: boolean;
     frontmatterType: string; // '-' | '+' | ';' | '{';
     mermaidTheme: string;
+    /** Mermaid theme that wins over `mermaidTheme` (the app's light/dark default); null/absent = use `mermaidTheme`. */
+    mermaidThemeOverride?: string | null;
+    mermaidLook?: 'classic' | 'handDrawn';
     vegaTheme: string;
     plantumlServer: string;
     sequenceTheme: 'hand' | 'simple';

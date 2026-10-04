@@ -1,7 +1,7 @@
 import type { HeadingEntry, LinkReference, TaskEntry } from '@shared/plugins/types'
 import { getFrontMatterAliases, getFrontMatterTags, parseYamlObject } from './frontMatter'
 import { addInlineField, findBracketFields, matchLineField } from './inlineFields'
-import { lineOfOffset, maskDocument } from './mask'
+import { lineOfOffset, maskDocument, type MaskedDocument } from './mask'
 import { findMarkdownLinks } from './markdownLinks'
 import { findTags } from './tags'
 import { countWords, toPlainText } from './text'
@@ -47,21 +47,18 @@ const isParagraphLine = (line: string): boolean =>
   !/^\s*[|<]/.test(line)
 
 /**
- * Extracts note metadata from markdown source. Pure and total: malformed
- * markdown or YAML never throws. Lines and columns are 0-based and refer to
- * the source with its line endings normalized (CRLF counts as one break).
+ * Wikilinks and markdown links of a masked document in source order, plus
+ * the inline-masked text with those links and bare URLs blanked as well:
+ * the text body tags are searched in.
  */
-export const parseNote = (markdown: string): NoteMetadata => {
-  const doc = maskDocument(markdown)
-  const { text, lineStarts, frontMatterEndLine } = doc
+const scanLinks = (doc: MaskedDocument): { found: Array<{ offset: number; link: ParsedLink }>; tagText: string } => {
+  const { text, lineStarts } = doc
   const position = (offset: number): { line: number; column: number } => {
     const line = lineOfOffset(lineStarts, offset)
     return { line, column: offset - lineStarts[line] }
   }
 
-  const frontmatter = doc.frontMatter ? parseYamlObject(doc.frontMatter.yaml) : null
-
-  // Links: wikilinks first, then markdown links in text where wikilinks are blanked.
+  // Wikilinks first, then markdown links in text where wikilinks are blanked.
   const linkMasked = doc.inline.split('')
   const found: Array<{ offset: number; link: ParsedLink }> = []
   const wikilinkRegex = new RegExp(WIKILINK_SOURCE, 'g')
@@ -90,10 +87,34 @@ export const parseNote = (markdown: string): NoteMetadata => {
     })
   }
   found.sort((a, b) => a.offset - b.offset)
+  const tagText = tagMasked.join('').replace(URL, (url) => ' '.repeat(url.length))
+  return { found, tagText }
+}
+
+/**
+ * Body tags (front matter excluded) with the UTF-16 offset of their `#` in
+ * `text`, the source with line endings normalized to LF. These are exactly
+ * the body occurrences `parseNote` reports: code, math, HTML, links and URLs
+ * never yield one.
+ */
+export const findBodyTags = (markdown: string): { text: string; tags: Array<{ index: number; tag: string }> } => {
+  const doc = maskDocument(markdown)
+  return { text: doc.text, tags: findTags(scanLinks(doc).tagText) }
+}
+
+/**
+ * Extracts note metadata from markdown source. Pure and total: malformed
+ * markdown or YAML never throws. Lines and columns are 0-based and refer to
+ * the source with its line endings normalized (CRLF counts as one break).
+ */
+export const parseNote = (markdown: string): NoteMetadata => {
+  const doc = maskDocument(markdown)
+  const { text, lineStarts, frontMatterEndLine } = doc
+
+  const frontmatter = doc.frontMatter ? parseYamlObject(doc.frontMatter.yaml) : null
+  const { found, tagText } = scanLinks(doc)
 
   // Tags: front matter first, then body tags outside links and URLs.
-  let tagText = tagMasked.join('')
-  tagText = tagText.replace(URL, (url) => ' '.repeat(url.length))
   const tags: string[] = []
   const seenTags = new Set<string>()
   for (const tag of [...getFrontMatterTags(frontmatter), ...findTags(tagText).map((t) => t.tag)]) {

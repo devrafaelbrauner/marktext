@@ -3,7 +3,7 @@
 import type Content from '../../block/base/content';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Muya } from '../../muya';
-import { lineAtPoint, resolveEndpoint } from '../dom';
+import { getNodeAndOffset, lineAtPoint, resolveEndpoint } from '../dom';
 
 const editors: Muya[] = [];
 const hosts: HTMLElement[] = [];
@@ -73,6 +73,21 @@ describe('resolveEndpoint', () => {
         expect(resolveEndpoint(textNodeIn(block.domNode!), 4)).toEqual({ offset: 4, block, path: block.path });
     });
 
+    // An element endpoint counts child nodes: a range collapsed at the end of
+    // the content span (`span.mu-plain-text` is its single child) is offset 1
+    // in DOM terms but the end of the text.
+    it('maps an element endpoint to the text length of the children before it', () => {
+        const muya = boot('alpha **beta** gamma\n');
+        const block = content(muya, 'alpha **beta** gamma');
+        const dom = block.domNode!;
+        const strong = dom.querySelector('strong')!;
+
+        expect(resolveEndpoint(dom, dom.childNodes.length)).toEqual({ offset: 20, block, path: block.path });
+        expect(resolveEndpoint(dom, 0)?.offset).toBe(0);
+        expect(resolveEndpoint(dom, 1)?.offset).toBe(dom.childNodes[0].textContent!.length);
+        expect(resolveEndpoint(strong, strong.childNodes.length)?.offset).toBe(12);
+    });
+
     it.each([
         { name: 'a table, which owns no editable leaf', markdown: 'alpha\n\n| h1 | h2 |\n| -- | -- |\n| c1 | c2 |\n', selector: 'figure.mu-table' },
         { name: 'a task-list item, whose first child is the checkbox', markdown: 'alpha\n\n- [ ] task\n', selector: 'li.mu-task-list-item' },
@@ -107,7 +122,9 @@ describe('lineAtPoint', () => {
     ])('covers only the $name line of a code block', ({ caret, start, end }) => {
         const muya = boot('```js\nline one\nline two\nline three\n```\n');
         const block = content(muya, 'line one\nline two\nline three');
-        caretLandsOn(block.domNode!, caret);
+        // A browser reports a text node and a character offset into it.
+        const position = getNodeAndOffset(block.domNode!, caret);
+        caretLandsOn(position.node, position.offset);
 
         expect(lineAtPoint(document, 0, 0)).toEqual({ block, start, end });
     });

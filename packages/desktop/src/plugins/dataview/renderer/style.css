@@ -1,0 +1,100 @@
+/* Dataview query results, rendered under ```dataview code blocks. */
+.dataview {
+  font-size: 0.95em;
+  color: var(--editor-color);
+}
+
+.dataview .dataview-status,
+.dataview .dataview-note {
+  margin: 0.25em 0;
+  color: var(--editor-color-50);
+}
+
+.dataview .dataview-error {
+  margin: 0.25em 0;
+  color: var(--delete-color);
+  white-space: pre-wrap;
+}
+
+.dataview .dataview-table-wrap {
+  max-height: 32em;
+  overflow: auto;
+  border: 1px solid var(--table-border-color);
+  border-radius: 3px;
+}
+
+.dataview .dataview-table {
+  width: 100%;
+  margin: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.dataview .dataview-table th,
+.dataview .dataview-table td {
+  padding: 4px 10px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--table-border-color);
+}
+
+.dataview .dataview-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-weight: 600;
+  background: var(--editor-bg-color);
+}
+
+.dataview .dataview-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.dataview .dataview-list,
+.dataview .dataview-task-list {
+  margin: 0.25em 0;
+  padding-left: 1.5em;
+}
+
+.dataview .dataview-task-list {
+  list-style: none;
+  padding-left: 0.25em;
+}
+
+.dataview .dataview-task-file {
+  margin: 0.5em 0 0.25em;
+  font-weight: 600;
+}
+
+.dataview .dataview-task input[type='checkbox'] {
+  margin: 0 0.4em 0 0;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.dataview .dataview-task-checked .dataview-task-text {
+  color: var(--editor-color-50);
+  text-decoration: line-through;
+}
+
+.dataview .dataview-link {
+  color: var(--link-color, var(--theme-color));
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.dataview a.dataview-link:hover,
+.dataview a.dataview-link:focus-visible {
+  text-decoration: underline;
+}
+
+.dataview a.dataview-link:focus-visible,
+.dataview .dataview-task input[type='checkbox']:focus-visible {
+  outline: 2px solid var(--theme-color);
+  outline-offset: 1px;
+}
+
+.dataview .dataview-link-unresolved {
+  color: var(--editor-color-50);
+  cursor: default;
+}

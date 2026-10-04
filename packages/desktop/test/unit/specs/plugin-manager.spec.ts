@@ -220,7 +220,11 @@ describe('renderer PluginManager', () => {
     expect(harness.muya.setDecorations).toHaveBeenCalledWith('full/grammar', expect.any(Array))
     expect(harness.registries.registerInlineSyntax).toHaveBeenCalledTimes(1)
     expect(harness.engine.getEngineOptions()).toEqual({ atxHeadingRequiresSpace: true })
-    expect(harness.muya.setOptions).toHaveBeenLastCalledWith({ atxHeadingRequiresSpace: true })
+    expect(harness.muya.setOptions).toHaveBeenLastCalledWith({
+      atxHeadingRequiresSpace: true,
+      mermaidThemeOverride: null,
+      mermaidLook: 'classic'
+    })
     expect(harness.services.registerTabView).toHaveBeenCalledWith(seen.ctx, expect.objectContaining({ id: 'kanban' }))
     expect(harness.eventListeners.size).toBe(1)
     await flush()
@@ -249,7 +253,11 @@ describe('renderer PluginManager', () => {
     expect(harness.unregister.codeBlock).toHaveBeenCalledTimes(1)
     expect(harness.unregister.completion).toHaveBeenCalledTimes(1)
     expect(harness.engine.getEngineOptions()).toEqual({ atxHeadingRequiresSpace: false })
-    expect(harness.muya.setOptions).toHaveBeenLastCalledWith({ atxHeadingRequiresSpace: false })
+    expect(harness.muya.setOptions).toHaveBeenLastCalledWith({
+      atxHeadingRequiresSpace: false,
+      mermaidThemeOverride: null,
+      mermaidLook: 'classic'
+    })
     expect(harness.tabViewDisposals).toHaveBeenCalledTimes(1)
     expect(harness.eventListeners.size).toBe(0)
   })
@@ -410,9 +418,17 @@ describe('engine host', () => {
     engine.requestEngineOptions({ atxHeadingRequiresSpace: false })
     const muya = createFakeMuya()
     engine.attach(muya as unknown as EngineInstance)
-    expect(muya.setOptions).toHaveBeenLastCalledWith({ atxHeadingRequiresSpace: true })
+    expect(muya.setOptions).toHaveBeenLastCalledWith({
+      atxHeadingRequiresSpace: true,
+      mermaidThemeOverride: null,
+      mermaidLook: 'classic'
+    })
     a.dispose()
-    expect(muya.setOptions).toHaveBeenLastCalledWith({ atxHeadingRequiresSpace: false })
+    expect(muya.setOptions).toHaveBeenLastCalledWith({
+      atxHeadingRequiresSpace: false,
+      mermaidThemeOverride: null,
+      mermaidLook: 'classic'
+    })
   })
 })
 
