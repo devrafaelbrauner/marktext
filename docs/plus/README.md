@@ -5,6 +5,22 @@ built-in, Obsidian-compatible plugins plus a pt-BR grammar checker backed by
 LanguageTool. Generic engine and platform pieces are written so they can be
 proposed upstream; feature plugins stay in this fork.
 
+## Documentation
+
+User guide, Brazilian Portuguese first:
+[guia](guia/README.md) (overview, build, `--safe`, data files, Preferences →
+Plugins, one page per built-in, Obsidian round-trip). English:
+[guide](guide/README.md).
+
+Developer guide: [desenvolvimento](desenvolvimento/README.md) (pt-BR) and
+[development](development/README.md) (architecture, built-in authoring, API
+reference, tests). Community plugins are the agreed M7 design only; the SDK
+reference is [sdk/README.md](sdk/README.md) and
+[sdk/README.en.md](sdk/README.en.md), not duplicated here.
+
+The pages below stay the decision record. Behaviour that the code actually
+ships is in the guides; where they differ, the guides cite the file.
+
 ## Decisions
 
 | #   | Decision                                                                                      | Consequence                                                                                              |
@@ -52,10 +68,17 @@ hosts trusted services such as the vault index.
 3. Everything registered through `ctx` is disposed automatically when the plugin
    is disabled; `--safe` starts the app with every plugin disabled.
 
+The longer version, including the index-worker glob, is
+[desenvolvimento/plugin-embutido.md](desenvolvimento/plugin-embutido.md)
+([English](development/builtin-plugin.md)).
+
 ## Grammar checker (`grammar`)
 
 LanguageTool-backed spelling/grammar/style checking, pt-BR by default; off until
 enabled in Preferences → Plugins.
+
+User pages: [guia/plugins/corretor.md](guia/plugins/corretor.md),
+[guide/plugins/grammar.md](guide/plugins/grammar.md).
 
 - **Where text goes.** Only the main part talks to the network (`ctx.net.fetch`):
   Premium (`api.languagetoolplus.com`, username + API key from `secrets.json`),
