@@ -1,10 +1,12 @@
+import type { PluginLocales, PluginManifest } from '@shared/plugins/types'
+import { locales as grammarLocales } from '@plugins/grammar/locales'
+import { manifest as grammarManifest } from '@plugins/grammar/manifest'
+import { locales as kanbanLocales } from '@plugins/kanban/locales'
+import { manifest as kanbanManifest } from '@plugins/kanban/manifest'
+import { locales as linksLocales } from '@plugins/links/locales'
+import { manifest as linksManifest } from '@plugins/links/manifest'
 import { locales as pdfReaderLocales } from '@plugins/pdf-reader/locales'
 import { manifest as pdfReaderManifest } from '@plugins/pdf-reader/manifest'
-import type { PluginLocales, PluginManifest } from '@shared/plugins/types'
-import { manifest as grammarManifest } from '@plugins/grammar/manifest'
-import { locales as grammarLocales } from '@plugins/grammar/locales'
-import { locales as linksLocales } from './links/locales'
-import { manifest as linksManifest } from './links/manifest'
 
 /**
  * Manifest and UI strings of one built-in plugin. Both processes read this
@@ -20,7 +22,8 @@ export interface BuiltinPluginInfo {
 }
 
 export const BUILTIN_PLUGINS: BuiltinPluginInfo[] = [
-  { manifest: grammarManifest, locales: grammarLocales },
   { manifest: linksManifest, locales: linksLocales },
-  { manifest: pdfReaderManifest, locales: pdfReaderLocales }
+  { manifest: kanbanManifest, locales: kanbanLocales },
+  { manifest: pdfReaderManifest, locales: pdfReaderLocales },
+  { manifest: grammarManifest, locales: grammarLocales }
 ]
