@@ -91,25 +91,18 @@ export function conflict(arr1: [number, number], arr2: [number, number]) {
     return !(arr1[1] < arr2[0] || arr2[1] < arr1[0]);
 }
 
-export function union({ start: tStart, end: tEnd }: IUnion, { start: lStart, end: lEnd, active }: IUnion) {
-    if (!(tEnd <= lStart || lEnd <= tStart)) {
-        if (lStart < tStart) {
-            return {
-                start: tStart,
-                end: tEnd < lEnd ? tEnd : lEnd,
-                active,
-            };
-        }
-        else {
-            return {
-                start: lStart,
-                end: tEnd < lEnd ? tEnd : lEnd,
-                active,
-            };
-        }
-    }
+// The overlap of `light` with the target range; every other field of `light`
+// (search state, decorations) is carried over.
+export function union<T extends IUnion>({ start: tStart, end: tEnd }: IUnion, light: T): T | null {
+    const { start: lStart, end: lEnd } = light;
+    if (tEnd <= lStart || lEnd <= tStart)
+        return null;
 
-    return null;
+    return {
+        ...light,
+        start: lStart < tStart ? tStart : lStart,
+        end: tEnd < lEnd ? tEnd : lEnd,
+    };
 }
 
 // https://github.com/jashkenas/underscore

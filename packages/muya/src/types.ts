@@ -38,6 +38,7 @@ export interface IMuyaOptions {
     softNewlineAsSpace: boolean;
     autoMoveCheckedToEnd: boolean;
     disableHtml: boolean;
+    atxHeadingRequiresSpace: boolean;
     locale: {
         name: string;
         resource: {

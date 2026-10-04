@@ -1,7 +1,11 @@
+import type { TCodeBlockExports } from '../../codeBlockPreview/export';
 import type { ILexOption } from './types';
 import { Marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 import Prism from 'prismjs';
+import { codeBlockExportExtension } from '../../codeBlockPreview/export';
+import { hasCodeBlockRenderers } from '../../codeBlockPreview/registry';
+import { customInlineMarkedExtension, hasInlineSyntaxRules } from '../../inlineRenderer/customSyntax';
 import cjkEmStrongExtension from './extensions/cjkEmStrong';
 import emojiExtension from './extensions/emoji';
 import footnoteExtension from './extensions/footnote';
@@ -35,7 +39,10 @@ function highlight(code: string, lang: string) {
     return Prism.highlight(code, grammar, lang);
 }
 
-export function getHighlightHtml(src: string, options: ILexOption = {}) {
+// `codeBlockExports`: awaited `exportHtml` results of registered code block
+// renderers (see `resolveCodeBlockExports`); without them only synchronous
+// exporters apply.
+export function getHighlightHtml(src: string, options: ILexOption = {}, codeBlockExports?: TCodeBlockExports) {
     options = Object.assign({}, DEFAULT_OPTIONS, options);
     const { footnote, frontMatter, texMathDollars, texMathGfm, texMathSingleBackslash, texMathDoubleBackslash, superSubScript }
         = options;
@@ -98,6 +105,13 @@ export function getHighlightHtml(src: string, options: ILexOption = {}) {
 
     if (footnote)
         marked.use(footnoteExtension());
+
+    // Opt-in: with nothing registered the output is exactly marked's.
+    if (hasCodeBlockRenderers())
+        marked.use(codeBlockExportExtension(codeBlockExports));
+
+    if (hasInlineSyntaxRules())
+        marked.use(customInlineMarkedExtension());
 
     let html = '';
 

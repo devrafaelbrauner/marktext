@@ -107,6 +107,7 @@ export const CLASS_NAMES = genUpper2LowerKeyHash([
     'MU_CONTAINER_ICON',
     'MU_COPY_HEADER_LINK',
     'MU_COPY_REMOVE',
+    'MU_DECORATION',
     'MU_DISABLE_HTML_RENDER',
     'MU_EMOJI_MARKED_TEXT',
     'MU_EMOJI_MARKER',
@@ -367,6 +368,9 @@ export const MUYA_DEFAULT_OPTIONS = {
     autoMoveCheckedToEnd: false,
     // Whether HTML rendering is disabled or not.
     disableHtml: false,
+    // `#` only promotes a paragraph to an ATX heading once followed by a space
+    // or tab, so typing `#tag` at a paragraph start keeps it a paragraph.
+    atxHeadingRequiresSpace: false,
     locale: en,
 };
 

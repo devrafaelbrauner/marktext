@@ -1,3 +1,4 @@
+import type { TInlineSyntaxPrecedence } from './customSyntax';
 import type { IEmphasisSpan } from './emphasis';
 import type { BeginRules, InlineRules } from './rules';
 import type {
@@ -8,6 +9,7 @@ import type {
 } from './types';
 import escapeCharactersMap from '../config/escapeCharacter';
 import { isLengthEven, union } from '../utils';
+import { matchInlineSyntax } from './customSyntax';
 import { scanEmphasisSpans } from './emphasis';
 import { parseSrcAndTitle } from './linkDestination';
 import { BACKSLASH_MATH_RULES, beginRules, emojiValidateRules, inlineRules, linkValidateRules } from './rules';
@@ -777,12 +779,45 @@ function tryTailHeader(state: ILexState): boolean {
     return true;
 }
 
+// Rules from `registerInlineSyntax`, one handler per precedence slot.
+function customSyntaxHandler(precedence: TInlineSyntaxPrecedence) {
+    return (state: ILexState): boolean => {
+        const hit = matchInlineSyntax(precedence, state.src, state.originSrc[state.pos - state.basePos - 1] ?? '');
+        if (!hit)
+            return false;
+
+        const { rule, match } = hit;
+        const raw = state.src.substring(0, match.length);
+        pushPending(state);
+        state.tokens.push({
+            type: 'custom_inline',
+            name: rule.name,
+            raw,
+            parent: state.tokens,
+            range: {
+                start: state.pos,
+                end: state.pos + match.length,
+            },
+            contentStart: state.pos + match.contentStart,
+            contentEnd: state.pos + match.contentEnd,
+            data: { ...match.data },
+            noSpellcheck: !!rule.noSpellcheck,
+        });
+        state.src = state.src.substring(match.length);
+        state.pos += match.length;
+
+        return true;
+    };
+}
+
 // The fixed, priority-ordered inline-rule handler list the tokenizer loop
 // iterates. This array order IS the rule-precedence contract.
 const INLINE_HANDLERS: ReadonlyArray<(state: ILexState) => boolean> = [
     tryBackslashMath,
     tryBacklash,
+    customSyntaxHandler('beforeEmphasis'),
     tryStrongEm,
+    customSyntaxHandler('beforeEmoji'),
     tryChunks,
     trySuperSubScript,
     tryFootnote,
@@ -794,6 +829,7 @@ const INLINE_HANDLERS: ReadonlyArray<(state: ILexState) => boolean> = [
     tryAutoLinkExtension,
     tryAutoLink,
     tryHtmlTag,
+    customSyntaxHandler('afterHtml'),
     trySoftLineBreak,
     tryHardLineBreak,
     tryTailHeader,
@@ -985,6 +1021,13 @@ export function tokensToPlainText(tokens: Token[]): string {
 
             case 'auto_link_extension':
                 result += token.raw;
+                break;
+
+            case 'custom_inline':
+                result += token.raw.substring(
+                    token.contentStart - token.range.start,
+                    token.contentEnd - token.range.start,
+                );
                 break;
 
             case 'soft_line_break':

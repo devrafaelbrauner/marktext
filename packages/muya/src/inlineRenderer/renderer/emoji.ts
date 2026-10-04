@@ -3,6 +3,7 @@ import type { CodeEmojiMathToken, ISyntaxRenderOptions } from '../types';
 import type Renderer from './index';
 import { CLASS_NAMES } from '../../config';
 import { validEmoji } from '../../utils/emoji';
+import { highlightsIn, wrapDecorations } from './highlight';
 
 // render token of emoji to vnode
 export default function emoji(
@@ -18,42 +19,25 @@ export default function emoji(
             ? `span.${finalClass}.${CLASS_NAMES.MU_INLINE_RULE}.${CLASS_NAMES.MU_EMOJI_MARKED_TEXT}`
             : `span.${CLASS_NAMES.MU_INLINE_RULE}.${CLASS_NAMES.MU_EMOJI_MARKED_TEXT}`;
 
-    let startMarkerSelector = `span.${finalClass}.${CLASS_NAMES.MU_EMOJI_MARKER}`;
-    let endMarkerSelector = startMarkerSelector;
-    let content: string | (VNode | string)[] = token.content;
-    let pos = rStart + token.marker.length;
-
-    if (token.highlights && token.highlights.length) {
-        content = [];
-
-        for (const light of token.highlights) {
-            const { active } = light;
-            let { start, end } = light;
-            const HIGHLIGHT_CLASS_NAME = this.getHighlightClassName(!!active);
-            if (start === rStart) {
-                startMarkerSelector += `.${HIGHLIGHT_CLASS_NAME}`;
-                start++;
-            }
-
-            if (end === rEnd) {
-                endMarkerSelector += `.${HIGHLIGHT_CLASS_NAME}`;
-                end--;
-            }
-
-            if (pos < start)
-                content.push(block.text.substring(pos, start));
-
-            if (start < end) {
-                content.push(
-                    h(`span.${HIGHLIGHT_CLASS_NAME}`, block.text.substring(start, end)),
-                );
-            }
-            pos = end;
+    const markerSelector = `span.${finalClass}.${CLASS_NAMES.MU_EMOJI_MARKER}`;
+    const markerLen = token.marker.length;
+    // A search match over a marker colours the marker span itself; decorations
+    // wrap the marker text.
+    const marker = (mStart: number, mEnd: number) => {
+        let selector = markerSelector;
+        let child: VNode | string = token.marker;
+        for (const light of highlightsIn(token, mStart, mEnd)) {
+            if (!light.decorationOnly)
+                selector += `.${this.getHighlightClassName(!!light.active)}`;
+            if (light.decorations)
+                child = wrapDecorations(h, light.decorations, token.marker);
         }
 
-        if (pos < rEnd - token.marker.length)
-            content.push(block.text.substring(pos, rEnd - 1));
-    }
+        return h(selector, [child]);
+    };
+    const content: string | (VNode | string)[] = token.highlights && token.highlights.length
+        ? this.highlight(h, block, rStart + markerLen, rEnd - markerLen, token)
+        : token.content;
 
     const emojiVNode = validation
         ? h(
@@ -71,8 +55,8 @@ export default function emoji(
         : h(contentSelector, content);
 
     return [
-        h(startMarkerSelector, token.marker),
+        marker(rStart, rStart + markerLen),
         emojiVNode,
-        h(endMarkerSelector, token.marker),
+        marker(rEnd - markerLen, rEnd),
     ];
 }

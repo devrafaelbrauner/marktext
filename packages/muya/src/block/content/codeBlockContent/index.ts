@@ -6,6 +6,7 @@ import type {
     IDiagramState,
     IFrontmatterState,
 } from '../../../state/types';
+import type CodeBlock from '../../commonMark/codeBlock';
 import type Code from '../../commonMark/codeBlock/code';
 import type HTMLPreview from '../../commonMark/html/htmlPreview';
 import { CLASS_NAMES, EVENT_KEYS, HTML_TAGS, VOID_HTML_TAGS } from '../../../config';
@@ -165,6 +166,9 @@ class CodeBlockContent extends Content {
         // attached, when outContainer cannot resolve its parent chain.
         if (!this._codeContainer)
             return;
+        // Registered-renderer previews debounce and dedupe on their own.
+        if (this.outContainer?.blockName === 'code-block')
+            (this.outContainer as CodeBlock).syncPreview();
         // Only re-render when the text actually changed. update() is called on
         // every render pass; without this guard a diagram's create-pass render
         // and update()'s render race (DiagramPreview.update is async), leaving

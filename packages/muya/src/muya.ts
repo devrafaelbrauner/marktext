@@ -1,17 +1,22 @@
 import type Content from './block/base/content';
 import type Parent from './block/base/parent';
 import type { TBlockPath } from './block/types';
+import type { IDecorationRange } from './editor/decorations';
+import type { IRangeEdit } from './editor/index';
 import type { Listener } from './event/types';
 import type { ILocale } from './i18n/types';
+import type { IHighlight } from './inlineRenderer/types';
 import type { IReplaceOption, ISearchOption } from './search/types';
 import type { IIndexCursor } from './selection/offsetCursor';
 import type { IHistorySelection, IPublicCursorInput } from './selection/types';
 import type { ITocItem } from './state/getTOC';
 import type { IBulletListState, IOrderListState, ITableState, ITaskListState, TState } from './state/types';
 import type { IMuyaOptions, Nullable } from './types';
+import type { ICheckableBlock } from './utils/annotation';
 import Format from './block/base/format';
 import { canTurnInto, insertBlockBelowByLabel, insertFrontMatterAtStart, replaceBlockByLabel } from './block/blockTransforms';
 import { ScrollPage } from './block/scrollPage';
+import { destroyCodeBlockPreviews, onCodeBlockRenderersChange, refreshCodeBlockPreviews } from './codeBlockPreview';
 import emptyStates from './config/emptyStates';
 import {
     CLASS_NAMES,
@@ -32,6 +37,7 @@ import {
 import { isAnyListState, isAtxHeadingState, isCodeBlockState, isSetextHeadingState } from './state/types';
 import { Ui } from './ui/ui';
 import { deepClone } from './utils';
+import { getCheckableBlocks } from './utils/annotation';
 import { encodeImageSrc } from './utils/image';
 import './assets/styles/blockSyntax.css';
 import './assets/styles/index.css';
@@ -161,6 +167,7 @@ export class Muya {
     public i18n: I18n;
 
     private _uiPlugins: Record<string, unknown> = {};
+    private _unsubscribeCodeBlockRenderers: (() => void) | null = null;
 
     constructor(element: HTMLElement, options?: Partial<IMuyaOptions>) {
         this.options = Object.assign({}, MUYA_DEFAULT_OPTIONS, options ?? {});
@@ -184,6 +191,7 @@ export class Muya {
 
     init() {
         this.editor.init();
+        this._unsubscribeCodeBlockRenderers = onCodeBlockRenderersChange(() => refreshCodeBlockPreviews(this));
 
         // UI plugins
         if (Muya.plugins.length) {
@@ -281,6 +289,46 @@ export class Muya {
         return this.editor.searchModule.replace(replaceValue, opt);
     }
 
+    /**
+     * Replaces the ranges of decoration layer `layerId`. Decorations are
+     * render-only marks; a block's decorations are dropped when its text
+     * changes. Clicking one emits `decoration-click` (`IDecorationClickPayload`).
+     */
+    setDecorations(layerId: string, ranges: IDecorationRange[]) {
+        this.editor.decorations.set(layerId, ranges);
+    }
+
+    /** Removes decoration layer `layerId`, or every layer when omitted. */
+    clearDecorations(layerId?: string) {
+        this.editor.decorations.clear(layerId);
+    }
+
+    /**
+     * Replaces a range of one block's text as a single undo step, only if it
+     * still reads `edit.expected`. Returns whether the edit was applied.
+     */
+    replaceRange(edit: IRangeEdit): boolean {
+        return this.editor.replaceRange(edit);
+    }
+
+    /**
+     * Inserts `text` at the caret of the last selected content block,
+     * replacing its selection, as one undo step. Returns false when there is
+     * no caret inside a content block.
+     */
+    insertText(text: string): boolean {
+        return this.editor.insertText(text);
+    }
+
+    /**
+     * Proofreadable blocks (paragraphs, headings, table cells), optionally
+     * restricted to `paths`, each with an annotation that separates prose from
+     * markup. Flushes queued edits first.
+     */
+    getCheckableBlocks(paths?: TBlockPath[]): ICheckableBlock[] {
+        return getCheckableBlocks(this, paths);
+    }
+
     setContent(content: TState[] | string, autoFocus = false) {
         this.editor.setContent(content, autoFocus);
     }
@@ -365,7 +413,7 @@ export class Muya {
 
     private _forceRender() {
         const selection = this.editor.selection.getSelection();
-        this.editor.scrollPage?.updateState(this.getState());
+        this.editor.decorations.preserveAcross(() => this.editor.scrollPage?.updateState(this.getState()));
 
         if (selection && selection.isSelectionInSameBlock) {
             const begin = Math.min(selection.anchor.offset, selection.focus.offset);
@@ -628,6 +676,44 @@ export class Muya {
      */
     invalidateImageCache() {
         this.editor.inlineRenderer.invalidateImageCache();
+    }
+
+    /**
+     * Re-renders every inline-formatted block (paragraphs, headings, table
+     * cells) from the current text, keeping the caret and search highlights.
+     * Does not touch state or history. Call after `registerInlineSyntax` /
+     * its unregister so already rendered documents pick the change up.
+     */
+    refreshInlineRendering() {
+        const { scrollPage, searchModule, activeContentBlock } = this.editor;
+        if (!scrollPage)
+            return;
+
+        const highlightsByBlock = new Map<Content, IHighlight[]>();
+        searchModule.matches.forEach(({ block, start, end }, i) => {
+            const list = highlightsByBlock.get(block) ?? [];
+            list.push({ start, end, active: i === searchModule.index });
+            highlightsByBlock.set(block, list);
+        });
+
+        const selection = this.editor.selection.getSelection();
+        const caret = selection?.isSelectionInSameBlock && selection.anchor.block === activeContentBlock
+            ? { anchor: selection.anchor.offset, focus: selection.focus.offset }
+            : null;
+
+        this.editor.inlineRenderer.batch(() => {
+            scrollPage.breadthFirstTraverse((node) => {
+                if (!(node instanceof Format))
+                    return;
+                const cursor = caret && node === activeContentBlock
+                    ? { block: node, anchor: { offset: caret.anchor }, focus: { offset: caret.focus } }
+                    : undefined;
+                node.update(cursor, highlightsByBlock.get(node) ?? []);
+            });
+        });
+
+        if (caret && activeContentBlock instanceof Format)
+            activeContentBlock.setCursor(caret.anchor, caret.focus);
     }
 
     /**
@@ -1682,6 +1768,9 @@ export class Muya {
     destroy() {
         this.eventCenter.detachAllDomEvents();
         this.eventCenter.unsubscribeAll();
+        this._unsubscribeCodeBlockRenderers?.();
+        this._unsubscribeCodeBlockRenderers = null;
+        destroyCodeBlockPreviews(this);
         // this.domNode[BLOCK_DOM_PROPERTY] = null;
         if (this.domNode.remove)
             this.domNode.remove();

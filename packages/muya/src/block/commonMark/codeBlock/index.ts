@@ -2,6 +2,8 @@ import type { Muya } from '../../../muya';
 import type { ICodeBlockState } from '../../../state/types';
 import type { TBlockPath } from '../../types';
 import diff from 'fast-diff';
+import { CodeBlockPreview } from '../../../codeBlockPreview/preview';
+import { getCodeBlockRenderer } from '../../../codeBlockPreview/registry';
 import { diffToTextOp, firstWordOfInfo } from '../../../utils';
 import { operateClassName } from '../../../utils/dom';
 import logger from '../../../utils/logger';
@@ -36,6 +38,10 @@ class CodeBlock extends Parent {
     // does not change the rendering skips the rebuild. Undefined until the
     // first render, which therefore always happens.
     private _renderedGrammar: string | undefined;
+
+    // Preview from a `registerCodeBlockRenderer` renderer, if one claims the
+    // fence language.
+    private _preview: CodeBlockPreview | null = null;
 
     static create(muya: Muya, state: ICodeBlockState) {
         const codeBlock = new CodeBlock(muya, state);
@@ -98,6 +104,7 @@ class CodeBlock extends Parent {
             operateClassName(this.domNode!, 'remove', 'mu-indented-code');
             operateClassName(this.domNode!, 'add', 'mu-fenced-code');
         }
+        this.syncPreview();
 
         // Render when the grammar the block is drawn with changes — including
         // to none, which is what clearing the language or naming one Prism does
@@ -133,6 +140,50 @@ class CodeBlock extends Parent {
                 debug.warn(err);
                 rerenderIfGrammarChanged();
             });
+    }
+
+    /**
+     * Attaches, swaps, detaches or refreshes the registered-renderer preview
+     * for the current language, text and registry. Cheap when nothing changed.
+     */
+    syncPreview() {
+        const lang = this.meta.type === 'fenced'
+            ? firstWordOfInfo(this.meta.lang ?? '').toLowerCase()
+            : '';
+        const inEditor = !!this.domNode && this.muya.domNode.contains(this.domNode);
+        const renderer = lang && inEditor ? getCodeBlockRenderer(lang) : undefined;
+        const preview = this._preview;
+
+        if (preview && (preview.renderer !== renderer || preview.lang !== lang || !preview.isInEditor())) {
+            preview.destroy();
+            this._preview = null;
+        }
+
+        if (this._preview) {
+            this._preview.update();
+        }
+        else if (renderer) {
+            this._preview = new CodeBlockPreview({
+                muya: this.muya,
+                domNode: this.domNode!,
+                getSource: () => this.lastContentInDescendant()?.text ?? '',
+                setSource: next => this._setSource(next),
+            }, renderer, lang);
+        }
+    }
+
+    // One undo step: flush pending typing, then fence the edit with cutoffs.
+    private _setSource(next: string) {
+        const content = this.lastContentInDescendant();
+        if (!content || content.text === next)
+            return;
+        const { jsonState, history } = this.muya.editor;
+        jsonState.flush();
+        history.cutoff();
+        content.text = next;
+        jsonState.flush();
+        history.cutoff();
+        content.update();
     }
 
     override get path(): TBlockPath {

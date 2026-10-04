@@ -1,6 +1,7 @@
 import type { JSONOp, JSONOpComponent, JSONOpList } from 'ot-json1';
 import type Content from '../block/base/content';
 import type Format from '../block/base/format';
+import type { TBlockPath } from '../block/types';
 import type { Muya } from '../muya';
 import type { IHistorySelection } from '../selection/types';
 import type { TState } from '../state/types';
@@ -19,10 +20,23 @@ import JSONState from '../state';
 import { hasPick, isHTMLElement } from '../utils';
 import { getBlock } from '../utils/dom';
 import logger from '../utils/logger';
+import { Decorations } from './decorations';
 import { attachDragDropImageHandlers } from './dragDropImage';
 import { attachLinkMouseHandlers } from './linkMouseEvents';
 
 const debug = logger('editor:');
+
+/**
+ * Replaces `[start, end)` (UTF-16 offsets) of the content block at `path`
+ * with `replacement`, provided that range still reads `expected`.
+ */
+export interface IRangeEdit {
+    path: TBlockPath;
+    start: number;
+    end: number;
+    expected: string;
+    replacement: string;
+}
 
 // The pick/drop walkers operate on live block-tree nodes (ScrollPage,
 // Parent, Content). The tree's instance methods (queryBlock, find,
@@ -242,6 +256,7 @@ export class Editor {
     searchModule: Search;
     clipboard: Clipboard;
     history: History;
+    decorations: Decorations;
     scrollPage: Nullable<ScrollPage> = null;
 
     private _activeContentBlock: Nullable<Content> = null;
@@ -255,6 +270,7 @@ export class Editor {
         this.searchModule = new Search(_muya);
         this.clipboard = Clipboard.create(_muya);
         this.history = new History(_muya);
+        this.decorations = new Decorations(_muya);
     }
 
     get activeContentBlock() {
@@ -290,6 +306,10 @@ export class Editor {
         // as a new `![](src)` block. Cleanup is likewise handled by
         // `detachAllDomEvents`.
         attachDragDropImageHandlers(muya);
+        // Registered after `_dispatchEvents` so a click is reported after the
+        // block's own click handling and an input after `inputHandler` updated
+        // the block text.
+        this.decorations.attach();
         this.focus();
     }
 
@@ -419,7 +439,7 @@ export class Editor {
             // blocks drop never re-inserted). The json state is authoritative and
             // already up to date — rebuild from it instead of leaving an empty doc.
             debug.error(`updateContents incremental apply failed; rebuilding from state: ${String(error)}`);
-            this.scrollPage!.updateState(this.jsonState.getState());
+            this.decorations.preserveAcross(() => this.scrollPage!.updateState(this.jsonState.getState()));
             this._restoreSelection(selection, true);
         }
     }
@@ -486,7 +506,7 @@ export class Editor {
         this.jsonState.dispatch(operations, source);
 
         const state = this.jsonState.getState();
-        this.scrollPage!.updateState(state);
+        this.decorations.preserveAcross(() => this.scrollPage!.updateState(state));
 
         // The tree was rebuilt wholesale, so the selection's cached block
         // references are stale — resolve the caret from paths instead.
@@ -497,11 +517,74 @@ export class Editor {
         this.jsonState.setContent(content);
         const state = this.jsonState.getState();
 
+        this.decorations.reset();
         this.scrollPage!.updateState(state);
         this.history.clear();
         this.searchModule.reset();
 
         if (autoFocus)
             this.focus();
+
+        this._muya.eventCenter.emit('content-set');
+    }
+
+    /**
+     * Applies `edit` as its own undo step and puts the caret after the
+     * replacement. Returns false, changing nothing, when the path does not
+     * resolve to a content block or the range no longer reads `expected`.
+     */
+    replaceRange(edit: IRangeEdit): boolean {
+        const { path, start, end, expected, replacement } = edit;
+        if (!Array.isArray(path) || typeof replacement !== 'string')
+            return false;
+
+        // `queryBlock` consumes the path array.
+        const block = this.scrollPage?.queryBlock([...path]);
+        if (!block || !block.isContent())
+            return false;
+
+        const { text } = block;
+        if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || end > text.length)
+            return false;
+        if (text.slice(start, end) !== expected)
+            return false;
+
+        this._replaceText(block, start, end, replacement);
+
+        return true;
+    }
+
+    /**
+     * Replaces the text selection, or inserts at the caret, of the last
+     * selected content block, as its own undo step; the caret ends after
+     * `text`. Works while the editor is blurred. Returns false when the
+     * selection is not inside one content block.
+     */
+    insertText(text: string): boolean {
+        const { anchorBlock, focusBlock, anchor, focus } = this.selection;
+        if (typeof text !== 'string' || !anchorBlock || anchorBlock !== focusBlock || !anchorBlock.outMostBlock || !anchor || !focus)
+            return false;
+
+        const start = Math.min(anchor.offset, focus.offset);
+        const end = Math.max(anchor.offset, focus.offset);
+        if (start < 0 || end > anchorBlock.text.length)
+            return false;
+
+        this._replaceText(anchorBlock, start, end, text);
+
+        return true;
+    }
+
+    private _replaceText(block: Content, start: number, end: number, replacement: string) {
+        const { text } = block;
+        // Flushing around the edit records it alone: pending keystrokes before
+        // it and typing after it each land in their own undo steps.
+        this.jsonState.flush();
+        this.history.cutoff();
+        block.text = text.slice(0, start) + replacement + text.slice(end);
+        const offset = start + replacement.length;
+        block.setCursor(offset, offset, true);
+        this.jsonState.flush();
+        this.history.cutoff();
     }
 }

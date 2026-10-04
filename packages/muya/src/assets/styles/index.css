@@ -241,6 +241,30 @@ body {
     background: none;
 }
 
+/* Default looks for render-only decorations (`muya.setDecorations`). A
+   decoration may only paint (text-decoration, background, color): any box
+   change would shift text away from the caret offsets. */
+.mu-decoration-spelling,
+.mu-decoration-grammar,
+.mu-decoration-style {
+    text-decoration-line: underline;
+    text-decoration-skip-ink: none;
+    text-decoration-style: wavy;
+    text-underline-offset: 3px;
+}
+
+.mu-decoration-spelling {
+    text-decoration-color: var(--mu-decoration-spelling-color, #e5484d);
+}
+
+.mu-decoration-grammar {
+    text-decoration-color: var(--mu-decoration-grammar-color, #3b82f6);
+}
+
+.mu-decoration-style {
+    text-decoration-color: var(--mu-decoration-style-color, #f59e0b);
+}
+
 /* Drag-and-drop image drop indicator (PG4). `dragDropImage.ts` positions this
    absolutely-anchored bar at the top/bottom edge of the drop-target block. */
 #mu-dragover-ghost {

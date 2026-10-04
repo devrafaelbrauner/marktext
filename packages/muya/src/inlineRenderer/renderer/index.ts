@@ -13,6 +13,7 @@ import autoLinkExtension from './autoLinkExtension';
 import backlash from './backlash';
 import backlashInToken from './backlashInToken';
 import codeFence from './codeFence';
+import customInline from './customInline';
 import del from './del';
 import delEmStrongFac from './delEmStrongFactory';
 import em from './em';
@@ -52,6 +53,7 @@ const inlineSyntaxRenderer = {
     hardLineBreak,
     softLineBreak,
     codeFence,
+    customInline,
     inlineMath,
     autoLink,
     autoLinkExtension,

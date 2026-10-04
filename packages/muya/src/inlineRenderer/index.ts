@@ -14,25 +14,46 @@ const debug = logger('inlineRenderer:');
 class InlineRenderer {
     public labels: Labels = new Map();
     public renderer: Renderer;
+    private _batchDepth = 0;
+    private _batchLabelsCollected = false;
 
     constructor(public muya: Muya) {
         this.renderer = new Renderer(muya, this);
     }
 
-    private _tokenizer(block: Format, highlights: IHighlight[]) {
+    /**
+     * Tokenizes `text` the way `patch` does for a block named `blockName`.
+     * `labels` defaults to the reference definitions collected by the last
+     * render pass.
+     */
+    tokenize(text: string, blockName: string, highlights: IHighlight[] = [], labels: Labels = this.labels) {
         const { options } = this.muya;
-        const { text } = block;
-        const { labels } = this;
 
         // TODO: different content block should have different rules.
         // eg: atxheading.content has no soft|hard line break
         // setextheading.content has no heading rules.
         const hasBeginRules
             = /thematicbreak\.content|paragraph\.content|atxheading\.content/.test(
-                block.blockName,
+                blockName,
             );
 
         return tokenizer(text, { hasBeginRules, labels, options, highlights });
+    }
+
+    /**
+     * Runs `fn`, which re-renders blocks without changing the document,
+     * collecting the reference definitions once instead of on every `patch`.
+     */
+    batch(fn: () => void) {
+        this._batchDepth++;
+        try {
+            fn();
+        }
+        finally {
+            this._batchDepth--;
+            if (this._batchDepth === 0)
+                this._batchLabelsCollected = false;
+        }
     }
 
     /**
@@ -60,12 +81,18 @@ class InlineRenderer {
     }
 
     patch(block: Format, cursor?: IRenderCursor, highlights: IHighlight[] = []) {
-        this._collectReferenceDefinitions();
+        if (!this._batchLabelsCollected) {
+            this._collectReferenceDefinitions();
+            this._batchLabelsCollected = this._batchDepth > 0;
+        }
         const { domNode } = block;
         if (block.isParent())
             debug.error('Patch can only handle content block');
 
-        const tokens = this._tokenizer(block, highlights);
+        // The single merge point: search highlights and stored decorations
+        // become disjoint segments before any renderer paints them.
+        const segments = this.muya.editor.decorations.paintSegments(block, highlights);
+        const tokens = this.tokenize(block.text, block.blockName, segments);
         const html = this.renderer.output(
             tokens,
             block,
