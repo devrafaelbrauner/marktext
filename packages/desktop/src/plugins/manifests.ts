@@ -1,4 +1,6 @@
 import type { PluginLocales, PluginManifest } from '@shared/plugins/types'
+import { manifest as grammarManifest } from '@plugins/grammar/manifest'
+import { locales as grammarLocales } from '@plugins/grammar/locales'
 
 /**
  * Manifest and UI strings of one built-in plugin. Both processes read this
@@ -13,4 +15,6 @@ export interface BuiltinPluginInfo {
   locales: PluginLocales
 }
 
-export const BUILTIN_PLUGINS: BuiltinPluginInfo[] = []
+export const BUILTIN_PLUGINS: BuiltinPluginInfo[] = [
+  { manifest: grammarManifest, locales: grammarLocales }
+]
