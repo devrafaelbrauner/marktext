@@ -1,0 +1,59 @@
+{
+  "name": "Links",
+  "description": "[[Wikilinks]] no estilo do Obsidian, com autocompletar, backlinks e atualização automática dos links quando notas são renomeadas.",
+  "settings": {
+    "newLinkFormat": {
+      "label": "Formato dos novos links",
+      "description": "Como o autocompletar escreve o caminho da nota vinculada.",
+      "shortest": "Caminho mais curto possível",
+      "relative": "Relativo à nota atual",
+      "absolute": "Caminho absoluto na pasta"
+    },
+    "updateLinksOnRename": {
+      "label": "Atualizar links ao renomear",
+      "description": "Reescreve os links das outras notas quando uma nota é renomeada ou movida no MarkText.",
+      "ask": "Perguntar sempre",
+      "always": "Sempre",
+      "never": "Nunca"
+    }
+  },
+  "panel": {
+    "title": "Backlinks",
+    "noFile": "Abra uma nota da pasta para ver os backlinks dela.",
+    "noFolder": "Abra uma pasta para ver os backlinks.",
+    "indexing": "Indexando a pasta…",
+    "linked": "Menções com link",
+    "unlinked": "Menções sem link",
+    "noLinked": "Nenhuma nota tem link para esta nota.",
+    "noUnlinked": "Nenhuma menção sem link encontrada.",
+    "truncated": "Mostrando as primeiras {count} menções sem link.",
+    "link": "Vincular",
+    "linkTitle": "Transformar esta menção em um link para {name}",
+    "openSource": "Abrir {name}",
+    "refresh": "Atualizar",
+    "linkFailed": "Não foi possível criar o link: {message}",
+    "linkChanged": "A nota mudou desde que as menções foram encontradas. A lista foi atualizada; tente de novo.",
+    "count": "{count}"
+  },
+  "create": {
+    "title": "Nota não encontrada",
+    "message": "“{name}” ainda não existe. Deseja criá-la?",
+    "confirm": "Criar nota",
+    "cancel": "Cancelar",
+    "failed": "Não foi possível criar a nota: {message}"
+  },
+  "open": {
+    "failed": "Não foi possível abrir o link: {message}"
+  },
+  "rename": {
+    "title": "Atualizar links?",
+    "message": "“{name}” foi renomeada. Atualizar {count} link(s) nestas notas?",
+    "confirm": "Atualizar links",
+    "cancel": "Não atualizar",
+    "done": "{count} link(s) atualizado(s) em {files} nota(s).",
+    "failed": "Não foi possível atualizar os links em {name}: {message}"
+  },
+  "commands": {
+    "showBacklinks": "Links: Mostrar backlinks"
+  }
+}

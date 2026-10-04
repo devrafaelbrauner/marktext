@@ -110,6 +110,8 @@ export class EngineHost {
   /** True during the task in which the app requested an undo/redo. */
   private historyPending = false
   private refreshScheduled = false
+  /** User's spellcheck preference as last reported by the editor; null until it reports one. */
+  private spellcheckPreference: boolean | null = null
 
   private readonly onContentSetEvent = (): void => {
     const tabId = this.options.getActiveTabId()
@@ -270,12 +272,31 @@ export class EngineHost {
    */
   getEngineOptions(): Required<Omit<EngineOptionRequests, 'mermaid'>> & Pick<EngineOptionRequests, 'mermaid'> {
     let atxHeadingRequiresSpace = false
+    let disableNativeSpellcheck = false
     let mermaid: MermaidEngineOptions | undefined
     for (const request of this.optionRequests) {
       atxHeadingRequiresSpace ||= !!request.atxHeadingRequiresSpace
+      disableNativeSpellcheck ||= !!request.disableNativeSpellcheck
       if (request.mermaid) mermaid = request.mermaid
     }
-    return mermaid ? { atxHeadingRequiresSpace, mermaid } : { atxHeadingRequiresSpace }
+    return mermaid
+      ? { atxHeadingRequiresSpace, disableNativeSpellcheck, mermaid }
+      : { atxHeadingRequiresSpace, disableNativeSpellcheck }
+  }
+
+  /**
+   * Records the user's spellcheck preference. The engine gets it unless an
+   * active plugin requests `disableNativeSpellcheck`, in which case it stays
+   * off until the last request is released.
+   */
+  setSpellcheckPreference(enabled: boolean): void {
+    this.spellcheckPreference = enabled
+    this.applyEngineOptions()
+  }
+
+  /** Spellcheck state the engine should have for the user's preference `enabled`. */
+  getEffectiveSpellcheck(enabled: boolean): boolean {
+    return enabled && !this.getEngineOptions().disableNativeSpellcheck
   }
 
   /**
@@ -292,11 +313,21 @@ export class EngineHost {
   }
 
   private applyEngineOptions(): void {
+    const { muya } = this
+    if (!muya) return
     const { atxHeadingRequiresSpace, mermaid } = this.getEngineOptions()
-    this.muya?.setOptions({
+    const options = {
       atxHeadingRequiresSpace,
       mermaidThemeOverride: mermaid?.theme ?? null,
       mermaidLook: mermaid?.look ?? 'classic'
+    }
+    if (this.spellcheckPreference === null) {
+      muya.setOptions(options)
+      return
+    }
+    muya.setOptions({
+      ...options,
+      spellcheckEnabled: this.getEffectiveSpellcheck(this.spellcheckPreference)
     })
   }
 

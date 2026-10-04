@@ -12,6 +12,7 @@ import { useEditorStore } from './editor'
 import { debouncedSendBufferedState } from './bufferedState'
 import type { TreeNode } from '../components/sideBar/types'
 import type { FileChangeDetail } from '@shared/types/files'
+import { notifyFileRenamed } from '../plugins/host/fileRenames'
 
 type ProjectTree = TreeNode
 type TreeChange = FileChangeDetail
@@ -290,8 +291,9 @@ export const useProjectStore = defineStore('project', () => {
         cb.dest = dest
 
         paste(cb as PasteOptions)
-          .then(() => {
+          .then(async() => {
             clipboard.value = null
+            if (cb.type === 'cut') await APPLY_MOVE(cb.src, dest)
           })
           .catch((err) => {
             notice.notify({
@@ -347,15 +349,19 @@ export const useProjectStore = defineStore('project', () => {
       })
   }
 
+  async function APPLY_MOVE(src: string, dest: string): Promise<void> {
+    useEditorStore().RENAME_IF_NEEDED({ src, dest })
+    const isDirectory = await window.fileUtils.isDirectory(dest).catch(() => false)
+    notifyFileRenamed({ oldPath: src, newPath: dest, isDirectory })
+  }
+
   function RENAME_IN_SIDEBAR(name: string): void {
-    const editorStore = useEditorStore()
     const src = renameCache.value
     if (!src) return
     const dirname = window.path.dirname(src)
     const dest = dirname + PATH_SEPARATOR + name
-    rename(src, dest).then(() => {
-      editorStore.RENAME_IF_NEEDED({ src, dest })
-    })
+    if (dest === src) return
+    rename(src, dest).then(() => APPLY_MOVE(src, dest))
   }
 
   function OPEN_SETTING_WINDOW(): void {

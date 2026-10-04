@@ -180,6 +180,12 @@ export interface EngineOptionRequests {
   /** `#` only becomes an ATX heading once followed by whitespace (keeps `#tag` at a paragraph start a paragraph). */
   atxHeadingRequiresSpace?: boolean
   /**
+   * Forces the editor's native (Chromium) spellchecker off while requested, e.g.
+   * by a proofreading plugin that draws its own underlines; the user's
+   * spellcheck preference applies again once no active plugin requests it.
+   */
+  disableNativeSpellcheck?: boolean
+  /**
    * Mermaid rendering of the live preview. Not ORed: the most recently made
    * request carrying `mermaid` wins. Without one, diagrams follow the app
    * theme (light/dark) with the classic look.
@@ -285,6 +291,13 @@ export type TabViewContribution =
     matches?(markdown: string): boolean
   }
 
+/** Absolute paths before and after a rename/move; `isDirectory` when a folder moved with its contents. */
+export interface FileRenameEvent {
+  oldPath: string
+  newPath: string
+  isDirectory: boolean
+}
+
 export interface WorkspaceApi {
   /** Folder opened in this window, or null. */
   getRootPath(): string | null
@@ -298,6 +311,12 @@ export interface WorkspaceApi {
   /** Creates the file and missing folders when it does not exist yet, then opens it. */
   createAndOpenFile(pathname: string, content: string): Promise<void>
   registerTabView(view: TabViewContribution): Disposable
+  /**
+   * After the app itself renamed or moved a file or folder (menu Rename/Move
+   * to, sidebar rename, sidebar cut/paste) and updated the open tabs. Changes
+   * made by other programs are not reported.
+   */
+  onDidRenameFile(listener: (event: FileRenameEvent) => void): Disposable
 }
 
 /** Rejection reason of vault and IPC calls. */

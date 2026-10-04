@@ -121,6 +121,7 @@ const createHarness = (initial: PluginHostState) => {
     onDidChangeRootPath: () => ({ dispose: () => {} }),
     openFile: vi.fn(async() => {}),
     registerTabView: vi.fn(() => ({ dispose: tabViewDisposals })),
+    onDidRenameFile: () => ({ dispose: () => {} }),
     revealSidebarPanel: vi.fn(),
     onSidebarPanelRemoved: vi.fn(),
     notify: vi.fn(),
@@ -219,7 +220,7 @@ describe('renderer PluginManager', () => {
     expect(pressCtrlAltK(harness.keyTarget).defaultPrevented).toBe(true)
     expect(harness.muya.setDecorations).toHaveBeenCalledWith('full/grammar', expect.any(Array))
     expect(harness.registries.registerInlineSyntax).toHaveBeenCalledTimes(1)
-    expect(harness.engine.getEngineOptions()).toEqual({ atxHeadingRequiresSpace: true })
+    expect(harness.engine.getEngineOptions()).toEqual({ atxHeadingRequiresSpace: true, disableNativeSpellcheck: false })
     expect(harness.muya.setOptions).toHaveBeenLastCalledWith({
       atxHeadingRequiresSpace: true,
       mermaidThemeOverride: null,
@@ -252,7 +253,7 @@ describe('renderer PluginManager', () => {
     expect(harness.unregister.inline).toHaveBeenCalledTimes(1)
     expect(harness.unregister.codeBlock).toHaveBeenCalledTimes(1)
     expect(harness.unregister.completion).toHaveBeenCalledTimes(1)
-    expect(harness.engine.getEngineOptions()).toEqual({ atxHeadingRequiresSpace: false })
+    expect(harness.engine.getEngineOptions()).toEqual({ atxHeadingRequiresSpace: false, disableNativeSpellcheck: false })
     expect(harness.muya.setOptions).toHaveBeenLastCalledWith({
       atxHeadingRequiresSpace: false,
       mermaidThemeOverride: null,
@@ -429,6 +430,33 @@ describe('engine host', () => {
       mermaidThemeOverride: null,
       mermaidLook: 'classic'
     })
+  })
+
+  it('keeps native spellcheck off while a plugin requests it and restores the user preference', () => {
+    const engine = new EngineHost({ getActiveTabId: () => 't', isMac: false, registries: {} as EngineRegistries })
+    const muya = createFakeMuya()
+    const defaults = { atxHeadingRequiresSpace: false, mermaidThemeOverride: null, mermaidLook: 'classic' }
+    engine.setSpellcheckPreference(true)
+    engine.attach(muya as unknown as EngineInstance)
+    expect(muya.setOptions).toHaveBeenLastCalledWith({ ...defaults, spellcheckEnabled: true })
+
+    const first = engine.requestEngineOptions({ disableNativeSpellcheck: true })
+    const second = engine.requestEngineOptions({ disableNativeSpellcheck: true })
+    expect(muya.setOptions).toHaveBeenLastCalledWith({ ...defaults, spellcheckEnabled: false })
+    expect(engine.getEffectiveSpellcheck(true)).toBe(false)
+
+    // The user turning spellcheck on while it is forced off changes nothing visible.
+    engine.setSpellcheckPreference(true)
+    expect(muya.setOptions).toHaveBeenLastCalledWith({ ...defaults, spellcheckEnabled: false })
+    first.dispose()
+    expect(muya.setOptions).toHaveBeenLastCalledWith({ ...defaults, spellcheckEnabled: false })
+    second.dispose()
+    expect(muya.setOptions).toHaveBeenLastCalledWith({ ...defaults, spellcheckEnabled: true })
+
+    // A user who had spellcheck off keeps it off after the release.
+    engine.setSpellcheckPreference(false)
+    engine.requestEngineOptions({ disableNativeSpellcheck: true }).dispose()
+    expect(muya.setOptions).toHaveBeenLastCalledWith({ ...defaults, spellcheckEnabled: false })
   })
 })
 

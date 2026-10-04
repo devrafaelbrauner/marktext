@@ -40,6 +40,7 @@ export interface PluginHostServices {
   onDidChangeRootPath(listener: (rootPath: string | null) => void): Disposable
   openFile(pathname: string, options?: { anchor?: string; subpath?: string }): Promise<void>
   registerTabView(ctx: RendererPluginContext, view: TabViewContribution): Disposable
+  onDidRenameFile: WorkspaceApi['onDidRenameFile']
   revealSidebarPanel(panelId: string): void
   /** Called after a plugin panel left the sidebar (to move the selection away from it). */
   onSidebarPanelRemoved(panelId: string): void
@@ -127,7 +128,8 @@ export const createPluginContext = (
       }
       await services.openFile(pathname)
     },
-    registerTabView: (view) => track(services.registerTabView(ctx, view))
+    registerTabView: (view) => track(services.registerTabView(ctx, view)),
+    onDidRenameFile: (listener) => track(services.onDidRenameFile(listener))
   }
 
   const ui: UiApi = {

@@ -1,0 +1,87 @@
+{
+  "name": "Kanban boards",
+  "description": "Opens Obsidian Kanban boards (notes with \"kanban-plugin: board\" in the front matter) as boards with lanes and cards, and dims %% comments %% in the editor.",
+  "view": {
+    "title": "Kanban board"
+  },
+  "commands": {
+    "newBoard": "New Kanban board"
+  },
+  "newBoard": {
+    "title": "New Kanban board",
+    "nameLabel": "Board name",
+    "defaultName": "Kanban",
+    "create": "Create",
+    "lanes": {
+      "todo": "To do",
+      "doing": "Doing",
+      "done": "Done"
+    },
+    "noFolder": "Open a folder or save the current file first: the board is created next to it.",
+    "failed": "Could not create the board: {message}"
+  },
+  "dialog": {
+    "cancel": "Cancel",
+    "ok": "OK"
+  },
+  "board": {
+    "label": "Kanban board {name}",
+    "addLane": "Add lane",
+    "laneNamePlaceholder": "Lane name",
+    "empty": "This board has no lanes yet.",
+    "filterPlaceholder": "Filter cards",
+    "clearFilter": "Clear filter",
+    "archive": "Archive ({count})",
+    "archiveTitle": "Archived cards",
+    "archiveEmpty": "No archived cards.",
+    "closeArchive": "Close archive",
+    "restore": "Restore",
+    "restoreTo": "Restore to {lane}",
+    "parseHint": "Cards are the list items under each lane heading."
+  },
+  "lane": {
+    "menu": "Lane actions for {title}",
+    "dragHandle": "Drag to reorder the lane {title}",
+    "rename": "Rename",
+    "setLimit": "Set WIP limit…",
+    "limitLabel": "Maximum number of cards (0 for no limit)",
+    "markComplete": "Mark cards in this lane as complete",
+    "unmarkComplete": "Stop marking cards as complete",
+    "moveLeft": "Move lane left",
+    "moveRight": "Move lane right",
+    "delete": "Delete lane",
+    "deleteTitle": "Delete lane",
+    "deleteConfirm": "Delete the lane \"{title}\" and its {count} card(s)?",
+    "deleteAction": "Delete",
+    "count": "{count} card(s)",
+    "countWithLimit": "{count} of at most {max} cards",
+    "overLimit": "Over the WIP limit",
+    "complete": "Cards here are complete",
+    "addCard": "Add a card",
+    "addCardPlaceholder": "Add a card…",
+    "cardsLabel": "Cards in {title}",
+    "renameLabel": "Lane name",
+    "addCardHint": "Enter adds the card, Shift+Enter starts a new line"
+  },
+  "card": {
+    "menu": "Card actions",
+    "edit": "Edit",
+    "editLabel": "Card text (Enter to save, Shift+Enter for a new line, Esc to cancel)",
+    "save": "Save",
+    "complete": "Mark as complete",
+    "incomplete": "Mark as not complete",
+    "moveTo": "Move to…",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "archive": "Archive",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this card?",
+    "toggleLabel": "Complete",
+    "overdue": "Overdue",
+    "openLink": "Open {target}",
+    "keyboardHint": "Enter edits, Alt+arrow keys move the card"
+  },
+  "errors": {
+    "openLink": "Could not open {target}: {message}"
+  }
+}

@@ -14,6 +14,7 @@ import { BUILTIN_SIDEBAR_PANEL_IDS, getSidebarPanel } from '../registries/sideba
 import { markTabViewsReady, registerTabView } from '../registries/tabViews'
 import type { ActiveTabInfo, PluginCommand, RendererPluginContext } from '../types'
 import { createPluginContext, type PluginHostServices } from './context'
+import { onDidRenameFile } from './fileRenames'
 import { EngineHost } from './engine'
 import { PluginKeybindings } from './keybindings'
 import { PluginManager } from './manager'
@@ -109,6 +110,7 @@ const createServices = (stateClient: PluginStateClient): PluginHostServices => {
       window.electron.ipcRenderer.send('mt::open-file', pathname, { ...options })
     },
     registerTabView,
+    onDidRenameFile,
     revealSidebarPanel: (panelId) => {
       layoutStore.SET_LAYOUT({ showSideBar: true, rightColumn: panelId })
     },

@@ -14,6 +14,9 @@ export interface MarkdownLinkMatch {
   start: number
   /** Offset just past the closing `)`. */
   end: number
+  /** `[destStart, destEnd)` is the raw destination as written, including `<>` brackets. */
+  destStart: number
+  destEnd: number
   embed: boolean
   destination: LinkDestination
 }
@@ -135,7 +138,14 @@ export const findMarkdownLinks = (masked: string, original: string): MarkdownLin
       const embed = open > 0 && masked[open - 1] === '!'
       const destination = parseLinkDestination(original.slice(parsed.destStart, parsed.destEnd))
       if (destination) {
-        found.push({ start: embed ? open - 1 : open, end: parsed.end, embed, destination })
+        found.push({
+          start: embed ? open - 1 : open,
+          end: parsed.end,
+          destStart: parsed.destStart,
+          destEnd: parsed.destEnd,
+          embed,
+          destination
+        })
       }
     }
     open = masked.indexOf('[', open + 1)

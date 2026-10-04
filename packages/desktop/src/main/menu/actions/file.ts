@@ -640,7 +640,8 @@ ipcMain.on('mt::rename', async(e, { id, pathname, newPathname }: RenamePayload) 
       e.sender.send('mt::set-pathname', {
         id,
         pathname: newPathname,
-        filename: path.basename(newPathname)
+        filename: path.basename(newPathname),
+        oldPathname: pathname
       })
     })
   }
@@ -687,7 +688,8 @@ ipcMain.on(
         e.sender.send('mt::set-pathname', {
           id,
           pathname: filePath,
-          filename: path.basename(filePath)
+          filename: path.basename(filePath),
+          oldPathname: pathname
         })
       })
     }

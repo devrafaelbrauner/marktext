@@ -730,8 +730,9 @@ watch(hideScrollbar, (value, oldValue) => {
 watch(spellcheckerEnabled, (value, oldValue) => {
   if (value === oldValue) return
 
-  // Set Muya's spellcheck container attribute.
-  editor.value?.setOptions({ spellcheckEnabled: value })
+  // Muya's spellcheck attribute; the engine host keeps it off while a plugin
+  // requests `disableNativeSpellcheck`.
+  engineHost.setSpellcheckPreference(value)
 
   // Disable native spell checker
   if (value) {
@@ -1803,7 +1804,7 @@ onMounted(() => {
     autoCheck: autoCheck.value,
     sequenceTheme: toSequenceTheme(sequenceTheme.value),
     plantumlServer: preferencesStore.plantumlServer,
-    spellcheckEnabled: spellcheckerEnabled.value,
+    spellcheckEnabled: engineHost.getEffectiveSpellcheck(spellcheckerEnabled.value),
     spellcheckHideMarks: spellcheckerNoUnderline.value,
     // Resolve the OS clipboard to a local file path on paste (image-from-file).
     clipboardFilePath: guessClipboardFilePath,
@@ -1838,6 +1839,7 @@ onMounted(() => {
   // the document tree and instantiates the registered UI plugins).
   muya.init()
   editor.value = muya
+  engineHost.setSpellcheckPreference(spellcheckerEnabled.value)
   engineHost.attach(muya)
   // The first document's content is set via constructor options, so no
   // `file-loaded` / `setMarkdownToEditor` runs for it — seed its TOC here.

@@ -54,6 +54,9 @@ const defaultOptions = {
 export class CompletionPicker extends BaseScrollFloat {
     static pluginName = 'completionPicker';
     public override capturesContentKeydown = true;
+    // Anchored to the caret: typing near the viewport edge scrolls the editor,
+    // which must not close the list the user is typing into.
+    public override hidesOnScroll = false;
     public override renderArray: ICompletionItem[] = [];
     public override activeItem: ICompletionItem | null = null;
 
