@@ -1,3 +1,5 @@
+import { locales as pdfReaderLocales } from '@plugins/pdf-reader/locales'
+import { manifest as pdfReaderManifest } from '@plugins/pdf-reader/manifest'
 import type { PluginLocales, PluginManifest } from '@shared/plugins/types'
 import { manifest as grammarManifest } from '@plugins/grammar/manifest'
 import { locales as grammarLocales } from '@plugins/grammar/locales'
@@ -19,5 +21,6 @@ export interface BuiltinPluginInfo {
 
 export const BUILTIN_PLUGINS: BuiltinPluginInfo[] = [
   { manifest: grammarManifest, locales: grammarLocales },
-  { manifest: linksManifest, locales: linksLocales }
+  { manifest: linksManifest, locales: linksLocales },
+  { manifest: pdfReaderManifest, locales: pdfReaderLocales }
 ]

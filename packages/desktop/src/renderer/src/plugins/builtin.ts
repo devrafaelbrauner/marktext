@@ -1,5 +1,7 @@
 import { locales as grammarLocales } from '@plugins/grammar/locales'
 import { manifest as grammarManifest } from '@plugins/grammar/manifest'
+import { locales as pdfReaderLocales } from '@plugins/pdf-reader/locales'
+import { manifest as pdfReaderManifest } from '@plugins/pdf-reader/manifest'
 import type { RendererPluginEntry } from './host/manager'
 import { locales as linksLocales } from '@plugins/links/locales'
 import { manifest as linksManifest } from '@plugins/links/manifest'
@@ -20,5 +22,10 @@ export const BUILTIN_RENDERER_PLUGINS: RendererPluginEntry[] = [
     manifest: linksManifest,
     locales: linksLocales,
     load: () => import('@plugins/links/renderer').then((m) => m.default)
+  },
+  {
+    manifest: pdfReaderManifest,
+    locales: pdfReaderLocales,
+    load: () => import('@plugins/pdf-reader/renderer').then((m) => m.default)
   }
 ]
