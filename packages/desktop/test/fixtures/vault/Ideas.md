@@ -2,11 +2,13 @@
 tags: idea, idea/product
 ---
 
-# Ideas
+Ideas
+=====
 
 A paragraph that names #idea/research and #Idea in another case. ^idea-1
 
-## Backlog
+Backlog
+-------
 
 - First idea about [[Projects/Alpha]]
 - Second idea with priority:: high

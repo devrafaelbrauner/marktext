@@ -17,7 +17,7 @@ kanban-plugin: board
 
 - [x] Set up the repository
 
----
+***
 
 ## Archive
 
