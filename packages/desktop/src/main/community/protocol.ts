@@ -23,7 +23,11 @@ const STANDARD_PRIVILEGES = {
   stream: true
 } as const
 
-/** Must run before the `ready` event. */
+/**
+ * Superseded by `registerPrivilegedSchemes()` in `main/protocol/register.ts`,
+ * which already privileges `mt-plugin` (one call replaces the whole list).
+ * Kept for standalone-branch testing; `main/index.ts` does not call it.
+ */
 export const registerCommunityScheme = (): void => {
   protocol.registerSchemesAsPrivileged([
     { scheme: 'mt-plugin', privileges: { ...STANDARD_PRIVILEGES } },

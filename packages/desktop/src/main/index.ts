@@ -15,7 +15,6 @@ import { t } from './i18n'
 import { registerSandboxIpcHandlers } from './ipc'
 import { setPlantumlServerSource } from './ipc/diagram'
 import { startMainPluginHost } from './plugins'
-import { registerCommunityScheme } from './community/protocol'
 import EditorWindow from './windows/editor'
 import { setupVaultIndex } from './vaultIndex'
 import { registerPrivilegedSchemes, installProtocolHandlers } from './protocol/register'
@@ -27,7 +26,9 @@ registerPrivilegedSchemes()
 // opens the first window. (`app.whenReady().then` would run after it.)
 app.on('ready', () => installProtocolHandlers())
 
-registerCommunityScheme()
+/* registerCommunityScheme intentionally not called: registerPrivilegedSchemes()
+ * above already privileges mt-plugin (one call replaces the whole list);
+ * Community only attaches protocol.handle('mt-plugin') via startCommunityProtocol(). */
 // Set version strings into global and process.versions
 process.env.MARKTEXT_VERSION = MARKTEXT_VERSION
 process.env.MARKTEXT_VERSION_STRING = MARKTEXT_VERSION_STRING
