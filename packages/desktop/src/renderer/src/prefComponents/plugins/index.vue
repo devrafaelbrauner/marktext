@@ -61,6 +61,11 @@
         />
       </div>
     </section>
+    <community-plugins
+      :state="state"
+      :client="client"
+      :highlighted-id="highlightedId"
+    />
   </div>
 </template>
 
@@ -74,7 +79,7 @@ import { BUILTIN_PLUGINS } from '@plugins/manifests'
 import { translatePluginKey } from '@/i18n'
 import { PluginStateClient, resolveSetting } from '@/plugins/host/pluginState'
 import SettingField from './settingField.vue'
-
+import CommunityPlugins from './community.vue'
 const { t } = useI18n()
 const route = useRoute()
 

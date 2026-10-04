@@ -4,11 +4,13 @@ import Store from 'electron-store'
 import { BUILTIN_PLUGINS } from '@plugins/manifests'
 import { SecretsStore } from '../security/secretsStore'
 import { safeFetch } from '../security/safeFetch'
+import { CommunityRegistry } from '../community/registry'
+import { registerCommunityIpc } from '../community/ipc'
+import { startCommunityProtocol } from '../community/protocol'
 import { BUILTIN_MAIN_PLUGINS } from './builtin'
 import { MainPluginHost } from './host'
 import { registerPluginIpcHandlers } from './ipc'
 import { PluginStateStore, type PersistedPluginState } from './stateStore'
-
 const PLUGINS_STORE_NAME = 'plugins'
 
 /**
@@ -26,7 +28,13 @@ export const createMainPluginHost = (userDataPath: string, safeMode: boolean): M
       electronStore.store = { ...state }
     }
   })
-  return new MainPluginHost({
+  const community = new CommunityRegistry({
+    userDataPath,
+    builtinIds: manifests.map((manifest) => manifest.id),
+    appVersion: MARKTEXT_VERSION,
+    log: (message) => log.warn(message)
+  })
+  const host = new MainPluginHost({
     manifests,
     plugins: BUILTIN_MAIN_PLUGINS,
     store,
@@ -34,6 +42,7 @@ export const createMainPluginHost = (userDataPath: string, safeMode: boolean): M
     safeMode,
     fetch: (url, init) => safeFetch(url, init),
     createLogger: (scope) => log.scope(scope),
+    community,
     publishState: (state) => {
       for (const win of BrowserWindow.getAllWindows()) {
         if (!win.isDestroyed()) win.webContents.send('mt::plugins::state-changed', state)
@@ -48,6 +57,12 @@ export const createMainPluginHost = (userDataPath: string, safeMode: boolean): M
       }
     }
   })
+  registerCommunityIpc({ host, registry: community })
+  startCommunityProtocol({
+    registry: community,
+    isServable: (id) => !safeMode && !!host.getState().enabled[id]
+  })
+  return host
 }
 
 /**

@@ -14,6 +14,7 @@ import { BUILTIN_SIDEBAR_PANEL_IDS, getSidebarPanel } from '../registries/sideba
 import { markTabViewsReady, registerTabView } from '../registries/tabViews'
 import type { ActiveTabInfo, PluginCommand, RendererPluginContext } from '../types'
 import { createPluginContext, type PluginHostServices } from './context'
+import { startCommunityRuntime } from '../community/manager'
 import { onDidRenameFile } from './fileRenames'
 import { EngineHost } from './engine'
 import { PluginKeybindings } from './keybindings'
@@ -179,8 +180,10 @@ export const startPluginHost = (): Promise<void> => {
     },
     log: writeLog
   })
+  const community = startCommunityRuntime(services, stateClient)
   window.addEventListener('pagehide', () => {
     manager.stop()
+    community.stop()
   })
 
   starting = manager

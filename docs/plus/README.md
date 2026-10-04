@@ -11,7 +11,7 @@ proposed upstream; feature plugins stay in this fork.
 | --- | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | D1  | Work in a fork; propose generic foundations (decorations, range replace, registries) upstream | Feature code lives in new directories; upstream files only get thin hooks, to keep rebases cheap         |
 | D2  | Read/write compatibility with Obsidian vaults                                                 | `[[wikilinks]]`, `#tags`, `key:: value`, Kanban board format, `YYYY-MM-DD` daily notes, `%% comments %%` |
-| D3  | No third-party plugins until the sandbox and IPC hardening land (milestone M7)                | Built-in plugins are trusted code using the same public API                                              |
+| D3  | Community plugins run in a sandboxed `mt-plugin:` iframe with manifest permissions (M7)       | Built-ins stay trusted in-process; community code has no preload                                         |
 | D4  | LanguageTool Premium API by default, server URL configurable (self-hosted allowed)            | Credentials live only in the main process (Electron `safeStorage`)                                       |
 | D5  | Turn off Chromium's spellchecker while the LanguageTool checker is active                     | No double underlines                                                                                     |
 | D6  | Icons are written as `:pack-name:` shortcodes and exported as inline SVG                      | Source stays plain text; exported HTML/PDF shows the icon                                                |
@@ -24,7 +24,7 @@ Out of scope: running Obsidian plugins, DataviewJS (arbitrary code), sync, mobil
 | Tier                  | Runs in                                                         | Access                                                          |
 | --------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- |
 | Built-in plugin       | Renderer (UI) and main process (services); bundled with the app | Full plugin API                                                 |
-| Community plugin (M7) | Sandboxed iframe on a dedicated scheme, no preload              | Plugin API over a MessagePort, filtered by manifest permissions |
+| Community plugin (M7) | Sandboxed iframe on `mt-plugin:`, no preload                    | Plugin API over a MessagePort, filtered by manifest permissions |
 
 Electron's `utilityProcess` is a Node child process, not a sandbox: it only
 hosts trusted services such as the vault index.
@@ -40,6 +40,7 @@ hosts trusted services such as the vault index.
 | Vault index             | `packages/desktop/src/main/vaultIndex/` (utility process) and `src/common/markdownExt/` (parsers shared with the editor) |
 | Engine extension points | `packages/muya/src/` (decorations, range replace, inline syntax, code block previews, completion)                        |
 | Built-in plugins        | `packages/desktop/src/plugins/<id>/`                                                                                     |
+| Community SDK           | `docs/plus/sdk/README.md`, `packages/plugin-sdk`                                                                         |
 
 ## Adding a built-in plugin
 

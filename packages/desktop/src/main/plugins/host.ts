@@ -1,9 +1,11 @@
 import type {
+  CommunityPluginRecord,
   Disposable,
   PluginHostState,
   PluginManifest,
   PluginSettingValue
 } from '@shared/plugins/types'
+import { toPluginManifest } from '@shared/plugins/community'
 import type { BuiltinMainPlugin } from './builtin'
 import { PluginError } from './errors'
 import { findSettingSchema, getSettingDefault, MAX_SETTING_STRING_LENGTH, validateSettingValue } from './settings'
@@ -34,6 +36,10 @@ export interface MainPluginHostOptions {
   publishState(state: PluginHostState): void
   /** Pushes `mt::plugins::event` to every app window, or only to `windowId`. */
   publishEvent(pluginId: string, event: string, payload: unknown, windowId?: number): void
+  /** Installed community plugins. Absent in tests that only exercise built-ins. */
+  community?: {
+    records(): readonly CommunityPluginRecord[]
+  }
 }
 
 type MethodHandler = (call: PluginCallInfo, ...args: unknown[]) => unknown
@@ -88,7 +94,8 @@ export class MainPluginHost {
 
   getState(): PluginHostState {
     const { manifests, store, secrets, safeMode } = this.options
-    const state: PluginHostState = { safeMode, enabled: {}, settings: {}, secretsSet: {} }
+    const community: CommunityPluginRecord[] = []
+    const state: PluginHostState = { safeMode, enabled: {}, settings: {}, secretsSet: {}, community }
     for (const manifest of manifests) {
       state.enabled[manifest.id] = store.isEnabled(manifest)
       state.settings[manifest.id] = { ...store.getSettings(manifest.id) }
@@ -97,7 +104,24 @@ export class MainPluginHost {
         secretKeys.map((s) => [s.key, secrets.has(manifest.id, s.key)])
       )
     }
+    const builtinIds = new Set(manifests.map((manifest) => manifest.id))
+    for (const record of this.options.community?.records() ?? []) {
+      if (builtinIds.has(record.id)) continue
+      const manifest = toPluginManifest(record)
+      community.push(record)
+      state.enabled[record.id] = store.isEnabled(manifest)
+      state.settings[record.id] = { ...store.getSettings(record.id) }
+      const secretKeys = (manifest.settings ?? []).filter((s) => s.type === 'secret')
+      state.secretsSet[record.id] = Object.fromEntries(
+        secretKeys.map((s) => [s.key, secrets.has(record.id, s.key)])
+      )
+    }
     return state
+  }
+
+  /** Pushes the current state. Install and uninstall call this after the registry changes. */
+  publish(): void {
+    this.options.publishState(this.getState())
   }
 
   isActive(id: string): boolean {
@@ -207,13 +231,20 @@ export class MainPluginHost {
     }
   }
 
+  private findManifest(id: string): PluginManifest | undefined {
+    const builtin = this.options.manifests.find((manifest) => manifest.id === id)
+    if (builtin) return builtin
+    const record = this.options.community?.records().find((item) => item.id === id)
+    return record ? toPluginManifest(record) : undefined
+  }
+
   private isEnabledId(id: string): boolean {
-    const manifest = this.options.manifests.find((m) => m.id === id)
+    const manifest = this.findManifest(id)
     return !!manifest && this.options.store.isEnabled(manifest)
   }
 
   private requireManifest(id: unknown): PluginManifest {
-    const manifest = this.options.manifests.find((m) => m.id === id)
+    const manifest = typeof id === 'string' ? this.findManifest(id) : undefined
     if (!manifest) throw new PluginError('FAILED', `Unknown plugin "${String(id)}"`)
     return manifest
   }

@@ -22,6 +22,8 @@ const parseSettingsPage = (type: string | null | undefined): string => {
   const plugin = type ? /\/plugins\/([a-z0-9-]+)$/.exec(type) : null
   if (plugin) {
     pageUrl += `/plugins/${plugin[1]}`
+  } else if (type && /\/plugins$/.test(type)) {
+    pageUrl += '/plugins'
   }
   return pageUrl
 }

@@ -50,6 +50,7 @@ process.on('exit', () => {
 export interface LaunchResult {
   app: ElectronApplication
   page: Page
+  userDataDir: string
 }
 
 export interface LaunchOptions {
@@ -69,6 +70,8 @@ export interface LaunchOptions {
     enabled?: Record<string, boolean>
     settings?: Record<string, Record<string, unknown>>
   }
+  // Reuse a user-data directory (for example to relaunch with --safe).
+  userDataDir?: string
 }
 
 export const launchElectron = async(
@@ -79,7 +82,8 @@ export const launchElectron = async(
   const executablePath = getElectronPath()
   // Pass project root as entry so Electron reads package.json and getAppPath() returns project root.
   // Passing out/main/index.js directly bypasses package.json and breaks __static path resolution.
-  const userDataDir = trackTempDir(getTempPath())
+  const userDataDir = options.userDataDir ?? trackTempDir(getTempPath())
+  if (options.userDataDir) trackTempDir(options.userDataDir)
   if (options.preferences) {
     fs.mkdirSync(userDataDir, { recursive: true })
     fs.writeFileSync(
@@ -112,7 +116,7 @@ export const launchElectron = async(
   const page = await app.firstWindow()
   await page.waitForLoadState('domcontentloaded')
   await new Promise((resolve) => setTimeout(resolve, 500))
-  return { app, page }
+  return { app, page, userDataDir }
 }
 
 // Capture renderer-process errors that would otherwise pop the "Unexpected
@@ -357,10 +361,10 @@ export const launchWithDoc = async(
   relativeFixture: string,
   options: LaunchOptions = {}
 ): Promise<LaunchResult> => {
-  const { app, page } = await launchElectron([relativeFixture], options)
-  await waitForEditor(page)
-  await waitForMenuReady(app)
-  return { app, page }
+  const launched = await launchElectron([relativeFixture], options)
+  await waitForEditor(launched.page)
+  await waitForMenuReady(launched.app)
+  return launched
 }
 
 export interface LaunchWithMarkdownResult extends LaunchResult {
@@ -372,10 +376,10 @@ export const launchWithMarkdown = async(
   options: LaunchOptions = {}
 ): Promise<LaunchWithMarkdownResult> => {
   const filePath = writeTempMarkdown(markdown)
-  const { app, page } = await launchElectron([filePath], options)
-  await waitForEditor(page)
-  await waitForMenuReady(app)
-  return { app, page, filePath }
+  const launched = await launchElectron([filePath], options)
+  await waitForEditor(launched.page)
+  await waitForMenuReady(launched.app)
+  return { ...launched, filePath }
 }
 
 export const sendIpcToRenderer = async(
