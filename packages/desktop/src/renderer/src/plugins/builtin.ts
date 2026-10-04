@@ -1,4 +1,6 @@
 import type { RendererPluginEntry } from './host/manager'
+import { locales as linksLocales } from '@plugins/links/locales'
+import { manifest as linksManifest } from '@plugins/links/manifest'
 
 /**
  * Renderer parts of the built-in plugins, in activation order. Each entry
@@ -6,4 +8,10 @@ import type { RendererPluginEntry } from './host/manager'
  * loads its code lazily, e.g.
  * `{ ...info, load: () => import('@plugins/<id>/renderer').then((m) => m.default) }`.
  */
-export const BUILTIN_RENDERER_PLUGINS: RendererPluginEntry[] = []
+export const BUILTIN_RENDERER_PLUGINS: RendererPluginEntry[] = [
+  {
+    manifest: linksManifest,
+    locales: linksLocales,
+    load: () => import('@plugins/links/renderer').then((m) => m.default)
+  }
+]

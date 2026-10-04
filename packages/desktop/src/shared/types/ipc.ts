@@ -352,7 +352,15 @@ export interface IpcMainEventChannels {
   'mt::rg::progress': [payload: unknown]
   'mt::screenshot-captured': [filePath: string]
   'mt::set-line-ending': [lineEnding: LineEnding]
-  'mt::set-pathname': [payload: { id: string; pathname: string; filename: string }]
+  'mt::set-pathname': [
+    payload: {
+      id: string
+      pathname: string
+      filename: string
+      /** Previous path when the app renamed or moved the file (not for save-as). */
+      oldPathname?: string
+    }
+  ]
   'mt::set-view-layout': [layout: unknown]
   'mt::show-command-palette': []
   'mt::show-export-dialog': [type: ExportType]

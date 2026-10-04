@@ -1,4 +1,6 @@
 import type { PluginLocales, PluginManifest } from '@shared/plugins/types'
+import { locales as linksLocales } from './links/locales'
+import { manifest as linksManifest } from './links/manifest'
 
 /**
  * Manifest and UI strings of one built-in plugin. Both processes read this
@@ -13,4 +15,6 @@ export interface BuiltinPluginInfo {
   locales: PluginLocales
 }
 
-export const BUILTIN_PLUGINS: BuiltinPluginInfo[] = []
+export const BUILTIN_PLUGINS: BuiltinPluginInfo[] = [
+  { manifest: linksManifest, locales: linksLocales }
+]
