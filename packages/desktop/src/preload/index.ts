@@ -93,7 +93,11 @@ const webFrameAPI = {
 }
 
 const webUtilsAPI = {
-  getPathForFile: (file: File): string => webUtils.getPathForFile(file)
+  getPathForFile: (file: File): string => {
+    const filePath = webUtils.getPathForFile(file)
+    if (filePath) send('mt::fs::grant-user-path', filePath)
+    return filePath
+  }
 }
 
 const windowControlAPI = {

@@ -202,6 +202,7 @@ export interface IpcSendChannels {
   'mt::cmd-toggle-autosave': []
   'mt::editor-selection-changed': [windowId: number, state: unknown]
   'mt::format-link-click': [payload: { data: unknown; dirname: string }]
+  'mt::fs::grant-user-path': [filePath: string]
   'mt::get-current-language': []
   'mt::handle-renderer-error': [error: unknown]
   'mt::keybinding-debug-dump-keyboard-info': []

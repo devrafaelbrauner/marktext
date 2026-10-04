@@ -18,6 +18,7 @@ import {
   isViewableAssetFile
 } from 'common/filesystem/paths'
 import { confirmOpenPath } from '../../security/confirmOpenPath'
+import { showOpenDialogScoped, showSaveDialogScoped } from '../../security/pathGrants'
 import { checkUpdates, userSetting } from './marktext'
 import { showTabBar } from './view'
 import { COMMANDS } from '../../commands'
@@ -113,7 +114,7 @@ const handleResponseForExport = async(e: IpcMainEvent, payload: ExportPayload): 
   const nakedFilename = sanitizeFilename(pathname ? path.basename(pathname, '.md') : title)
 
   const defaultPath = path.join(dirname, `${nakedFilename}${extension}`)
-  const { filePath, canceled } = await dialog.showSaveDialog(win, {
+  const { filePath, canceled } = await showSaveDialogScoped(win, {
     defaultPath,
     filters: getExportExtensionFilter(type)
   })
@@ -208,7 +209,7 @@ const handlePandocExport = async(e: IpcMainEvent, payload: PandocExportPayload):
   let filePath = ''
   // Awaited inside the try, so a save the OS refuses becomes a notification.
   try {
-    const { filePath: chosen, canceled } = await dialog.showSaveDialog(win, {
+    const { filePath: chosen, canceled } = await showSaveDialogScoped(win, {
       defaultPath: path.join(sourceDir ?? getPath('documents'), `${stem}${format.extension}`),
       filters: [{ name: format.label, extensions: [format.extension.slice(1)] }]
     })
@@ -310,7 +311,7 @@ const handleResponseForSave = async(
   let filePath = pathname
 
   if (!filePath) {
-    const { filePath: dialogPath, canceled } = await dialog.showSaveDialog(win, {
+    const { filePath: dialogPath, canceled } = await showSaveDialogScoped(win, {
       defaultPath: path.join(defaultPath || getPath('documents'), `${recommendFilename}.md`)
     })
 
@@ -490,7 +491,7 @@ ipcMain.on(
     // on disk nevertheless but is already tracked by MarkText.
     const alreadyExistOnDisk = !!pathname
 
-    let { filePath, canceled } = await dialog.showSaveDialog(win, {
+    let { filePath, canceled } = await showSaveDialogScoped(win, {
       defaultPath:
         pathname || path.join(defaultPath || getPath('documents'), `${recommendFilename}.md`)
     })
@@ -671,7 +672,7 @@ ipcMain.on(
     if (!win) {
       return
     }
-    const { filePath, canceled } = await dialog.showSaveDialog(win, {
+    const { filePath, canceled } = await showSaveDialogScoped(win, {
       buttonLabel: 'Move to',
       nameFieldLabel: 'Filename:',
       defaultPath: pathname
@@ -701,7 +702,7 @@ ipcMain.on('mt::ask-for-open-project-in-sidebar', async(e) => {
   if (!win) {
     return
   }
-  const { filePaths } = await dialog.showOpenDialog(win, {
+  const { filePaths } = await showOpenDialogScoped(win, {
     properties: ['openDirectory', 'createDirectory']
   })
 
@@ -822,7 +823,7 @@ export const importFile = async(win: BrowserWindow | null): Promise<void> => {
     return
   }
 
-  const { filePaths } = await dialog.showOpenDialog(win, {
+  const { filePaths } = await showOpenDialogScoped(win, {
     properties: ['openFile'],
     filters: [
       {
@@ -847,7 +848,7 @@ export const openFile = async(win: BrowserWindow | null): Promise<void> => {
   if (!win) {
     return
   }
-  const { filePaths } = await dialog.showOpenDialog(win, {
+  const { filePaths } = await showOpenDialogScoped(win, {
     properties: ['openFile', 'multiSelections'],
     filters: [
       {
@@ -866,7 +867,7 @@ export const openFolder = async(win: BrowserWindow | null): Promise<void> => {
   if (!win) {
     return
   }
-  const { filePaths } = await dialog.showOpenDialog(win, {
+  const { filePaths } = await showOpenDialogScoped(win, {
     properties: ['openDirectory', 'createDirectory']
   })
 

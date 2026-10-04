@@ -94,6 +94,13 @@ export interface IMuyaOptions {
      * file into the document. Return `''` when no path is available.
      */
     getPathForFile?: (file: File) => string;
+    /**
+     * Turn an absolute local image path into the URL the host can load.
+     * Absent, the engine keeps emitting `file://` URLs. Desktop passes a
+     * function that emits `mt-file:` so images load with webSecurity on.
+     * Export stays on `file://` and does not use this option.
+     */
+    localImageUrl?: (absolutePath: string) => string;
 }
 
 /**

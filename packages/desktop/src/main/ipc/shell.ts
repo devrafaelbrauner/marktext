@@ -3,6 +3,8 @@ import log from 'electron-log'
 import * as plist from 'plist'
 import { confirmOpenPath } from '../security/confirmOpenPath'
 import { validateSender } from '../security/validateSender'
+import { pathIsAllowed } from '../security/fsAccess'
+import { grantFile } from '../security/pathGrants'
 
 const EXTERNAL_PROTOCOLS: Record<string, true> = { 'https:': true, 'http:': true, 'mailto:': true }
 
@@ -37,12 +39,21 @@ export const registerShellHandlers = (): void => {
   ipcMain.on('mt::shell::open-external', (e, url: unknown) => {
     if (validateSender(e)) openExternal(url)
   })
-  ipcMain.on('mt::shell::show-item', (_e, fullPath: string) => {
-    try {
-      shell.showItemInFolder(fullPath)
-    } catch (err) {
+  ipcMain.on('mt::shell::show-item', (e, fullPath: string) => {
+    if (!validateSender(e) || typeof fullPath !== 'string') return
+    pathIsAllowed(e, fullPath).then((allowed) => {
+      if (!allowed) {
+        log.warn('shell.showItemInFolder refused a path outside the allowed roots')
+        return
+      }
+      try {
+        shell.showItemInFolder(fullPath)
+      } catch (err) {
+        log.error('shell.showItemInFolder failed:', err)
+      }
+    }).catch((err: unknown) => {
       log.error('shell.showItemInFolder failed:', err)
-    }
+    })
   })
   ipcMain.handle('mt::shell::open-path', async(e, fullPath: unknown) => {
     if (!validateSender(e) || typeof fullPath !== 'string') return 'Refused'
@@ -82,27 +93,29 @@ export const registerShellHandlers = (): void => {
     }
   })
 
-  ipcMain.handle('mt::clipboard::guess-file-path', () => {
+  ipcMain.handle('mt::clipboard::guess-file-path', (e) => {
+    if (!validateSender(e)) return ''
     try {
+      let filePath = ''
       if (process.platform === 'darwin') {
         if (clipboard.has('NSFilenamesPboardType')) {
           const parsed = plist.parse(clipboard.read('NSFilenamesPboardType'))
-          return Array.isArray(parsed) && parsed.length ? parsed[0] : ''
+          filePath = Array.isArray(parsed) && parsed.length && typeof parsed[0] === 'string' ? parsed[0] : ''
         }
-        return ''
-      }
-      if (process.platform === 'win32') {
+      } else if (process.platform === 'win32') {
         // `FileNameW` is a UTF-16LE, NUL-separated list of file paths.
         // `clipboard.read(format)` decodes the raw bytes as UTF-8, which garbles
-        // non-ASCII (e.g. Chinese) characters; read the Buffer and decode it as
-        // UTF-16LE instead, then take the first non-empty entry.
+        // non-ASCII characters; read the Buffer and decode it as UTF-16LE.
         const buffer = clipboard.readBuffer('FileNameW')
         if (buffer.length > 0) {
-          return buffer.toString('utf16le').split('\u0000').find(p => p.length > 0) ?? ''
+          filePath = buffer.toString('utf16le').split('\u0000').find(p => p.length > 0) ?? ''
         }
-        return ''
       }
-      return ''
+      if (filePath) {
+        const win = BrowserWindow.fromWebContents(e.sender)
+        if (win) grantFile(win.id, filePath)
+      }
+      return filePath
     } catch (err) {
       log.error('clipboard.guess-file-path failed:', err)
       return ''

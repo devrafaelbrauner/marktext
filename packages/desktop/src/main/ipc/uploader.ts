@@ -7,6 +7,7 @@ import { isImageFile } from 'common/filesystem/paths'
 import { ensureShellEnvPath } from '../app/envPath'
 import { resolveCommand } from '../utils/resolveCommand'
 import { validateSender } from '../security/validateSender'
+import { grantTempDir } from '../security/pathGrants'
 
 // Strip ANSI SGR color codes (CSI parameter ... 'm') from picgo output before
 // trying to parse it. \x1b is the ESC byte.
@@ -103,6 +104,7 @@ const writeBinaryToTmp = async(
 ): Promise<string> => {
   const buf = data instanceof Uint8Array ? Buffer.from(data) : Buffer.from(data || [])
   const dir = await fs.mkdtemp(path.join(tmpdir(), 'marktext-upload-'))
+  grantTempDir(dir)
   const tmpPath = path.join(dir, `${Date.now()}${suffix}`)
   await fs.writeFile(tmpPath, buf)
   return tmpPath

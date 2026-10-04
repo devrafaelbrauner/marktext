@@ -261,6 +261,34 @@ describe('getImageSrc — non-relative sources are left unchanged', () => {
     });
 });
 
+describe('getImageSrc — localImageUrl option', () => {
+    // Mirrors the real host builder: exactly one encode pass per segment.
+    const localImageUrl = (absolutePath: string) =>
+        `mt-file://local${absolutePath.split('/').map((part) => encodeURIComponent(part)).join('/')}`;
+    it('uses the host resolver for a relative path and keeps file:// by default', () => {
+        withDirname(DIRNAME, () => {
+            expect(getImageSrc('assets/foo.png').src).toBe('file:///home/user/docs/assets/foo.png');
+            expect(getImageSrc('assets/foo.png', localImageUrl).src).toBe(
+                'mt-file://local/home/user/docs/assets/foo.png',
+            );
+        });
+    });
+
+    it('rewrites an already-file URL when the host supplies a resolver', () => {
+        expect(getImageSrc('file:///var/img/pic.png', localImageUrl).src).toBe(
+            'mt-file://local/var/img/pic.png',
+        );
+    });
+
+    it('encodes a URL-delimiter directory exactly once (#5212 with mt-file)', () => {
+        withDirname('/home/user/C# 100%25 what?', () => {
+            expect(getImageSrc('assets/cat.png', localImageUrl).src).toBe(
+                'mt-file://local/home/user/C%23%20100%2525%20what%3F/assets/cat.png',
+            );
+        });
+    });
+});
+
 describe('getImageSrc — Windows drive + UNC base directories (Phase G review)', () => {
     it('preserves the drive when resolving `..`', () => {
         withDirname('C:/Users/me/docs', () => {

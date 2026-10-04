@@ -1,23 +1,24 @@
-import path from 'path'
-import { pathToFileURL } from 'url'
 import { BrowserWindow } from 'electron'
 import type { IpcMainEvent, IpcMainInvokeEvent } from 'electron'
 
+import { MT_APP_RENDERER_URL } from '../protocol/mtApp'
+
 /**
  * URL the app's own renderer is loaded from: the electron-vite dev server in
- * development, the packaged `renderer/index.html` otherwise. Mirrors
- * `BaseWindow._buildUrlWithSettings`.
+ * development, the privileged `mt-app://` page otherwise. A packaged `file://`
+ * page is a unique origin per path, so workers and fonts would not load once
+ * webSecurity is on. Mirrors `BaseWindow._buildUrlWithSettings`.
  */
 export const getAppRendererUrl = (): string | null => {
   if (import.meta.env.DEV) return process.env['ELECTRON_RENDERER_URL'] || null
-  return pathToFileURL(path.join(__dirname, '../renderer/index.html')).href
+  return MT_APP_RENDERER_URL
 }
 
 /**
  * Whether `candidate` is the app renderer page `base`. Query and hash are
- * ignored (windows carry their boot settings in the query); for `file:` the
- * exact page must match, for the dev server the origin is enough because
- * Vite serves every module from it.
+ * ignored (windows carry their boot settings in the query). `file:` and
+ * `mt-app:` must match the exact page; the dev server matches by origin
+ * because Vite serves every module from it.
  */
 export const isAppRendererUrl = (candidate: string, base: string | null): boolean => {
   if (!base) return false
@@ -29,8 +30,7 @@ export const isAppRendererUrl = (candidate: string, base: string | null): boolea
   } catch {
     return false
   }
-  if (actual.protocol !== expected.protocol) return false
-  if (expected.protocol === 'file:') {
+  if (expected.protocol === 'file:' || expected.protocol === 'mt-app:') {
     return actual.host === expected.host &&
       decodeURIComponent(actual.pathname) === decodeURIComponent(expected.pathname)
   }
