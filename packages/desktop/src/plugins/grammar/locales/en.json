@@ -1,0 +1,157 @@
+{
+  "name": "Grammar checker (LanguageTool)",
+  "description": "Checks spelling, grammar and style as you write, using LanguageTool Premium, the free public API or your own server. Brazilian Portuguese by default.",
+  "settings": {
+    "server": {
+      "label": "Server",
+      "description": "LanguageTool Premium needs your username and API key. The free public API has lower limits. A custom server is a self-hosted LanguageTool.",
+      "premium": "LanguageTool Premium",
+      "free": "LanguageTool free (public API)",
+      "custom": "Custom server"
+    },
+    "serverUrl": {
+      "label": "Custom server URL",
+      "description": "Base URL of the API, ending in /v2. Used only when Server is “Custom server”. Plain http is only allowed for this computer (localhost)."
+    },
+    "username": {
+      "label": "Username (email)",
+      "description": "Email of your LanguageTool Premium account."
+    },
+    "apiKey": {
+      "label": "API key",
+      "description": "Generated on your LanguageTool account page. Stored encrypted and never shown again."
+    },
+    "language": {
+      "label": "Language",
+      "description": "Language of your texts. Spelling is only checked when a regional variant is chosen.",
+      "options": {
+        "pt-BR": "Portuguese (Brazil)",
+        "pt-PT": "Portuguese (Portugal)",
+        "en-US": "English (US)",
+        "en-GB": "English (UK)",
+        "es": "Spanish",
+        "fr": "French",
+        "de": "German",
+        "it": "Italian",
+        "nl": "Dutch",
+        "auto": "Detect automatically"
+      }
+    },
+    "level": {
+      "label": "Strictness",
+      "description": "“Picky” also reports style and typography suggestions.",
+      "default": "Default",
+      "picky": "Picky"
+    },
+    "motherTongue": {
+      "label": "Native language",
+      "description": "Language code of your native language (e.g. pt-BR), used to detect false friends."
+    },
+    "checkOnType": {
+      "label": "Check while typing",
+      "description": "When off, documents are checked when opened and with the “Check document now” command."
+    },
+    "debounceMs": {
+      "label": "Delay after typing (ms)",
+      "description": "How long to wait after the last keystroke before checking."
+    },
+    "disabledRules": {
+      "label": "Ignored rules",
+      "description": "LanguageTool rule ids that are never reported (filled by “Ignore rule”)."
+    },
+    "disabledCategories": {
+      "label": "Ignored categories",
+      "description": "LanguageTool category ids that are never reported, e.g. TYPOGRAPHY or STYLE."
+    },
+    "dictionary": {
+      "label": "Personal dictionary",
+      "description": "Words never reported as misspelled. With Premium they are also synced to your LanguageTool dictionary."
+    },
+    "disableNativeSpellcheck": {
+      "label": "Turn off the built-in spellchecker",
+      "description": "Avoids double underlines while the grammar checker is active. Your spellchecker preference comes back when this is off or the plugin is disabled."
+    },
+    "consentGiven": {
+      "label": "Allow sending text to the server",
+      "description": "Paragraph text is sent to the configured LanguageTool server to be checked. Front matter, code and math are never sent."
+    }
+  },
+  "status": {
+    "ok": "{language} ✓",
+    "one": "1 problem",
+    "many": "{count} problems",
+    "checking": "Checking…",
+    "quota": "Limit reached",
+    "auth": "Authentication error",
+    "network": "Offline",
+    "server": "Server error",
+    "config": "Set up",
+    "consent": "Allow checking",
+    "off": "Checking off",
+    "skipped": "Not checked",
+    "tooltip": {
+      "ok": "LanguageTool: no problems found",
+      "problems": "LanguageTool: show problems",
+      "checking": "LanguageTool: checking the document",
+      "error": "LanguageTool: {message}",
+      "config": "LanguageTool: open the plugin settings",
+      "consent": "LanguageTool: allow sending text to the server",
+      "off": "LanguageTool: checking is turned off",
+      "skipped": "LanguageTool: this file has “languagetool: false” in its front matter"
+    }
+  },
+  "errors": {
+    "quota": "The LanguageTool limit was reached. Checking resumes automatically.",
+    "auth": "LanguageTool rejected the username or API key.",
+    "network": "Could not reach the LanguageTool server.",
+    "server": "The LanguageTool server returned an error: {message}",
+    "config": "Choose a server and fill in its settings (Premium needs username and API key; a custom server needs a valid URL).",
+    "replaceFailed": "The text changed; the suggestion was not applied.",
+    "dictionaryFailed": "Could not save the word in the dictionary."
+  },
+  "popover": {
+    "label": "Writing suggestion",
+    "suggestions": "Suggestions",
+    "noSuggestions": "No suggestions",
+    "ignore": "Ignore",
+    "ignoreRule": "Ignore rule",
+    "addToDictionary": "Add to dictionary",
+    "moreInfo": "More information",
+    "close": "Close"
+  },
+  "kinds": {
+    "spelling": "Spelling",
+    "grammar": "Grammar",
+    "style": "Style"
+  },
+  "panel": {
+    "title": "Problems",
+    "empty": "No problems found.",
+    "checkNow": "Check now",
+    "off": "Checking is turned off.",
+    "skipped": "This file is not checked (languagetool: false).",
+    "noDocument": "Open a document to check it.",
+    "consent": "Checking needs your permission to send text to LanguageTool.",
+    "allow": "Allow",
+    "openSettings": "Open settings",
+    "count": "{count}"
+  },
+  "commands": {
+    "checkNow": "Grammar: Check document now",
+    "next": "Grammar: Go to next problem",
+    "toggle": "Grammar: Turn checking on/off"
+  },
+  "notify": {
+    "on": "Grammar checking turned on.",
+    "off": "Grammar checking turned off.",
+    "noProblems": "No problems found."
+  },
+  "consent": {
+    "title": "Send text to LanguageTool?",
+    "body": "To check spelling and grammar, the text of your paragraphs, headings and table cells is sent to the LanguageTool server below. Front matter, code and math are never sent.",
+    "server": "Server: {server}",
+    "privacy": "LanguageTool processes the text only to check it. You can withdraw this permission at any time in Preferences → Plugins.",
+    "accept": "Allow and check",
+    "decline": "Not now"
+  }
+}

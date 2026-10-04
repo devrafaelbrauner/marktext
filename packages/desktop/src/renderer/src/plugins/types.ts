@@ -179,6 +179,12 @@ export interface CompletionProvider {
 export interface EngineOptionRequests {
   /** `#` only becomes an ATX heading once followed by whitespace (keeps `#tag` at a paragraph start a paragraph). */
   atxHeadingRequiresSpace?: boolean
+  /**
+   * Forces the editor's native (Chromium) spellchecker off while requested, e.g.
+   * by a proofreading plugin that draws its own underlines; the user's
+   * spellcheck preference applies again once no active plugin requests it.
+   */
+  disableNativeSpellcheck?: boolean
 }
 
 // ---------------------------------------------------------------------------

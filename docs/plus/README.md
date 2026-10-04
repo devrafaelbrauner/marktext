@@ -51,3 +51,26 @@ hosts trusted services such as the vault index.
    `src/main/plugins/builtin.ts`.
 3. Everything registered through `ctx` is disposed automatically when the plugin
    is disabled; `--safe` starts the app with every plugin disabled.
+
+## Grammar checker (`grammar`)
+
+LanguageTool-backed spelling/grammar/style checking, pt-BR by default; off until
+enabled in Preferences → Plugins.
+
+- **Where text goes.** Only the main part talks to the network (`ctx.net.fetch`):
+  Premium (`api.languagetoolplus.com`, username + API key from `secrets.json`),
+  the free public API, or a self-hosted server (`http` only to loopback).
+  Nothing is sent before the consent dialog was accepted (`consentGiven`);
+  front matter, code, math and HTML blocks are never sent, and a file with
+  `languagetool: false` in its front matter is skipped.
+- **What is sent.** Muya's checkable blocks as LanguageTool `data.annotation`
+  (markup kept as markup), packed below the plan's per-request size with a
+  `\n\n` separator, throttled per minute (requests and characters) and retried
+  with backoff on 429/503 (Retry-After honoured). Results are cached per block
+  text, so only new or edited blocks are re-sent.
+- **Fixes keep formatting.** A suggestion for a range that contains markup is
+  diffed against the prose LanguageTool read and applied to the prose only
+  (`Eu **vai**` → `Eu **vou**`), as one undo step.
+- **Native spellchecker.** The plugin asks the engine host for
+  `disableNativeSpellcheck` (setting, on by default); the user's spellcheck
+  preference is restored when the request is released.

@@ -1,3 +1,5 @@
+import { locales as grammarLocales } from '@plugins/grammar/locales'
+import { manifest as grammarManifest } from '@plugins/grammar/manifest'
 import type { RendererPluginEntry } from './host/manager'
 
 /**
@@ -6,4 +8,10 @@ import type { RendererPluginEntry } from './host/manager'
  * loads its code lazily, e.g.
  * `{ ...info, load: () => import('@plugins/<id>/renderer').then((m) => m.default) }`.
  */
-export const BUILTIN_RENDERER_PLUGINS: RendererPluginEntry[] = []
+export const BUILTIN_RENDERER_PLUGINS: RendererPluginEntry[] = [
+  {
+    manifest: grammarManifest,
+    locales: grammarLocales,
+    load: () => import('@plugins/grammar/renderer').then((m) => m.default)
+  }
+]
