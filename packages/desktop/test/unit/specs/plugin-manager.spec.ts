@@ -121,6 +121,7 @@ const createHarness = (initial: PluginHostState) => {
     onDidChangeRootPath: () => ({ dispose: () => {} }),
     openFile: vi.fn(async() => {}),
     registerTabView: vi.fn(() => ({ dispose: tabViewDisposals })),
+    onDidRenameFile: () => ({ dispose: () => {} }),
     revealSidebarPanel: vi.fn(),
     onSidebarPanelRemoved: vi.fn(),
     notify: vi.fn(),

@@ -1,0 +1,20 @@
+/* Wikilinks look like regular links; the brackets are hidden markers. */
+span.mu-inline-wikilink > .mu-inline-rule {
+  color: var(--link-color, rgb(20 86 240));
+  cursor: pointer;
+}
+
+/* Unresolved targets (decoration layer `links/unresolved`): dimmed like Obsidian. */
+.mu-decoration.mu-links-unresolved,
+.mu-decoration.mu-links-unresolved .mu-inline-rule,
+span.mu-inline-wikilink .mu-decoration.mu-links-unresolved {
+  color: var(--editor-color-50, rgb(128 128 128));
+}
+
+.links-plugin-dialog .links-rename-confirm ul {
+  max-height: 180px;
+  overflow: auto;
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+  font-size: 13px;
+}

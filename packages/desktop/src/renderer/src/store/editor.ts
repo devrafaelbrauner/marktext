@@ -25,6 +25,7 @@ import { useMainStore } from '.'
 import { t } from '../i18n'
 import { debouncedSendBufferedState, sendBufferedState } from './bufferedState'
 import { isIndexCursor } from '../util/cursor'
+import { notifyFileRenamed } from '../plugins/host/fileRenames'
 import {
   findMatchingMarkdownView,
   getAssetViewForPath,
@@ -672,6 +673,9 @@ export const useEditorStore = defineStore('editor', {
           Object.assign(tab, { filename, pathname, isSaved: true })
           debouncedSendBufferedState()
         }
+        if (fileInfo.oldPathname && pathname) {
+          notifyFileRenamed({ oldPath: fileInfo.oldPathname, newPath: pathname, isDirectory: false })
+        }
       })
 
       window.electron.ipcRenderer.on('mt::tab-saved', (_, tabId) => {
@@ -871,21 +875,25 @@ export const useEditorStore = defineStore('editor', {
     },
 
     /**
-     * Update the pathname/filename of any tab whose pathname matches `src`.
-     * Invoked from the sidebar rename flow (project.ts:RENAME_IN_SIDEBAR).
+     * Points the tabs showing `src`, or (when `src` is a folder) any file
+     * inside it, at their new location under `dest`. Invoked from the sidebar
+     * rename and cut/paste flows (project.ts).
      */
     RENAME_IF_NEEDED({ src, dest }: { src: string; dest: string }): void {
       this.tabs.forEach((tab) => {
-        if (tab.pathname === src) {
-          tab.pathname = dest
-          tab.filename = window.path.basename(dest)
-        }
+        const { pathname } = tab
+        if (!pathname || !pathname.startsWith(src)) return
+        const rest = pathname.slice(src.length)
+        if (rest !== '' && rest[0] !== '/' && rest[0] !== '\\') return
+        tab.pathname = dest + rest
+        tab.filename = window.path.basename(tab.pathname)
       })
-      // Keep DIRNAME in sync when the active tab is the one being renamed,
-      // so link resolution / dirname-based lookups don't keep using the old
-      // folder until the user switches tabs.
-      if (this.currentFile != null && this.currentFile.pathname === dest) {
-        window.DIRNAME = window.path.dirname(dest)
+      // Keep DIRNAME in sync when the active tab moved, so link resolution /
+      // dirname-based lookups don't keep using the old folder until the user
+      // switches tabs.
+      const current = this.currentFile?.pathname
+      if (current && (current === dest || current.startsWith(dest))) {
+        window.DIRNAME = window.path.dirname(current)
       }
       debouncedSendBufferedState()
     },
