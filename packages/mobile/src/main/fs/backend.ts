@@ -2,9 +2,11 @@
 // strings, as the desktop renderer expects (`window.path` is pathe):
 //
 //   /data/marktext/...      app-private storage (settings, caches, buffers)
-//   /vault/<key>/...        a document tree the user granted through the
-//                           Storage Access Framework picker; <key> is stable
-//                           for the lifetime of the grant
+//   /vault/<key>/<name>/... a document tree the user granted through the
+//                           Storage Access Framework picker; <key> is a short
+//                           hash of the tree URI, stable for the lifetime of
+//                           the grant, and <name> the tree's display name, so
+//                           the sidebar shows the folder's own name
 //   /doc/<key>/<name>       a single document opened or created via a picker
 //
 // The native plugin maps them onto File / DocumentFile; the memory backend
@@ -47,6 +49,9 @@ export interface DirEntry {
   name: string
   isFile: boolean
   isDirectory: boolean
+  /** Set when the listing carries it, which saves a stat per entry. */
+  mtimeMs?: number
+  birthtimeMs?: number
 }
 
 export interface PickedEntry {
@@ -78,7 +83,8 @@ export interface FileBackend {
   /** Storage Access Framework pickers; `null` when the user cancels. */
   pickDirectory(): Promise<PickedEntry | null>
   pickOpenFile(mimeTypes: string[]): Promise<PickedEntry | null>
-  pickSaveFile(suggestedName: string, mimeType: string): Promise<PickedEntry | null>
+  /** `initialPath`: directory the picker should start in, when the provider allows it. */
+  pickSaveFile(suggestedName: string, mimeType: string, initialPath?: string): Promise<PickedEntry | null>
 }
 
 /** Depth-first walk yielding file paths below `root` that `include` accepts. */

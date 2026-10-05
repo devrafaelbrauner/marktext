@@ -33,6 +33,12 @@ export class MemoryFileBackend implements FileBackend {
     this.nodes.set(path, node)
   }
 
+  /** Synchronous read for blob URLs in the browser dev build; `null` unless a file. */
+  peek(path: string): { data: Uint8Array; mtimeMs: number } | null {
+    const node = this.nodes.get(normalize(path))
+    return node?.kind === 'file' ? { data: node.data, mtimeMs: node.mtimeMs } : null
+  }
+
   async stat(path: string): Promise<FileStat | null> {
     const node = this.nodes.get(normalize(path))
     if (!node) return null
@@ -52,7 +58,13 @@ export class MemoryFileBackend implements FileBackend {
     const out: DirEntry[] = []
     for (const [key, node] of this.nodes) {
       if (key === dir || !key.startsWith(prefix) || key.slice(prefix.length).includes('/')) continue
-      out.push({ name: key.slice(prefix.length), isFile: node.kind === 'file', isDirectory: node.kind === 'dir' })
+      out.push({
+        name: key.slice(prefix.length),
+        isFile: node.kind === 'file',
+        isDirectory: node.kind === 'dir',
+        mtimeMs: node.mtimeMs,
+        birthtimeMs: node.birthtimeMs
+      })
     }
     return out.sort((a, b) => a.name.localeCompare(b.name))
   }

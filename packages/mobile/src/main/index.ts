@@ -1,5 +1,6 @@
 import { registerBackButton } from './backButton'
 import { registerBoot } from './boot'
+import { registerCore } from './core'
 import { exposeMainToFrames, isChildFrame } from './frames'
 import { registerSettingsWindow } from './settingsWindow'
 
@@ -7,6 +8,7 @@ import { registerSettingsWindow } from './settingsWindow'
 // the parent document's handlers (src/main/frames.ts).
 if (!isChildFrame()) {
   await registerBoot()
+  await registerCore()
   registerSettingsWindow()
   await registerBackButton()
   exposeMainToFrames()

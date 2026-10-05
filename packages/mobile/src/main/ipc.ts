@@ -206,3 +206,4 @@ export const rendererIpc = connectWindow(EDITOR_WINDOW_ID)
 /** Channels with a registered handler; feeds the BRIDGE.md coverage check. */
 export const registeredInvokeChannels = (): string[] => [...invokeHandlers.keys()]
 export const registeredSendChannels = (): string[] => [...sendHandlers.keys()]
+export const registeredSyncChannels = (): string[] => [...syncHandlers.keys()]

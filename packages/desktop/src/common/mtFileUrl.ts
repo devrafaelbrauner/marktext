@@ -21,10 +21,25 @@ export function isAbsoluteLocalPath(filePath: string): boolean {
 /** A URL the handler rejects. Used so a UNC path never falls through to `http:` or `file://host`. */
 export const MT_FILE_REJECT_URL = 'mt-file://reject/unc'
 
+// Builds the URL of an absolute local path for builds without the `mt-file:`
+// protocol. The Android WebView serves files from `https://vault.local/...`,
+// and the browser dev build from blob URLs; desktop never sets it.
+let localFileUrlBuilder: ((absolutePath: string) => string) | null = null
+
+/**
+ * Replaces the `mt-file://local` form `toMtFileUrl` emits. The builder only
+ * sees absolute, forward-slashed, non-UNC paths; rejected paths still map to
+ * `MT_FILE_REJECT_URL`.
+ */
+export function setLocalFileUrlBuilder(builder: ((absolutePath: string) => string) | null): void {
+  localFileUrlBuilder = builder
+}
+
 export function toMtFileUrl(absolutePath: string): string {
   if (!absolutePath || isUncOrRemoteHostPath(absolutePath)) return MT_FILE_REJECT_URL
   const normalized = absolutePath.replace(/\\/g, '/')
   if (!isAbsoluteLocalPath(normalized)) return MT_FILE_REJECT_URL
+  if (localFileUrlBuilder) return localFileUrlBuilder(normalized)
   const encoded = normalized.split('/').map((part) => encodeURIComponent(part)).join('/')
   return encoded.startsWith('/')
     ? `mt-file://${MT_FILE_HOST}${encoded}`

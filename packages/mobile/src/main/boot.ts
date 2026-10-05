@@ -12,6 +12,7 @@ const bootInfo = (): BootInfo => ({
   arch: 'arm64',
   versions: {},
   env: {
+    MARKTEXT_PLATFORM: 'android',
     NODE_ENV: import.meta.env.MODE === 'development' ? 'development' : 'production',
     MARKTEXT_VERSION_STRING: `v${MARKTEXT_VERSION}`
   },
