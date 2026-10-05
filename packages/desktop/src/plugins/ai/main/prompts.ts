@@ -2,9 +2,10 @@ import type { AiAction } from '../common/types'
 import type { ChatMessage } from './client'
 
 const NO_FENCES = 'Do not wrap the reply in code fences.'
-// muya renders `$…$` / `$$…$$` only; models often default to LaTeX's `\(…\)`.
+// muya renders `$…$` inline and `$$` blocks with the delimiters on their own
+// lines; models often default to LaTeX's `\(…\)` or put `$$…$$` on one line.
 const MATH_DELIMITERS =
-  'Write math only as inline `$...$` or display `$$...$$`; never use `\\(...\\)` or `\\[...\\]`.'
+  'Write math only as inline `$...$`, or as a display block with `$$` alone on the lines before and after it; never use `\\(...\\)` or `\\[...\\]`.'
 
 const SYSTEM_PROMPTS: Record<AiAction, string> = {
   fixText: [
@@ -81,7 +82,10 @@ const MATH_ACTIONS: Record<AiAction, boolean> = {
 // Fenced blocks and inline code spans: math delimiters inside them are text.
 const CODE_SEGMENTS = /(^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\2[ \t]*$|`+[^`\n]*`+)/m
 
-/** `\(x\)` → `$x$` and `\[x\]` → `$$` display block, outside code. */
+/**
+ * `\(x\)` and one-line `$$x$$` → inline `$x$`; `\[x\]` → `$$` display block.
+ * Outside code only.
+ */
 const toDollarMath = (markdown: string): string =>
   markdown
     .split(new RegExp(CODE_SEGMENTS.source, 'gm'))
@@ -93,6 +97,7 @@ const toDollarMath = (markdown: string): string =>
       return part
         .replace(/\\\[([\s\S]+?)\\\]/g, (_match, body: string) => `\n$$\n${body.trim()}\n$$\n`)
         .replace(/\\\(([\s\S]+?)\\\)/g, (_match, body: string) => `$${body.trim()}$`)
+        .replace(/\$\$([^$\n]+?)\$\$/g, (_match, body: string) => `$${body.trim()}$`)
     })
     .join('')
 
