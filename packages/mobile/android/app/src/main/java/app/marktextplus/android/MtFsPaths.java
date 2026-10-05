@@ -77,8 +77,12 @@ public final class MtFsPaths {
         Document.COLUMN_FLAGS
     };
 
-    /** Process-wide virtualPath -> documentId cache for granted trees, LRU bounded. */
-    private static final int DOC_ID_CACHE_MAX = 512;
+    /**
+     * Process-wide virtualPath -> documentId cache for granted trees, LRU bounded. Sized for whole
+     * vaults: a miss costs a children query of the parent folder (hundreds of ms on the external
+     * storage provider), and indexing reads every note. ~200 bytes per entry.
+     */
+    private static final int DOC_ID_CACHE_MAX = 50_000;
     private static final Map<String, String> docIdCache = new LinkedHashMap<String, String>(64, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
@@ -903,8 +907,12 @@ public final class MtFsPaths {
                     if (!w.isDir()) {
                         throw fsError(ENOTDIR, loc.vpath, "not a directory");
                     }
+                    // A vault walk lists every folder before reading its notes: remembering
+                    // the children's ids turns each later read into a direct lookup.
+                    String dir = loc.prefixPath(loc.rel.size());
                     for (Row r : listChildren(loc, w.docId)) {
                         out.add(Info.of(r, r.name));
+                        cachePut(dir + "/" + r.name, r.docId);
                     }
                     break;
                 }

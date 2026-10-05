@@ -22,16 +22,23 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.json.JSONException;
 
 /**
- * File backend for the in-WebView mobile main process. All file work runs on one single-thread
- * executor so calls complete in submission order (a write followed by a read sees the write).
+ * File backend for the in-WebView mobile main process. Mutations run on one single-thread executor
+ * in submission order. Reads (stat, readdir, readFile) run on a small pool, since indexing a vault
+ * issues thousands and each storage-provider query blocks for tens of milliseconds; while any
+ * mutation is queued, reads join the serial queue so a read submitted after a write sees it.
  */
 @CapacitorPlugin(name = "MtFs")
 public class MtFsPlugin extends Plugin {
 
+    private static final int READ_THREADS = 4;
+
     private final ExecutorService io = Executors.newSingleThreadExecutor(r -> new Thread(r, "MtFs-io"));
+    private final ExecutorService readers = Executors.newFixedThreadPool(READ_THREADS, r -> new Thread(r, "MtFs-read"));
+    private final AtomicInteger pendingWrites = new AtomicInteger();
     private MtFsPaths fs;
 
     @Override
@@ -42,21 +49,39 @@ public class MtFsPlugin extends Plugin {
     @Override
     protected void handleOnDestroy() {
         io.shutdown();
+        readers.shutdown();
     }
 
     private interface Task {
         JSObject run(MtFsPaths.Op op) throws Exception;
     }
 
-    private void submit(PluginCall call, String path, Task task) {
-        io.execute(() -> {
+    private Runnable runner(PluginCall call, String path, Task task) {
+        return () -> {
             try {
                 JSObject result = task.run(fs.begin());
                 call.resolve(result != null ? result : new JSObject());
             } catch (Exception e) {
                 reject(call, path, e);
             }
+        };
+    }
+
+    /** A mutation (or anything that must keep submission order). */
+    private void submit(PluginCall call, String path, Task task) {
+        pendingWrites.incrementAndGet();
+        Runnable run = runner(call, path, task);
+        io.execute(() -> {
+            try {
+                run.run();
+            } finally {
+                pendingWrites.decrementAndGet();
+            }
         });
+    }
+
+    private void submitRead(PluginCall call, String path, Task task) {
+        (pendingWrites.get() > 0 ? io : readers).execute(runner(call, path, task));
     }
 
     private static void reject(PluginCall call, String path, Exception e) {
@@ -93,7 +118,7 @@ public class MtFsPlugin extends Plugin {
     @PluginMethod
     public void stat(PluginCall call) {
         String path = call.getString("path");
-        submit(call, path, op -> {
+        submitRead(call, path, op -> {
             MtFsPaths.Info info = op.stat(path);
             JSObject out = new JSObject();
             out.put("exists", info != null);
@@ -111,7 +136,7 @@ public class MtFsPlugin extends Plugin {
     @PluginMethod
     public void readdir(PluginCall call) {
         String path = call.getString("path");
-        submit(call, path, op -> {
+        submitRead(call, path, op -> {
             List<MtFsPaths.Info> list = op.readdir(path);
             JSArray entries = new JSArray();
             for (MtFsPaths.Info info : list) {
@@ -132,7 +157,7 @@ public class MtFsPlugin extends Plugin {
     @PluginMethod
     public void readFile(PluginCall call) {
         String path = call.getString("path");
-        submit(call, path, op -> {
+        submitRead(call, path, op -> {
             boolean base64 = isBase64(call);
             byte[] bytes = op.readFile(path);
             JSObject out = new JSObject();

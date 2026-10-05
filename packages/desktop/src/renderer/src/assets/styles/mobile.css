@@ -7,10 +7,16 @@
 
 /* The sidebar is a drawer over the editor here, never beside it: the desktop
    cap of 100vw minus the sidebar width (editorWithTabs) would leave the
-   editor a strip next to the open drawer. Flex sizing alone fits it. */
+   editor a strip next to the open drawer. Cap it at its flex slot instead;
+   `min-width: 0` stops a long tab bar from widening the slot past the screen. */
 @media (max-width: 599px) {
+  .editor-middle,
   .editor-with-tabs {
-    max-width: none !important;
+    min-width: 0;
+  }
+
+  .editor-with-tabs {
+    max-width: 100% !important;
   }
 }
 
