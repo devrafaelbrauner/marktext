@@ -1,7 +1,7 @@
 # Plugins da comunidade
 
 Desenho combinado do marco M7. **Não está implementado** neste commit: o
-host só ativa os nove embutidos. A referência de quem escreve um plugin da
+host só ativa os dez embutidos. A referência de quem escreve um plugin da
 comunidade é o SDK, não esta página:
 
 - [SDK (pt-BR)](../sdk/README.md)

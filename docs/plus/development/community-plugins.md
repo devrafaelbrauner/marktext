@@ -1,7 +1,7 @@
 # Community plugins
 
 Agreed design for milestone M7. **Not implemented** in this commit: the host
-only activates the nine built-ins. The reference for someone writing a
+only activates the ten built-ins. The reference for someone writing a
 community plugin is the SDK, not this page:
 
 - [SDK (pt-BR)](../sdk/README.md)

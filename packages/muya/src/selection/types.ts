@@ -7,6 +7,20 @@ export interface INodeOffset {
     offset: number;
 }
 
+// A position in the document: UTF-16 offset into the `text` of the content
+// block at `path`.
+export interface IBlockOffset {
+    path: TBlockPath;
+    offset: number;
+}
+
+// A text selection as plain data; `anchor` is where it started, so it may
+// come after `focus`.
+export interface ITextSelectionRange {
+    anchor: IBlockOffset;
+    focus: IBlockOffset;
+}
+
 export interface IContentCursor extends ISelection {
     start: INodeOffset;
     end: INodeOffset;

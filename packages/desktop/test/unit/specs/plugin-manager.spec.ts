@@ -50,6 +50,8 @@ const createFakeMuya = () => {
     replaceRange: vi.fn(() => true),
     getCheckableBlocks: vi.fn(() => []),
     insertText: vi.fn(() => true),
+    insertMarkdownBlocks: vi.fn((_markdown: string, _after?: Array<string | number>) => true),
+    getTextSelection: vi.fn(() => null),
     refreshInlineRendering: vi.fn()
   }
 }
@@ -397,6 +399,26 @@ describe('engine host', () => {
     engine.notifyContentChange('other-tab')
     await flush()
     expect(events).toEqual([{ tabId: 't', source: 'user' }, { tabId: 't', source: 'api' }])
+  })
+
+  it('reports block insertions as api edits and has no selection without an engine', async() => {
+    const muya = createFakeMuya()
+    const engine = new EngineHost({ getActiveTabId: () => 't', isMac: false, registries: {} as EngineRegistries })
+    expect(engine.insertMarkdownBlocks('| a |', [0, 'text'])).toBe(false)
+    expect(engine.getSelection()).toBeNull()
+
+    engine.attach(muya as unknown as EngineInstance)
+    muya.insertMarkdownBlocks.mockImplementation(() => {
+      // The editor store reports the edit synchronously, as it does for engine json-change events.
+      engine.notifyContentChange('t')
+      return true
+    })
+    const events: unknown[] = []
+    engine.onDidChangeContent((e) => events.push(e))
+    expect(engine.insertMarkdownBlocks('| a |', [0, 'text'])).toBe(true)
+    await flush()
+    expect(muya.insertMarkdownBlocks).toHaveBeenCalledWith('| a |', [0, 'text'])
+    expect(events).toEqual([{ tabId: 't', source: 'api' }])
   })
 
   it('routes ctrl-clicks on custom tokens and ignores plain clicks', () => {

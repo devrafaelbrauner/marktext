@@ -13,6 +13,7 @@ import type {
   DecorationClickEvent,
   DecorationRange,
   Disposable,
+  EditorSelection,
   EngineOptionRequests,
   InlineSyntaxRule,
   MermaidEngineOptions,
@@ -43,6 +44,8 @@ export type EngineInstance = Pick<
   | 'replaceRange'
   | 'getCheckableBlocks'
   | 'insertText'
+  | 'insertMarkdownBlocks'
+  | 'getTextSelection'
   | 'refreshInlineRendering'
 >
 
@@ -217,6 +220,16 @@ export class EngineHost {
   insertText(text: string): void {
     const { muya } = this
     if (muya) this.asApi(() => muya.insertText(text))
+  }
+
+  insertMarkdownBlocks(markdown: string, after?: BlockPath): boolean {
+    const { muya } = this
+    if (!muya) return false
+    return this.asApi(() => muya.insertMarkdownBlocks(markdown, after))
+  }
+
+  getSelection(): EditorSelection | null {
+    return this.muya?.getTextSelection() ?? null
   }
 
   /** Runs `edit` so the content changes it causes are reported with source 'api'. */

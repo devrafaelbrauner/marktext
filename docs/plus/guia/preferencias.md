@@ -4,7 +4,7 @@ Abra Preferências e escolha **Plugins** na barra lateral. A rota é
 `/preference/plugins`. Um plugin pode abrir a própria ficha
 (`/preference/plugins/<id>`), que rola até o cartão.
 
-A página lista os nove plugins embutidos, na ordem em que são registrados.
+A página lista os dez plugins embutidos, na ordem em que são registrados.
 Não dá para reordenar nem instalar outro daqui.
 
 Cada cartão tem o nome, a versão `1.0.0`, a descrição e um interruptor
@@ -17,21 +17,22 @@ abertos no editor. Não é preciso reiniciar o aplicativo.
 O formulário sai do manifesto. O plugin não coloca código na janela de
 preferências.
 
-| Tipo | Controle |
-| --- | --- |
-| booleano | interruptor |
-| texto | campo; grava ao alterar |
-| número | campo numérico, com mínimo, máximo e passo quando existem |
-| lista de opções | menu |
-| lista de textos | uma entrada por linha |
-| segredo | senha, botões Salvar e Limpar |
+| Tipo            | Controle                                                  |
+| --------------- | --------------------------------------------------------- |
+| booleano        | interruptor                                               |
+| texto           | campo; grava ao alterar                                   |
+| número          | campo numérico, com mínimo, máximo e passo quando existem |
+| lista de opções | menu                                                      |
+| lista de textos | uma entrada por linha                                     |
+| segredo         | senha, botões Salvar e Limpar                             |
 
 Texto longo demais é recusado (10 000 caracteres; lista com no máximo 1 000
 itens). Um valor que não casa com o padrão do campo também é recusado. A
 mensagem aparece como “Não foi possível salvar…”.
 
-Só o corretor tem um segredo: **Chave de API**. O renderer só sabe se ela
-está configurada. O texto claro fica no processo principal, em
+Dois plugins têm um segredo: o corretor (**Chave de API**) e a IA
+(**Chave de API da OpenRouter**). O renderer só sabe se ela está
+configurada. O texto claro fica no processo principal, em
 [`secrets.json`](dados.md). Salvar de novo substitui; Limpar apaga. O campo
 não mostra o valor anterior.
 
