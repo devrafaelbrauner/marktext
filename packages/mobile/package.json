@@ -18,7 +18,8 @@
     "@capacitor/core": "^8.5.2",
     "@capacitor/keyboard": "^8.0.6",
     "@capacitor/share": "^8.0.3",
-    "@capacitor/splash-screen": "^8.0.2"
+    "@capacitor/splash-screen": "^8.0.2",
+    "pathe": "^2.0.3"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.2",
