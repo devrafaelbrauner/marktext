@@ -13,7 +13,8 @@ const bootInfo = (): BootInfo => ({
   versions: {},
   env: {
     NODE_ENV: import.meta.env.MODE === 'development' ? 'development' : 'production',
-    MARKTEXT_VERSION_STRING: `v${MARKTEXT_VERSION}`
+    MARKTEXT_VERSION_STRING: `v${MARKTEXT_VERSION}`,
+    MARKTEXT_PLATFORM: 'android'
   },
   paths: {
     resources: '/android_asset',

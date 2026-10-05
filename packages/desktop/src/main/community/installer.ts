@@ -9,7 +9,8 @@ import path from 'path'
 import { MAX_FILE_BYTES, MAX_FILE_COUNT, MAX_UNCOMPRESSED_BYTES } from '@shared/plugins/community'
 import { validateCommunityManifest, type ManifestCheckOptions } from '@shared/plugins/communitySchema'
 import type { CommunityManifest } from '@shared/plugins/community'
-import { readZip, writeZipFiles, ZipError } from './zip'
+import { ZipError } from '@shared/plugins/zipFormat'
+import { readZip, writeZipFiles } from './zip'
 
 export class InstallError extends Error {
   constructor(message: string) {

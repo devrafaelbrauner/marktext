@@ -142,6 +142,7 @@ import {
   ZoomOut as ZoomOutIcon
 } from '@element-plus/icons-vue'
 import { ZoomPanController } from '@/util/zoomPan'
+import { isAndroid } from '@/util'
 import {
   exportDiagram,
   naturalSvgSize,
@@ -239,6 +240,8 @@ const save = async (format: ExportFormat) => {
     if (!filePath) return
 
     await window.fileUtils.writeFile(filePath, image.data)
+    // Android has no file manager to reveal the saved file in, so the notice offers no action there.
+    const revealable = !isAndroid()
     notice
       .notify({
         type: 'primary',
@@ -246,10 +249,10 @@ const save = async (format: ExportFormat) => {
         message: t('store.editor.exportSuccessMessage', {
           name: window.path.basename(filePath)
         }),
-        showConfirm: true
+        showConfirm: revealable
       })
       .then(() => {
-        window.electron.shell.showItemInFolder(filePath)
+        if (revealable) window.electron.shell.showItemInFolder(filePath)
       })
       // Dismissing the notice rejects; that is not a failure.
       .catch(() => {})

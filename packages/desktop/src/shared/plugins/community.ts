@@ -277,12 +277,16 @@ export const dispatchRpc = async(
   }
 }
 
-/** Document CSP for every response of `mt-plugin://<id>/`. Scripts run only
+/** Document CSP for every response of a plugin's origin (`mt-plugin://<id>`
+ * on desktop, `https://<id>.plugin.local` on Android). Scripts run only
  * from the plugin's own origin; inline scripts are needed because the host
  * bootstrap and small fixture plugins ship inline code. No object, frame or
  * network access is allowed. */
-export const pluginResponseCsp = (id: string): string =>
-  `default-src 'none'; script-src 'unsafe-inline' mt-plugin://${id}; style-src 'unsafe-inline' mt-plugin://${id}; img-src data: mt-plugin://${id}; connect-src 'none'; object-src 'none'; frame-src 'none'`
+export const pluginResponseCsp = (id: string, origin = `mt-plugin://${id}`): string =>
+  `default-src 'none'; script-src 'unsafe-inline' ${origin}; style-src 'unsafe-inline' ${origin}; img-src data: ${origin}; connect-src 'none'; object-src 'none'; frame-src 'none'`
+
+/** Origin a community plugin is served from on Android, by the native request handler. */
+export const androidPluginOrigin = (id: string): string => `https://${id}.plugin.local`
 
 export const localizeDescription = (description: CommunityDescription, language: string): string => {
   if (typeof description === 'string') return description

@@ -1,6 +1,7 @@
 import { registerBackButton } from './backButton'
 import { registerBoot } from './boot'
 import { exposeMainToFrames, isChildFrame } from './frames'
+import { registerPlugins } from './plugins'
 import { registerSettingsWindow } from './settingsWindow'
 
 // The settings iframe reuses this bundle but not this side: its IPC goes to
@@ -9,5 +10,6 @@ if (!isChildFrame()) {
   await registerBoot()
   registerSettingsWindow()
   await registerBackButton()
+  await registerPlugins()
   exposeMainToFrames()
 }

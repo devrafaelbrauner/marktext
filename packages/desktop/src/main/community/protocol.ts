@@ -10,7 +10,8 @@
  */
 
 import { app, protocol } from 'electron'
-import { renderBootstrapScript, servePluginUrl } from './serve'
+import { renderBootstrapScript } from '@shared/plugins/communityBootstrap'
+import { servePluginUrl } from './serve'
 import type { CommunityRegistry } from './registry'
 
 let attached = false

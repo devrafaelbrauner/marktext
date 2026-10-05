@@ -8,7 +8,8 @@ import { validateCommunityManifest } from '@shared/plugins/communitySchema'
 import { installFromFolder, installFromZip } from '../../../src/main/community/installer'
 import { resolvePluginFile, safeRelativePath } from '../../../src/main/community/paths'
 import { servePluginUrl } from '../../../src/main/community/serve'
-import { readZip, safeZipEntryName } from '../../../src/main/community/zip'
+import { readZip } from '../../../src/main/community/zip'
+import { safeZipEntryName } from '@shared/plugins/zipFormat'
 import { ActivationWatch } from '../../../src/renderer/src/plugins/community/activation'
 
 const validManifest = {

@@ -14,7 +14,7 @@ import type { PluginHostServices } from '../host/context'
 import { createPluginContext } from '../host/context'
 import type { PluginStateClient } from '../host/pluginState'
 import { CommunitySession } from './session'
-import { createSandboxedFrame, ensureBackgroundHost } from './frames'
+import { createSandboxedFrame, ensureBackgroundHost, pluginOrigin } from './frames'
 
 interface FrameInfo {
   session: CommunitySession
@@ -92,7 +92,7 @@ export const startCommunityRuntime = (
     })
     sessions.set(record.id, session)
     const iframe = createSandboxedFrame(
-      `mt-plugin://${record.id}/__mt/bootstrap.html`,
+      `${pluginOrigin(record.id)}/__mt/bootstrap.html`,
       'community-plugin-frame'
     )
     frames.set(iframe, { session, role: 'background', greeted: false })

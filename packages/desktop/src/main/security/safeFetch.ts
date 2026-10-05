@@ -1,47 +1,15 @@
 import { net } from 'electron'
-import { isIP } from 'net'
 import type { SafeFetchInit, SafeFetchResponse } from '../plugins/types'
-
-export const DEFAULT_TIMEOUT_MS = 15_000
-export const DEFAULT_MAX_RESPONSE_BYTES = 5 * 1024 * 1024
-
-export type SafeFetchErrorCode = 'BAD_URL' | 'TIMEOUT' | 'TOO_LARGE' | 'NETWORK'
-
-export class SafeFetchError extends Error {
-  readonly code: SafeFetchErrorCode
-
-  constructor(code: SafeFetchErrorCode, message: string) {
-    super(message)
-    this.name = 'SafeFetchError'
-    this.code = code
-  }
-}
+import {
+  buildSafeFetchResponse,
+  checkSafeFetchUrl,
+  DEFAULT_MAX_RESPONSE_BYTES,
+  DEFAULT_TIMEOUT_MS,
+  SafeFetchError
+} from './safeFetchPolicy'
 
 /** `net.fetch`, narrowed to what `safeFetch` needs; replaceable in tests. */
 export type FetchImpl = (url: string, init: RequestInit) => Promise<Response>
-
-const isLoopbackHost = (hostname: string): boolean => {
-  const host = hostname.replace(/^\[|\]$/g, '').toLowerCase()
-  if (host === 'localhost') return true
-  if (isIP(host) === 4) return host.startsWith('127.')
-  return host === '::1'
-}
-
-/** The parsed URL when `safeFetch` may reach it, else throws 'BAD_URL'. */
-export const checkSafeFetchUrl = (raw: string): URL => {
-  let url: URL
-  try {
-    url = new URL(raw)
-  } catch {
-    throw new SafeFetchError('BAD_URL', 'Invalid URL')
-  }
-  if (url.username || url.password) {
-    throw new SafeFetchError('BAD_URL', 'Credentials in URL are not allowed')
-  }
-  if (url.protocol === 'https:') return url
-  if (url.protocol === 'http:' && isLoopbackHost(url.hostname)) return url
-  throw new SafeFetchError('BAD_URL', `URL not allowed: only https, or http to loopback (${url.protocol}//${url.hostname})`)
-}
 
 const readCapped = async(body: ReadableStream<Uint8Array> | null, max: number): Promise<Uint8Array> => {
   if (!body) return new Uint8Array()
@@ -111,15 +79,7 @@ export const safeFetch = async(
     response.headers.forEach((value, key) => {
       headers[key.toLowerCase()] = value
     })
-    const text = (): string => new TextDecoder().decode(body)
-    return {
-      status: response.status,
-      ok: response.ok,
-      headers,
-      body,
-      text,
-      json: <T = unknown>(): T => JSON.parse(text()) as T
-    }
+    return buildSafeFetchResponse(response.status, headers, body)
   } catch (err) {
     if (err instanceof SafeFetchError) throw err
     if (timedOut) throw new SafeFetchError('TIMEOUT', `Request timed out after ${timeoutMs} ms`)
