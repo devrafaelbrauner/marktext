@@ -53,14 +53,14 @@ Imagens locais: `toMtFileUrl` (`common/mtFileUrl.ts`) recebe um construtor de UR
 | `window.path`          | Implementado          | pathe (puro, preload)                                                                                                                                                                                                                         |
 | `window.commandExists` | Não suportado         | `mt::cmd::exists` sem handler                                                                                                                                                                                                                 |
 | `window.i18nUtils`     | Implementado          | `mt::i18n::load`                                                                                                                                                                                                                              |
-| `window.ripgrep`       | Não suportado         | `mt::rg::*` sem handler (busca usa o índice do vault)                                                                                                                                                                                         |
+| `window.ripgrep`       | Implementado          | `mt::rg::*` atendidos por busca em JS no worker do índice do vault                                                                                                                                                                            |
 | `window.uploader`      | Não suportado         | `mt::uploader::upload` sem handler                                                                                                                                                                                                            |
 | `window.fonts`         | Não suportado         | `mt::fonts::list` sem handler                                                                                                                                                                                                                 |
 | `window.diagram`       | Não suportado         | `mt::diagram::fetch-plantuml` sem handler                                                                                                                                                                                                     |
-| `window.plugins`       | Não suportado         | `mt::plugins::*`: fatia Plugins                                                                                                                                                                                                               |
-| `window.community`     | Não suportado         | `mt::community::*`: fatia Plugins                                                                                                                                                                                                             |
-| `window.vault`         | Não suportado         | `mt::vault::*`: fatia Plugins                                                                                                                                                                                                                 |
-| `window.vaultIndex`    | Não suportado         | `mt::index::*`: fatia Plugins                                                                                                                                                                                                                 |
+| `window.plugins`       | Implementado          | `mt::plugins::*`: host do desktop no WebView, segredos no Keystore                                                                                                                                                                            |
+| `window.community`     | Implementado          | `mt::community::*`: instalação via SAF, hospedagem em `https://<id>.plugin.local/`                                                                                                                                                            |
+| `window.vault`         | Implementado          | `mt::vault::*` sobre o FileBackend                                                                                                                                                                                                            |
+| `window.vaultIndex`    | Implementado          | `mt::index::*`: índice do desktop num Web Worker                                                                                                                                                                                              |
 
 ## Push (main → renderer) emitidos pelo main móvel
 
@@ -179,95 +179,95 @@ Imagens locais: `toMtFileUrl` (`common/mtFileUrl.ts`) recebe um construtor de UR
 
 ### Janela, menus e estado de UI
 
-| Canal                                 | Tipo   | Status                | Observação                                                                        |
-| ------------------------------------- | ------ | --------------------- | --------------------------------------------------------------------------------- |
-| `mt::win::is-fullscreen`              | invoke | Implementado          | sempre `false`                                                                    |
-| `mt::win::is-maximized`               | invoke | Implementado          | sempre `false`                                                                    |
-| `menu-add-recently-used`              | send   | Sem efeito no Android | lista de recentes do SO; documentos vêm das permissões SAF                        |
-| `menu-clear-recently-used`            | send   | Sem efeito no Android | lista de recentes do SO; documentos vêm das permissões SAF                        |
-| `mt::add-recently-used-document`      | send   | Sem efeito no Android | lista de recentes do SO; documentos vêm das permissões SAF                        |
-| `mt::editor-selection-changed`        | send   | Sem efeito no Android | só atualiza menus nativos do desktop                                              |
-| `mt::menu::popup`                     | send   | Não suportado         | menus de contexto nativos: fatia de UI responsiva                                 |
-| `mt::menu::popup-application`         | send   | Não suportado         | menus de contexto nativos: fatia de UI responsiva                                 |
-| `mt::set-editor-format-menus-enabled` | send   | Sem efeito no Android | só atualiza menus nativos do desktop                                              |
-| `mt::update-format-menu`              | send   | Sem efeito no Android | só atualiza menus nativos do desktop                                              |
-| `mt::update-line-ending-menu`         | send   | Sem efeito no Android | só atualiza menus nativos do desktop                                              |
-| `mt::update-sidebar-menu`             | send   | Sem efeito no Android | só atualiza menus nativos do desktop                                              |
-| `mt::view-layout-changed`             | send   | Sem efeito no Android | só atualiza menus nativos do desktop                                              |
-| `mt::win::close`                      | send   | Implementado          | janela 2 (configurações) fecha o overlay; janela 1 manda o app para segundo plano |
-| `mt::win::maximize`                   | send   | Sem efeito no Android | uma janela em tela cheia, sem controles de janela                                 |
-| `mt::win::minimize`                   | send   | Sem efeito no Android | uma janela em tela cheia, sem controles de janela                                 |
-| `mt::win::set-fullscreen`             | send   | Sem efeito no Android | uma janela em tela cheia, sem controles de janela                                 |
-| `mt::win::toggle-fullscreen`          | send   | Sem efeito no Android | uma janela em tela cheia, sem controles de janela                                 |
-| `mt::win::toggle-maximize`            | send   | Sem efeito no Android | uma janela em tela cheia, sem controles de janela                                 |
-| `mt::win::unmaximize`                 | send   | Sem efeito no Android | uma janela em tela cheia, sem controles de janela                                 |
-| `mt::window-initialized`              | send   | Sem efeito no Android | só atualiza menus nativos do desktop                                              |
-| `mt::window-toggle-always-on-top`     | send   | Sem efeito no Android | uma janela em tela cheia, sem controles de janela                                 |
-| `window-close-by-id`                  | send   | Não suportado         | canal interno do main do desktop (ipcMain.emit); o renderer não o envia           |
-| `window-reload-by-id`                 | send   | Não suportado         | canal interno do main do desktop (ipcMain.emit); o renderer não o envia           |
-| `window-toggle-always-on-top`         | send   | Não suportado         | canal interno do main do desktop (ipcMain.emit); o renderer não o envia           |
+| Canal                                 | Tipo   | Status                | Observação                                                                                                       |
+| ------------------------------------- | ------ | --------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `mt::win::is-fullscreen`              | invoke | Implementado          | sempre `false`                                                                                                   |
+| `mt::win::is-maximized`               | invoke | Implementado          | sempre `false`                                                                                                   |
+| `menu-add-recently-used`              | send   | Sem efeito no Android | lista de recentes do SO; documentos vêm das permissões SAF                                                       |
+| `menu-clear-recently-used`            | send   | Sem efeito no Android | lista de recentes do SO; documentos vêm das permissões SAF                                                       |
+| `mt::add-recently-used-document`      | send   | Sem efeito no Android | lista de recentes do SO; documentos vêm das permissões SAF                                                       |
+| `mt::editor-selection-changed`        | send   | Sem efeito no Android | só atualiza menus nativos do desktop                                                                             |
+| `mt::menu::popup`                     | send   | Implementado          | menus.ts: o template vira uma folha de ações na página; cliques voltam como `mt::menu::click`/`mt::menu::closed` |
+| `mt::menu::popup-application`         | send   | Implementado          | menus.ts: menu do app (novo, abrir arquivo/pasta, salvar, buscar, barra lateral, paleta, modos, configurações)   |
+| `mt::set-editor-format-menus-enabled` | send   | Sem efeito no Android | só atualiza menus nativos do desktop                                                                             |
+| `mt::update-format-menu`              | send   | Sem efeito no Android | só atualiza menus nativos do desktop                                                                             |
+| `mt::update-line-ending-menu`         | send   | Sem efeito no Android | só atualiza menus nativos do desktop                                                                             |
+| `mt::update-sidebar-menu`             | send   | Sem efeito no Android | só atualiza menus nativos do desktop                                                                             |
+| `mt::view-layout-changed`             | send   | Sem efeito no Android | só atualiza menus nativos do desktop                                                                             |
+| `mt::win::close`                      | send   | Implementado          | janela 2 (configurações) fecha o overlay; janela 1 manda o app para segundo plano                                |
+| `mt::win::maximize`                   | send   | Sem efeito no Android | uma janela em tela cheia, sem controles de janela                                                                |
+| `mt::win::minimize`                   | send   | Sem efeito no Android | uma janela em tela cheia, sem controles de janela                                                                |
+| `mt::win::set-fullscreen`             | send   | Sem efeito no Android | uma janela em tela cheia, sem controles de janela                                                                |
+| `mt::win::toggle-fullscreen`          | send   | Sem efeito no Android | uma janela em tela cheia, sem controles de janela                                                                |
+| `mt::win::toggle-maximize`            | send   | Sem efeito no Android | uma janela em tela cheia, sem controles de janela                                                                |
+| `mt::win::unmaximize`                 | send   | Sem efeito no Android | uma janela em tela cheia, sem controles de janela                                                                |
+| `mt::window-initialized`              | send   | Sem efeito no Android | só atualiza menus nativos do desktop                                                                             |
+| `mt::window-toggle-always-on-top`     | send   | Sem efeito no Android | uma janela em tela cheia, sem controles de janela                                                                |
+| `window-close-by-id`                  | send   | Não suportado         | canal interno do main do desktop (ipcMain.emit); o renderer não o envia                                          |
+| `window-reload-by-id`                 | send   | Não suportado         | canal interno do main do desktop (ipcMain.emit); o renderer não o envia                                          |
+| `window-toggle-always-on-top`         | send   | Não suportado         | canal interno do main do desktop (ipcMain.emit); o renderer não o envia                                          |
 
 ### Plugins, vault e comunidade
 
-| Canal                        | Tipo   | Status        | Observação                                                                        |
-| ---------------------------- | ------ | ------------- | --------------------------------------------------------------------------------- |
-| `mt::community::fetch`       | invoke | Não suportado | responsabilidade da fatia Plugins (MobilePlugins); integrador atualiza ao mesclar |
-| `mt::community::install`     | invoke | Não suportado | responsabilidade da fatia Plugins (MobilePlugins); integrador atualiza ao mesclar |
-| `mt::community::set-enabled` | invoke | Não suportado | responsabilidade da fatia Plugins (MobilePlugins); integrador atualiza ao mesclar |
-| `mt::community::uninstall`   | invoke | Não suportado | responsabilidade da fatia Plugins (MobilePlugins); integrador atualiza ao mesclar |
-| `mt::plugins::get-state`     | invoke | Não suportado | responsabilidade da fatia Plugins (MobilePlugins); integrador atualiza ao mesclar |
-| `mt::plugins::invoke`        | invoke | Não suportado | responsabilidade da fatia Plugins (MobilePlugins); integrador atualiza ao mesclar |
-| `mt::plugins::set-enabled`   | invoke | Não suportado | responsabilidade da fatia Plugins (MobilePlugins); integrador atualiza ao mesclar |
-| `mt::plugins::set-secret`    | invoke | Não suportado | responsabilidade da fatia Plugins (MobilePlugins); integrador atualiza ao mesclar |
-| `mt::plugins::set-setting`   | invoke | Não suportado | responsabilidade da fatia Plugins (MobilePlugins); integrador atualiza ao mesclar |
-| `mt::vault::create-text`     | invoke | Não suportado | responsabilidade da fatia Plugins (MobilePlugins); integrador atualiza ao mesclar |
-| `mt::vault::exists`          | invoke | Não suportado | responsabilidade da fatia Plugins (MobilePlugins); integrador atualiza ao mesclar |
-| `mt::vault::list`            | invoke | Não suportado | responsabilidade da fatia Plugins (MobilePlugins); integrador atualiza ao mesclar |
-| `mt::vault::read-binary`     | invoke | Não suportado | responsabilidade da fatia Plugins (MobilePlugins); integrador atualiza ao mesclar |
-| `mt::vault::read-text`       | invoke | Não suportado | responsabilidade da fatia Plugins (MobilePlugins); integrador atualiza ao mesclar |
-| `mt::vault::write-text`      | invoke | Não suportado | responsabilidade da fatia Plugins (MobilePlugins); integrador atualiza ao mesclar |
-| `mt::plugins::open-settings` | send   | Não suportado | responsabilidade da fatia Plugins (MobilePlugins); integrador atualiza ao mesclar |
-| `mt::vault::set-active-file` | send   | Não suportado | responsabilidade da fatia Plugins (MobilePlugins); integrador atualiza ao mesclar |
+| Canal                        | Tipo   | Status       | Observação                                                                                               |
+| ---------------------------- | ------ | ------------ | -------------------------------------------------------------------------------------------------------- |
+| `mt::community::fetch`       | invoke | Implementado | checagem de permissão do desktop + `net.ts` (CapacitorHttp, mesma política https/loopback)               |
+| `mt::community::install`     | invoke | Implementado | pasta ou .zip via seletor SAF → `/data/marktext/plugins/<id>/`; validação e proteção zip-slip do desktop |
+| `mt::community::set-enabled` | invoke | Implementado | habilita/desabilita a hospedagem em `https://<id>.plugin.local/`                                         |
+| `mt::community::uninstall`   | invoke | Implementado | remove a pasta privada do plugin                                                                         |
+| `mt::plugins::get-state`     | invoke | Implementado | host do desktop (`main/plugins/host.ts`) rodando no WebView; estado em `/data/marktext/plugins.json`     |
+| `mt::plugins::invoke`        | invoke | Implementado | parte main dos plugins embutidos (grammar, ai) no WebView                                                |
+| `mt::plugins::set-enabled`   | invoke | Implementado | igual ao desktop                                                                                         |
+| `mt::plugins::set-secret`    | invoke | Implementado | Android Keystore (AES-256-GCM); valores nunca passam pelo log do Capacitor                               |
+| `mt::plugins::set-setting`   | invoke | Implementado | igual ao desktop                                                                                         |
+| `mt::vault::create-text`     | invoke | Implementado | escopo do `vaultFs` do desktop sobre o FileBackend                                                       |
+| `mt::vault::exists`          | invoke | Implementado | idem                                                                                                     |
+| `mt::vault::list`            | invoke | Implementado | idem                                                                                                     |
+| `mt::vault::read-binary`     | invoke | Implementado | idem                                                                                                     |
+| `mt::vault::read-text`       | invoke | Implementado | idem                                                                                                     |
+| `mt::vault::write-text`      | invoke | Implementado | idem, com checagem de conflito por `expectedMtimeMs`                                                     |
+| `mt::plugins::open-settings` | send   | Implementado | abre a janela de configurações (iframe) na página do plugin                                              |
+| `mt::vault::set-active-file` | send   | Implementado | só da janela 1; define o arquivo ativo que delimita o vault sem pasta aberta                             |
 
 ### Índice do vault
 
-| Canal                       | Tipo   | Status        | Observação                                                                 |
-| --------------------------- | ------ | ------------- | -------------------------------------------------------------------------- |
-| `mt::index::backlinks`      | invoke | Não suportado | índice do vault — fatia Plugins/VaultIndex; integrador atualiza ao mesclar |
-| `mt::index::files-with-tag` | invoke | Não suportado | índice do vault — fatia Plugins/VaultIndex; integrador atualiza ao mesclar |
-| `mt::index::get-file`       | invoke | Não suportado | índice do vault — fatia Plugins/VaultIndex; integrador atualiza ao mesclar |
-| `mt::index::is-ready`       | invoke | Não suportado | índice do vault — fatia Plugins/VaultIndex; integrador atualiza ao mesclar |
-| `mt::index::list-files`     | invoke | Não suportado | índice do vault — fatia Plugins/VaultIndex; integrador atualiza ao mesclar |
-| `mt::index::request`        | invoke | Não suportado | índice do vault — fatia Plugins/VaultIndex; integrador atualiza ao mesclar |
-| `mt::index::resolve-link`   | invoke | Não suportado | índice do vault — fatia Plugins/VaultIndex; integrador atualiza ao mesclar |
-| `mt::index::tags`           | invoke | Não suportado | índice do vault — fatia Plugins/VaultIndex; integrador atualiza ao mesclar |
+| Canal                       | Tipo   | Status       | Observação                                                                           |
+| --------------------------- | ------ | ------------ | ------------------------------------------------------------------------------------ |
+| `mt::index::backlinks`      | invoke | Implementado | `VaultIndexManager` do desktop num Web Worker; arquivos via ponte para o FileBackend |
+| `mt::index::files-with-tag` | invoke | Implementado | idem                                                                                 |
+| `mt::index::get-file`       | invoke | Implementado | idem                                                                                 |
+| `mt::index::is-ready`       | invoke | Implementado | idem                                                                                 |
+| `mt::index::list-files`     | invoke | Implementado | idem                                                                                 |
+| `mt::index::request`        | invoke | Implementado | idem (handlers de worker dos plugins dataview, daily-notes, links)                   |
+| `mt::index::resolve-link`   | invoke | Implementado | idem                                                                                 |
+| `mt::index::tags`           | invoke | Implementado | idem                                                                                 |
 
 ### Outros
 
-| Canal                                          | Tipo   | Status        | Observação                                                              |
-| ---------------------------------------------- | ------ | ------------- | ----------------------------------------------------------------------- |
-| `mt::ask-for-image-path`                       | invoke | Não suportado | uploader/captura/diálogo de pasta de imagens fora do MVP                |
-| `mt::cmd::exists`                              | invoke | Não suportado | não há comandos de shell                                                |
-| `mt::diagram::fetch-plantuml`                  | invoke | Não suportado | fetch de PlantUML no main fora do MVP                                   |
-| `mt::fonts::list`                              | invoke | Não suportado | lista de fontes do SO indisponível                                      |
-| `mt::rg::start`                                | invoke | Não suportado | ripgrep fora do MVP (sem binário no Android)                            |
-| `mt::spellchecker-get-available-dictionaries`  | invoke | Não suportado | o WebView Android não expõe o corretor do Chromium                      |
-| `mt::spellchecker-get-custom-dictionary-words` | invoke | Não suportado | o WebView Android não expõe o corretor do Chromium                      |
-| `mt::spellchecker-remove-word`                 | invoke | Não suportado | o WebView Android não expõe o corretor do Chromium                      |
-| `mt::spellchecker-set-enabled`                 | invoke | Não suportado | o WebView Android não expõe o corretor do Chromium                      |
-| `mt::uploader::upload`                         | invoke | Não suportado | uploader/captura/diálogo de pasta de imagens fora do MVP                |
-| `app-create-settings-window`                   | send   | Não suportado | canal interno do main do desktop (ipcMain.emit); o renderer não o envia |
-| `broadcast-preferences-changed`                | send   | Não suportado | canal interno do main do desktop (ipcMain.emit); o renderer não o envia |
-| `mt::NEED_UPDATE`                              | send   | Não suportado | atualização pela loja, não pelo app                                     |
-| `mt::ask-for-image-auto-path`                  | send   | Não suportado | uploader/captura/diálogo de pasta de imagens fora do MVP                |
-| `mt::ask-for-modify-image-folder-path`         | send   | Não suportado | uploader/captura/diálogo de pasta de imagens fora do MVP                |
-| `mt::check-for-update`                         | send   | Não suportado | atualização pela loja, não pelo app                                     |
-| `mt::handle-renderer-error`                    | send   | Implementado  | `console.error` (Logcat)                                                |
-| `mt::make-screenshot`                          | send   | Não suportado | uploader/captura/diálogo de pasta de imagens fora do MVP                |
-| `mt::open-setting-window`                      | send   | Implementado  | settingsWindow.ts: iframe em tela cheia (janela 2)                      |
-| `mt::response-export`                          | send   | Não suportado | exportação/impressão/pandoc fora do MVP                                 |
-| `mt::response-pandoc-export`                   | send   | Não suportado | exportação/impressão/pandoc fora do MVP                                 |
-| `mt::response-print`                           | send   | Não suportado | exportação/impressão/pandoc fora do MVP                                 |
-| `mt::rg::cancel`                               | send   | Não suportado | ripgrep fora do MVP (sem binário no Android)                            |
-| `screen-capture`                               | send   | Não suportado | uploader/captura/diálogo de pasta de imagens fora do MVP                |
-| `set-image-folder-path`                        | send   | Não suportado | uploader/captura/diálogo de pasta de imagens fora do MVP                |
+| Canal                                          | Tipo   | Status        | Observação                                                                                       |
+| ---------------------------------------------- | ------ | ------------- | ------------------------------------------------------------------------------------------------ |
+| `mt::ask-for-image-path`                       | invoke | Não suportado | uploader/captura/diálogo de pasta de imagens fora do MVP                                         |
+| `mt::cmd::exists`                              | invoke | Não suportado | não há comandos de shell                                                                         |
+| `mt::diagram::fetch-plantuml`                  | invoke | Não suportado | fetch de PlantUML no main fora do MVP                                                            |
+| `mt::fonts::list`                              | invoke | Não suportado | lista de fontes do SO indisponível                                                               |
+| `mt::rg::start`                                | invoke | Implementado  | busca em JS no worker do índice (`matchString` do muya), sem ripgrep; mesmos eventos `mt::rg::*` |
+| `mt::spellchecker-get-available-dictionaries`  | invoke | Não suportado | o WebView Android não expõe o corretor do Chromium                                               |
+| `mt::spellchecker-get-custom-dictionary-words` | invoke | Não suportado | o WebView Android não expõe o corretor do Chromium                                               |
+| `mt::spellchecker-remove-word`                 | invoke | Não suportado | o WebView Android não expõe o corretor do Chromium                                               |
+| `mt::spellchecker-set-enabled`                 | invoke | Não suportado | o WebView Android não expõe o corretor do Chromium                                               |
+| `mt::uploader::upload`                         | invoke | Não suportado | uploader/captura/diálogo de pasta de imagens fora do MVP                                         |
+| `app-create-settings-window`                   | send   | Não suportado | canal interno do main do desktop (ipcMain.emit); o renderer não o envia                          |
+| `broadcast-preferences-changed`                | send   | Não suportado | canal interno do main do desktop (ipcMain.emit); o renderer não o envia                          |
+| `mt::NEED_UPDATE`                              | send   | Não suportado | atualização pela loja, não pelo app                                                              |
+| `mt::ask-for-image-auto-path`                  | send   | Não suportado | uploader/captura/diálogo de pasta de imagens fora do MVP                                         |
+| `mt::ask-for-modify-image-folder-path`         | send   | Não suportado | uploader/captura/diálogo de pasta de imagens fora do MVP                                         |
+| `mt::check-for-update`                         | send   | Não suportado | atualização pela loja, não pelo app                                                              |
+| `mt::handle-renderer-error`                    | send   | Implementado  | `console.error` (Logcat)                                                                         |
+| `mt::make-screenshot`                          | send   | Não suportado | uploader/captura/diálogo de pasta de imagens fora do MVP                                         |
+| `mt::open-setting-window`                      | send   | Implementado  | settingsWindow.ts: iframe em tela cheia (janela 2)                                               |
+| `mt::response-export`                          | send   | Não suportado | exportação/impressão/pandoc fora do MVP                                                          |
+| `mt::response-pandoc-export`                   | send   | Não suportado | exportação/impressão/pandoc fora do MVP                                                          |
+| `mt::response-print`                           | send   | Não suportado | exportação/impressão/pandoc fora do MVP                                                          |
+| `mt::rg::cancel`                               | send   | Implementado  | cancela a busca no worker                                                                        |
+| `screen-capture`                               | send   | Não suportado | uploader/captura/diálogo de pasta de imagens fora do MVP                                         |
+| `set-image-folder-path`                        | send   | Não suportado | uploader/captura/diálogo de pasta de imagens fora do MVP                                         |

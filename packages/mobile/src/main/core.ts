@@ -13,6 +13,7 @@ import { registerFsHandlers } from './fsHandlers'
 import { registerI18n } from './i18n'
 import { ipcMain, push } from './ipc'
 import { Keybindings, registerKeybindings } from './keybindings'
+import { registerMenus } from './menus'
 import { registerMisc } from './misc'
 import { Preferences, UserData } from './preferences'
 import { PathScope } from './scope'
@@ -86,6 +87,7 @@ export async function registerCore(): Promise<void> {
   editor.register()
   registerFsHandlers(ctx, editor)
   registerMisc({ isNative, memoryBackend })
+  registerMenus(() => String(preferences.getItem('language') || 'en'))
 
   // The renderer paints its theme from the boot URL before the preferences
   // arrive (bootstrap.ts initialState); without it a dark theme flashes light.

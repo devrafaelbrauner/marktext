@@ -24,9 +24,19 @@ export function handleBack(): boolean {
   return true
 }
 
+// The renderer's phone sidebar drawer (components/sideBar) closes from its
+// backdrop; the renderer cannot reach this stack, so back taps the backdrop.
+function closeSidebarDrawer(): boolean {
+  const backdrop = document.querySelector<HTMLElement>('.side-bar.drawer .drawer-backdrop')
+  if (!backdrop) return false
+  backdrop.click()
+  return true
+}
+
 export async function registerBackButton(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return
   await App.addListener('backButton', () => {
-    if (!handleBack()) App.minimizeApp().catch((error: unknown) => console.error(error))
+    if (handleBack() || closeSidebarDrawer()) return
+    App.minimizeApp().catch((error: unknown) => console.error(error))
   })
 }
