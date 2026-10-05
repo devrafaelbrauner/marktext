@@ -286,6 +286,7 @@
           </p>
           <p>{{ errorText }}</p>
           <button
+            v-if="!android"
             type="button"
             class="pdf-reader-text-button"
             @click="openExternally"
@@ -318,6 +319,7 @@ import { TextLayer } from 'pdfjs-dist'
 import type { PageViewport, PDFDocumentProxy, PDFPageProxy, RenderTask } from 'pdfjs-dist'
 import type { TextContent } from 'pdfjs-dist/types/src/display/api'
 import type { RendererPluginContext } from '@/plugins/types'
+import { isAndroid } from '@/util'
 import { classifyLoadError } from '../common/errors'
 import {
   buildPageText,
@@ -375,6 +377,8 @@ const RENDER_SETTLE_MS = 120
 const FIND_DEBOUNCE_MS = 200
 
 const isMac = window.electron.process.platform === 'darwin'
+// Android has no `shell.openPath` (handing a vault file to another app), so the fallback button is hidden.
+const android = isAndroid()
 const { t } = props.ctx
 
 interface PageTextData {

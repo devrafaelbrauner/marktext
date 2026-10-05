@@ -6,8 +6,13 @@
 
 import { defineComponent, h, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import type { Component } from 'vue'
+import { androidPluginOrigin } from '@shared/plugins/community'
+import { isAndroid } from '@/util'
 
 export const communityStatus = reactive<Record<string, { text: string; tooltip: string }>>({})
+
+/** Origin of a plugin's files: the `mt-plugin:` scheme on desktop, the native request handler's host on Android. */
+export const pluginOrigin = (id: string): string => isAndroid() ? androidPluginOrigin(id) : `mt-plugin://${id}`
 
 export const createSandboxedFrame = (src: string, className: string): HTMLIFrameElement => {
   const iframe = document.createElement('iframe')
@@ -39,7 +44,7 @@ export const panelComponent = (
     let iframe: HTMLIFrameElement | null = null
     onMounted(() => {
       if (!host.value) return
-      iframe = createSandboxedFrame(`mt-plugin://${pluginId}/${entry}`, 'community-panel-frame')
+      iframe = createSandboxedFrame(`${pluginOrigin(pluginId)}/${entry}`, 'community-panel-frame')
       onFrame(iframe)
       host.value.appendChild(iframe)
     })

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { checkSafeFetchUrl, safeFetch, type FetchImpl } from 'main_renderer/security/safeFetch'
+import { safeFetch, type FetchImpl } from 'main_renderer/security/safeFetch'
+import { checkSafeFetchUrl } from 'main_renderer/security/safeFetchPolicy'
 
 vi.mock('electron', () => ({ net: { fetch: vi.fn() } }))
 

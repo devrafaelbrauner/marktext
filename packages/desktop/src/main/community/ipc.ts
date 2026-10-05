@@ -7,13 +7,13 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron'
 import type { IpcMainInvokeEvent } from 'electron'
 import type { PluginIpcResult } from '@shared/types/ipc'
-import { parseNetworkHost } from '@shared/plugins/community'
 import { validateSender } from '../security/validateSender'
-import { safeFetch, SafeFetchError } from '../security/safeFetch'
+import { safeFetch } from '../security/safeFetch'
+import { SafeFetchError } from '../security/safeFetchPolicy'
 import { PluginError } from '../plugins/errors'
 import { toIpcResult } from '../plugins/errors'
 import type { MainPluginHost } from '../plugins/host'
-import type { SafeFetchInit } from '../plugins/types'
+import { communityFetch } from './fetch'
 import { InstallError } from './installer'
 import type { CommunityRegistry } from './registry'
 
@@ -88,50 +88,13 @@ export const registerCommunityIpc = ({ host, registry }: CommunityIpcOptions): v
 
   ipcMain.handle('mt::community::fetch', (event, id: unknown, url: unknown, init: unknown) => {
     if (!validateSender(event)) return forbidden()
-    return toIpcResult(async() => {
-      if (typeof id !== 'string' || typeof url !== 'string') throw new PluginError('BAD_ARGS', 'Malformed fetch')
-      const record = registry.get(id)
-      if (!record || !host.getState().enabled[id] || host.safeMode) {
-        throw new PluginError('DISABLED', `Plugin "${id}" is disabled`)
-      }
-      let hostname: string
-      try {
-        hostname = new URL(url).hostname.toLowerCase()
-      } catch {
-        throw new PluginError('BAD_ARGS', 'Invalid URL')
-      }
-      const allowed = record.grantedPermissions.some((permission) => parseNetworkHost(permission) === hostname)
-      if (!allowed) throw new PluginError('PERMISSION_DENIED', `No network permission for ${hostname}`)
-      const fetchInit = sanitizeFetchInit(init)
-      try {
-        const response = await safeFetch(url, fetchInit)
-        return {
-          status: response.status,
-          ok: response.ok,
-          headers: response.headers,
-          body: response.text()
-        }
-      } catch (err) {
-        if (err instanceof SafeFetchError) throw new PluginError(err.code === 'BAD_URL' ? 'BAD_ARGS' : 'FAILED', err.message)
-        throw new PluginError('FAILED', asError(err).message)
-      }
-    })
+    return toIpcResult(() => communityFetch({
+      id,
+      url,
+      init,
+      record: typeof id === 'string' ? registry.get(id) : undefined,
+      active: typeof id === 'string' && !!host.getState().enabled[id] && !host.safeMode,
+      fetch: safeFetch
+    }))
   })
-}
-
-const sanitizeFetchInit = (init: unknown): SafeFetchInit => {
-  if (!init || typeof init !== 'object') return {}
-  const record = init as Record<string, unknown>
-  const method = record.method === 'POST' ? 'POST' : record.method === 'GET' ? 'GET' : undefined
-  const headers: Record<string, string> = {}
-  if (record.headers && typeof record.headers === 'object' && !Array.isArray(record.headers)) {
-    for (const [key, value] of Object.entries(record.headers)) {
-      if (typeof value !== 'string') continue
-      if (/^cookie$/i.test(key) || /^host$/i.test(key)) continue
-      headers[key] = value
-    }
-  }
-  const body = typeof record.body === 'string' ? record.body : undefined
-  const timeoutMs = typeof record.timeoutMs === 'number' ? record.timeoutMs : undefined
-  return { method, headers, body, timeoutMs }
 }
