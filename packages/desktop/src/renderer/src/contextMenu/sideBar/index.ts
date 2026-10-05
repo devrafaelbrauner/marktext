@@ -10,6 +10,7 @@ import {
   getShowInFolder
 } from './menuItems'
 import { popupContextMenu, type ContextMenuItem } from '../popupMenu'
+import { isAndroid } from '@/util'
 
 export const showContextMenu = (
   event: { clientX: number; clientY: number },
@@ -25,8 +26,8 @@ export const showContextMenu = (
     SEPARATOR,
     getRENAME(),
     getDELETE(),
-    SEPARATOR,
-    getShowInFolder()
+    // Android has no file manager to reveal a document in.
+    ...(isAndroid() ? [] : [SEPARATOR, getShowInFolder()])
   ]
 
   // PASTE entry (index 5) toggles based on the cached source path.

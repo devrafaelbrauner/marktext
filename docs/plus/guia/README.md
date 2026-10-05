@@ -21,6 +21,7 @@ Linux, `Cmd+Shift+P` no macOS).
 | Página                                                        | Conteúdo                                        |
 | ------------------------------------------------------------- | ----------------------------------------------- |
 | [Compilação](compilacao.md)                                   | Como instalar dependências e rodar este fork    |
+| [Android](android.md)                                         | APK: compilar, instalar, usar e diferenças      |
 | [Modo de segurança](modo-seguro.md)                           | O que `--safe` desliga de fato                  |
 | [Onde ficam os dados](dados.md)                               | `plugins.json`, `secrets.json`, cache do índice |
 | [Preferências → Plugins](preferencias.md)                     | Ativar, desativar, configurações e segredos     |

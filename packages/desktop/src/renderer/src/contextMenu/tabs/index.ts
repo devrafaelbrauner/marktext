@@ -9,6 +9,7 @@ import {
   getShowInFolder
 } from './menuItems'
 import { popupContextMenu } from '../popupMenu'
+import { isAndroid } from '@/util'
 
 type MenuItemShape = {
   type?: string
@@ -58,7 +59,8 @@ export const showContextMenu = (event: ContextMenuClickEvent, tab: TabLike): voi
     SEPARATOR,
     rename,
     copyPath,
-    showInFolder
+    // Android has no file manager to reveal a document in.
+    ...(isAndroid() ? [] : [showInFolder])
   ].map((item) => wrapClick(item as MenuItemShape, tab.id))
 
   popupContextMenu(items, { x: event.clientX, y: event.clientY })

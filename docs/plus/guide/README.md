@@ -21,6 +21,7 @@ and Linux, `Cmd+Shift+P` on macOS).
 | Page                                                | Contents                                    |
 | --------------------------------------------------- | ------------------------------------------- |
 | [Building](building.md)                             | Install dependencies and run this fork      |
+| [Android](android.md)                               | APK: build, install, use and differences    |
 | [Safe mode](safe-mode.md)                           | What `--safe` actually disables             |
 | [Where data lives](data.md)                         | `plugins.json`, `secrets.json`, index cache |
 | [Preferences → Plugins](preferences.md)             | Enable, disable, settings, and secrets      |

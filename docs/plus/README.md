@@ -34,7 +34,7 @@ ships is in the guides; where they differ, the guides cite the file.
 | D6  | Icons are written as `:pack-name:` shortcodes and exported as inline SVG                      | Source stays plain text; exported HTML/PDF shows the icon                                                |
 | D7  | Mermaid keeps its dedicated diagram block for now                                             | Migration to the generic code-block preview registry happens after Dataview proves it                    |
 
-Out of scope: running Obsidian plugins, DataviewJS (arbitrary code), sync, mobile.
+Out of scope: running Obsidian plugins, DataviewJS (arbitrary code), sync. Android ships as an APK from `packages/mobile` (the desktop renderer in a Capacitor WebView; see [guide/android.md](guide/android.md)).
 
 ## Trust model
 
