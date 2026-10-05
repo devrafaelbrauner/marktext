@@ -59,4 +59,7 @@ adb install -r packages/mobile/android/app/build/outputs/apk/debug/app-debug.apk
 | Excluir arquivo                 | Apaga de vez: não há lixeira                                                                                                    |
 | Codificação                     | UTF-8 (com/sem BOM), UTF-16 LE/BE e Windows-1252; outras falham ao salvar com aviso                                             |
 | HTTP sem TLS                    | Só para o próprio aparelho (`127.0.0.1`, `localhost`), como no desktop                                                          |
+| Tabelas                         | Em telas estreitas, colunas de pelo menos 8em; a tabela rola para o lado                                                        |
+| Blocos HTML                     | O código-fonte de um bloco HTML não é editável pelo toque (só a prévia aparece)                                                 |
+| Cofres grandes                  | Medido num Galaxy S26 Ultra: 5000 notas indexadas em ~8 s na primeira abertura; busca em ~1 s                                   |
 | Fora desta versão               | Exportar/imprimir/Pandoc, upload de imagens, PlantUML, lista de fontes do sistema, corretor do Chromium, atualização automática |
