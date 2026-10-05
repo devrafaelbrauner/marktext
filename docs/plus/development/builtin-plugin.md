@@ -10,7 +10,7 @@ check today: the process is trusted.
 packages/desktop/src/plugins/<id>/
   manifest.ts
   locales/en.json      # required
-  locales/pt.json      # the nine current plugins ship it; other languages fall back to English
+  locales/pt.json      # the ten current plugins ship it; other languages fall back to English
   locales/index.ts
   renderer/index.ts    # export default { activate, deactivate? }
   main/index.ts        # only for network, secrets, or work the renderer cannot do
@@ -36,9 +36,7 @@ export const manifest: PluginManifest = {
   description: 'description',
   defaultEnabled: true,
   affectsParsing: false,
-  settings: [
-    { key: 'enabled', type: 'boolean', label: 'settings.enabled', default: true }
-  ]
+  settings: [{ key: 'enabled', type: 'boolean', label: 'settings.enabled', default: true }]
 }
 ```
 

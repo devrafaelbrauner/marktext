@@ -1,4 +1,5 @@
 import type { PluginManifest } from '@shared/plugins/types'
+import { manifest as aiManifest } from '@plugins/ai/manifest'
 import { manifest as grammarManifest } from '@plugins/grammar/manifest'
 import type { MainPluginModule } from './types'
 
@@ -9,5 +10,6 @@ export interface BuiltinMainPlugin {
 }
 
 export const BUILTIN_MAIN_PLUGINS: BuiltinMainPlugin[] = [
-  { manifest: grammarManifest, load: () => import('@plugins/grammar/main').then((m) => m.default) }
+  { manifest: grammarManifest, load: () => import('@plugins/grammar/main').then((m) => m.default) },
+  { manifest: aiManifest, load: () => import('@plugins/ai/main').then((m) => m.default) }
 ]

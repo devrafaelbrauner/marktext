@@ -3,11 +3,11 @@
 A pasta de dados do usuário é a do Electron para o aplicativo `marktext`, a
 menos que você mude:
 
-| Sistema | Caminho padrão |
-| --- | --- |
-| macOS | `~/Library/Application Support/marktext` |
-| Windows | `%APPDATA%\marktext` |
-| Linux | `$XDG_CONFIG_HOME/marktext` ou `~/.config/marktext` |
+| Sistema | Caminho padrão                                      |
+| ------- | --------------------------------------------------- |
+| macOS   | `~/Library/Application Support/marktext`            |
+| Windows | `%APPDATA%\marktext`                                |
+| Linux   | `$XDG_CONFIG_HOME/marktext` ou `~/.config/marktext` |
 
 Outros lugares:
 
@@ -33,8 +33,8 @@ corrompido é zerado na abertura (`clearInvalidConfig`).
 }
 ```
 
-Um id ausente em `enabled` usa o padrão do manifesto (o corretor começa
-desligado; os outros, ligados). Segredos não entram aqui. O consentimento do
+Um id ausente em `enabled` usa o padrão do manifesto (o corretor e a IA
+começam desligados; os outros, ligados). Segredos não entram aqui. O consentimento do
 corretor é o booleano `settings.grammar.consentGiven`, não um arquivo à parte.
 
 ### `secrets.json`
@@ -47,7 +47,8 @@ agrupado pelo id do plugin:
 { "grammar": { "apiKey": "<base64>" } }
 ```
 
-Hoje o único segredo é a chave de API do corretor. O e-mail da conta fica em
+Hoje os segredos são a chave de API do corretor e a chave da OpenRouter do
+plugin de IA (`ai.apiKey`). O e-mail da conta fica em
 `plugins.json`, no campo `username`. No Linux o aplicativo recusa gravar se o
 backend for só `basic_text` (chave fixa do Chromium).
 
@@ -66,14 +67,14 @@ baterem, o cache é ignorado e o índice é refeito. Notas markdown maiores que
 
 ## Outros arquivos na mesma pasta
 
-| Arquivo | Uso |
-| --- | --- |
-| `preferences.json` | Preferências gerais (electron-store `preferences`) |
-| `keybindings.json` | Atalhos do usuário; ignorado com `--safe` |
-| `recently-used-documents.json` | Documentos recentes |
-| `dataCenter.json` | Pastas de imagens e capturas |
-| `editorStates/` | Estado das abas |
-| `logs/<ano><mês>/` | Logs; o mês não leva zero à esquerda |
+| Arquivo                        | Uso                                                |
+| ------------------------------ | -------------------------------------------------- |
+| `preferences.json`             | Preferências gerais (electron-store `preferences`) |
+| `keybindings.json`             | Atalhos do usuário; ignorado com `--safe`          |
+| `recently-used-documents.json` | Documentos recentes                                |
+| `dataCenter.json`              | Pastas de imagens e capturas                       |
+| `editorStates/`                | Estado das abas                                    |
+| `logs/<ano><mês>/`             | Logs; o mês não leva zero à esquerda               |
 
 O código ainda aponta `EnvPaths.preferencesFilePath` para `preference.json`
 (singular). Esse caminho não é o que o aplicativo grava. O arquivo vivo é

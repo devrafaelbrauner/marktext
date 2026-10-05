@@ -1,0 +1,81 @@
+{
+  "name": "AI (OpenRouter)",
+  "description": "Fixes text, creates tables, solves math and answers questions with the AI model you choose on OpenRouter, using your own API key.",
+  "settings": {
+    "apiKey": {
+      "label": "OpenRouter API key",
+      "description": "Create one at https://openrouter.ai/keys. It is stored encrypted on this computer and only sent to OpenRouter."
+    },
+    "defaultModel": {
+      "label": "Default model",
+      "description": "Model id used by every command without its own model. Copy the id (e.g. anthropic/claude-sonnet-4 or openai/gpt-4o-mini) from https://openrouter.ai/models."
+    },
+    "fixTextModel": {
+      "label": "Model for “Fix text”"
+    },
+    "createTableModel": {
+      "label": "Model for “Create table”"
+    },
+    "solveMathModel": {
+      "label": "Model for “Calculate”"
+    },
+    "researchModel": {
+      "label": "Model for “Research”"
+    },
+    "overrideModel": {
+      "description": "Model id from https://openrouter.ai/models for this command only. Leave empty to use the default model. For web search, add :online to the id (e.g. openai/gpt-4o-mini:online).",
+      "placeholder": "Default model"
+    },
+    "baseUrl": {
+      "label": "API base URL",
+      "description": "OpenRouter API address. Change it only for an OpenRouter-compatible proxy. Plain http is only allowed for this computer (localhost)."
+    },
+    "consentGiven": {
+      "label": "Allow sending text to OpenRouter",
+      "description": "The text an AI command works on is sent to OpenRouter and to the provider of the chosen model. Front matter, code and math are never sent."
+    }
+  },
+  "commands": {
+    "fixText": "AI: Fix text",
+    "createTable": "AI: Create table",
+    "solveMath": "AI: Calculate",
+    "research": "AI: Research"
+  },
+  "notify": {
+    "working": "Asking {model}…",
+    "fixed": "Corrections applied.",
+    "noChanges": "No corrections needed.",
+    "inserted": "Answer from {model} inserted below.",
+    "busy": "An AI command is still running."
+  },
+  "errors": {
+    "noDocument": "Open a Markdown document in the editor first.",
+    "noText": "Select text, or place the caret in a paragraph, heading or table cell. Code, math and front matter are never sent.",
+    "tooLong": "The text is too long: at most {max} characters per request.",
+    "tooManyBlocks": "Select at most {max} paragraphs to fix at once.",
+    "consent": "Allow sending text to OpenRouter to use AI commands.",
+    "noKey": "Set your OpenRouter API key in the AI plugin settings.",
+    "noModel": "Set a model id from openrouter.ai/models in the AI plugin settings.",
+    "config": "The API base URL in the AI plugin settings is invalid.",
+    "auth": "OpenRouter rejected the API key. Check it in the AI plugin settings.",
+    "credits": "Your OpenRouter account has no credits left for {model}.",
+    "forbidden": "OpenRouter refused the request: {message}",
+    "modelNotFound": "OpenRouter does not know the model “{model}”. Copy the id from openrouter.ai/models.",
+    "rateLimited": "Too many requests to OpenRouter. Try again in a moment.",
+    "network": "Could not reach OpenRouter: {message}",
+    "timeout": "{model} did not answer in time. Try again or choose a faster model.",
+    "empty": "{model} returned an empty answer.",
+    "requestFailed": "The OpenRouter request failed: {message}",
+    "replaceFailed": "Some text changed while the model was working, so its correction was not applied.",
+    "insertFailed": "The document changed while the model was working; the answer was not inserted."
+  },
+  "consent": {
+    "title": "Send text to OpenRouter?",
+    "body": "AI commands send the selected text (or the paragraph at the caret) to OpenRouter, which forwards it to the provider of the chosen model. Front matter, code and math are never sent.",
+    "server": "Server: {server}",
+    "model": "Model: {model}",
+    "privacy": "How the text is used depends on OpenRouter's and the model provider's policies. You can withdraw this permission at any time in Preferences → Plugins.",
+    "accept": "Allow and send",
+    "decline": "Not now"
+  }
+}

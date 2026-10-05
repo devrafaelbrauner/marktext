@@ -14,7 +14,7 @@ export { de, en, es, fr, ja, ko, nl, pt, ru, tr, zhCN, zhTW } from './locales';
 export { Muya } from './muya';
 export type { IMatch, IReplaceOption, ISearchOption } from './search/types';
 export type { IIndexCursor } from './selection/offsetCursor';
-export type { IHistorySelection, IPublicCursorInput } from './selection/types';
+export type { IBlockOffset, IHistorySelection, IPublicCursorInput, ITextSelectionRange } from './selection/types';
 export type { ITocItem } from './state/getTOC';
 export { MarkdownToHtml } from './state/markdownToHtml';
 export { renderToStaticHTML } from './state/renderToStaticHTML';
