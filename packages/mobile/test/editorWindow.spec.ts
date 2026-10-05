@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { BUFFER_PATH, matchesAccelerator } from '../src/main/editorWindow'
+import { registerI18n } from '../src/main/i18n'
+import { rendererIpc } from '../src/main/ipc'
 import { getRootPath } from '../src/main/state'
 import { ROOT, createCore, flush, recordPushes } from './helpers'
 
@@ -33,6 +35,20 @@ describe('startup', () => {
         }
       ]
     ])
+  })
+
+  it('holds the bootstrap until the renderer has the UI language, so the first tab is named in it', async() => {
+    registerI18n()
+    const { editor } = await createCore({}, { startUpAction: 'openLastFolder', language: 'pt' })
+    const pushed = recordPushes(['mt::bootstrap-editor'])
+    const started = editor.startup()
+    await flush()
+    expect(pushed).toEqual([])
+    const translations = (await rendererIpc.invoke('mt::i18n::load', 'pt')) as { editor: { untitled: string } }
+    expect(translations.editor.untitled).toBe('Sem título')
+    await started
+    await flush()
+    expect(pushed.map(([channel]) => channel)).toEqual(['mt::bootstrap-editor'])
   })
 
   it('reopens the last folder while it is still reachable, then populates the tree', async() => {

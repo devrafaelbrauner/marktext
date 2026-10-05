@@ -55,9 +55,29 @@ export async function translate(
   return result
 }
 
+// Languages whose translations the editor window received. Its first tab is
+// named with `t()` as soon as `mt::bootstrap-editor` arrives (store/help.ts),
+// so the bootstrap waits for this (editorWindow.ts startup).
+const delivered = new Map<string, PromiseWithResolvers<void>>()
+const deliveryOf = (language: string): PromiseWithResolvers<void> => {
+  let entry = delivered.get(language)
+  if (!entry) delivered.set(language, (entry = Promise.withResolvers<void>()))
+  return entry
+}
+
+/**
+ * Resolves once the renderer was handed `language`'s translations, or right
+ * away for English, which the renderer bundles.
+ */
+export const translationsDelivered = (language: string): Promise<void> =>
+  language === 'en' ? Promise.resolve() : deliveryOf(language).promise
+
 export function registerI18n(): void {
   ipcMain.handle('mt::i18n::load', async(_event, language) => {
     const translations = typeof language === 'string' && language in loaders ? await loadTranslations(language) : null
+    // A macrotask later the renderer has installed them (i18n setLanguage
+    // continues in microtasks after this reply).
+    if (typeof language === 'string') setTimeout(() => deliveryOf(language).resolve(), 0)
     // Desktop answers `null` ("could not load", the renderer keeps its locale)
     // although the channel type declares a record.
     return translations ?? (null as unknown as Translations)

@@ -10,7 +10,7 @@ import { isMobileFsError } from './fs/backend'
 import { loadOptionsFrom, type CoreContext } from './context'
 import { androidString, askUnsavedChanges, describeError, type AndroidStringKey } from './dialogs'
 import { isRecord } from './guards'
-import { translate } from './i18n'
+import { translate, translationsDelivered } from './i18n'
 import { EDITOR_WINDOW_ID, ipcMain, pushTo } from './ipc'
 import type { Keybindings } from './keybindings'
 import {
@@ -26,6 +26,8 @@ import { isMarkdownName, isViewableAsset, reportOutsideRoot } from './tree'
 export const BUFFER_PATH = '/data/marktext/buffer.json'
 /** How often open documents are checked for changes made by other apps. */
 export const POLL_INTERVAL_MS = 5000
+/** Longest the boot waits for the renderer's UI language (see startup). */
+const TRANSLATIONS_WAIT_MS = 2000
 
 const MARKDOWN_MIME_TYPES = ['text/markdown', 'text/x-markdown', 'text/plain', 'application/octet-stream']
 
@@ -187,6 +189,12 @@ export class EditorWindow {
       if (!folder && startUpAction !== 'blank') folder = this.options.demoFolder ?? null
     }
     const restoreLayout = prefs.getItem('restoreLayoutState') === true
+    // The first untitled tab is named in the UI language: let the renderer
+    // install it first. The cap keeps a failed locale load from blocking boot.
+    await Promise.race([
+      translationsDelivered(this.language),
+      new Promise<void>((resolve) => setTimeout(resolve, TRANSLATIONS_WAIT_MS))
+    ])
     this.push('mt::bootstrap-editor', {
       addBlankTab: !buffer && !folder,
       markdownList: [],
