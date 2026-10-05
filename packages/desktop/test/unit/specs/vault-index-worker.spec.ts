@@ -5,7 +5,8 @@ import path from 'path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { dispatchWorkerRequest, registerWorkerHandler } from 'main_renderer/vaultIndex/worker/handlers'
 import { createIndexWorkerRuntime } from 'main_renderer/vaultIndex/worker/runtime'
-import { VaultIndexManager, getVaultIndexCacheFile, type IndexWorkerProcess } from 'main_renderer/vaultIndex/manager'
+import { VaultIndexManager, type IndexWorkerProcess } from 'main_renderer/vaultIndex/manager'
+import { getVaultIndexCacheFile } from 'main_renderer/vaultIndex/cacheFile'
 import type { MainToWorkerMessage, VaultIndexReader, WorkerToMainMessage } from 'main_renderer/vaultIndex/types'
 import { nodeVaultIndexFs } from 'main_renderer/vaultIndex/nodeFs'
 
@@ -190,7 +191,7 @@ describe('VaultIndexManager', () => {
     workers = []
     sent = []
     manager = new VaultIndexManager({
-      cacheDir,
+      getCacheFile: (rootPath) => getVaultIndexCacheFile(cacheDir, rootPath),
       getExcludePatterns: () => [],
       spawnWorker: () => {
         const worker = createInProcessWorker()

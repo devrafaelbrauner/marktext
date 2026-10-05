@@ -4,6 +4,7 @@ import log from 'electron-log'
 import Watcher from '../filesystem/watcher'
 import { onInternalChannel } from '../utils/internalIpc'
 import type Preference from '../preferences'
+import { getVaultIndexCacheFile } from './cacheFile'
 import { registerVaultIndexIpc } from './ipc'
 import { VaultIndexManager, type IndexWorkerProcess } from './manager'
 import type { WorkerToMainMessage } from './types'
@@ -38,8 +39,9 @@ const readExcludePatterns = (preferences: Preference): string[] => {
  */
 export const setupVaultIndex = (options: { preferences: Preference; userDataPath: string }): VaultIndexManager => {
   const { preferences, userDataPath } = options
+  const cacheDir = path.join(userDataPath, 'vault-index')
   const manager = new VaultIndexManager({
-    cacheDir: path.join(userDataPath, 'vault-index'),
+    getCacheFile: (rootPath) => getVaultIndexCacheFile(cacheDir, rootPath),
     getExcludePatterns: () => readExcludePatterns(preferences),
     spawnWorker: spawnUtilityWorker,
     sendToWindow: (windowId, channel, payload) => {

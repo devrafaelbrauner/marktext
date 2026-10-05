@@ -14,6 +14,7 @@ import { isLinux, isOsx } from '../config'
 import type { BrowserWindow } from 'electron'
 import type { LineEnding } from '@shared/types/files'
 import type Preference from '../preferences'
+import type { WatcherTapEvent } from './watcherTap'
 
 // TODO(refactor): Please see GH#1035.
 
@@ -44,20 +45,6 @@ interface WatcherEntry {
   type: WatchType
   close: () => void
 }
-
-/**
- * Activity of directory (opened folder) watchers, observed through
- * `Watcher.addTap`. Single-file watchers are not reported. Path events
- * carry only the path; consumers re-read the file themselves.
- */
-export type WatcherTapEvent =
-  | { type: 'watch' | 'unwatch'; windowId: number; rootPath: string }
-  | {
-    type: 'add' | 'change' | 'unlink' | 'addDir' | 'unlinkDir'
-    windowId: number
-    rootPath: string
-    pathname: string
-  }
 
 const add = async(
   win: BrowserWindow,

@@ -1,5 +1,5 @@
 import { loadVaultIndexCache, saveVaultIndexCache } from '../cache'
-import type { MainToWorkerMessage, VaultIndexFs, VaultIndexQueries, WorkerToMainMessage } from '../types'
+import type { MainToWorkerMessage, VaultIndexFs, VaultIndexQueries, VaultIndexReader, WorkerToMainMessage } from '../types'
 import { VaultIndex } from '../vaultIndex'
 import { dispatchWorkerRequest } from './handlers'
 
@@ -16,6 +16,12 @@ export interface IndexWorkerRuntimeOptions {
 
 export interface IndexWorkerRuntime {
   handle(message: MainToWorkerMessage): void
+  /**
+   * The index of the last `init`, for hosts that answer more than the
+   * message protocol (the Android worker's search and resume rescan). Its
+   * state is the last completed scan; null before `init`.
+   */
+  readonly index: VaultIndexReader | null
 }
 
 /**
@@ -82,6 +88,9 @@ export const createIndexWorkerRuntime = (
   }
 
   return {
+    get index() {
+      return index
+    },
     handle(message) {
       switch (message.kind) {
         case 'init': {

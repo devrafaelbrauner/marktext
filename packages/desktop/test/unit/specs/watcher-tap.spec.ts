@@ -28,7 +28,8 @@ vi.mock('chokidar', () => ({
 // See watcher-await-write-finish.spec.ts: the markdown loader pulls in the native `ced` addon.
 vi.mock('ced', () => ({ default: () => 'UTF-8' }))
 
-import Watcher, { type WatcherTapEvent } from 'main_renderer/filesystem/watcher'
+import Watcher from 'main_renderer/filesystem/watcher'
+import type { WatcherTapEvent } from 'main_renderer/filesystem/watcherTap'
 
 describe('Watcher tap', () => {
   let watcher: Watcher
