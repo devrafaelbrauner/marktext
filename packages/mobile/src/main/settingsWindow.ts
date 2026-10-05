@@ -32,7 +32,7 @@ export function openSettingsWindow(category = ''): void {
   overlay.className = 'mt-settings-window'
   overlay.style.cssText = 'position:fixed;inset:0;z-index:3000;background:var(--editorBgColor, #fff)'
   const frame = document.createElement('iframe')
-  frame.title = 'Settings'
+  frame.title = document.title
   frame.style.cssText = 'border:0;width:100%;height:100%;display:block'
   frame.src = src
   overlay.append(frame)

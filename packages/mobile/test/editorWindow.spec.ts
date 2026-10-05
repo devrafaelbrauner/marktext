@@ -140,7 +140,7 @@ describe('open', () => {
     await editor.openTab('/data/marktext/secret.md', {}, true)
     await flush()
     expect(pushed.map(([channel]) => channel)).toEqual(['mt::show-notification'])
-    expect(pushed[0]?.[1]).toMatchObject({ title: 'Cannot open tab', type: 'error' })
+    expect(pushed[0]?.[1]).toMatchObject({ title: 'Cannot open file', type: 'error' })
   })
 })
 

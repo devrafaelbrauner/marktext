@@ -8,7 +8,7 @@ import type { BufferedState } from '@shared/types/bufferedState'
 import type { MarkdownDocument, SaveOptions, TabOptions, UnsavedFile } from '@shared/types/files'
 import { isMobileFsError } from './fs/backend'
 import { loadOptionsFrom, type CoreContext } from './context'
-import { androidString, askUnsavedChanges } from './dialogs'
+import { androidString, askUnsavedChanges, describeError, type AndroidStringKey } from './dialogs'
 import { isRecord } from './guards'
 import { translate } from './i18n'
 import { EDITOR_WINDOW_ID, ipcMain, pushTo } from './ipc'
@@ -235,9 +235,9 @@ export class EditorWindow {
       } catch (error) {
         tab.isSaved = false
         this.push('mt::show-notification', {
-          title: `Could not find file ${String(tab.filename)} on disk, please save your work.`,
+          title: androidString(this.language, 'fileMissing', String(tab.filename)),
           type: 'error',
-          message: errorMessage(error)
+          message: describeError(this.language, error)
         })
       }
     }
@@ -260,7 +260,7 @@ export class EditorWindow {
       const picked = await this.ctx.backend.pickDirectory()
       if (picked) await this.openFolder(picked.path)
     } catch (error) {
-      this.notifyError('Cannot open folder', error)
+      this.notifyError('cannotOpenFolder', error)
     }
   }
 
@@ -271,7 +271,7 @@ export class EditorWindow {
       this.ctx.scope.grantFile(picked.path)
       await this.openTab(picked.path, {}, true)
     } catch (error) {
-      this.notifyError('Cannot open tab', error)
+      this.notifyError('cannotOpenTab', error)
     }
   }
 
@@ -301,7 +301,7 @@ export class EditorWindow {
       this.push('mt::open-new-tab', doc as unknown as MarkdownDocument, options, selected)
     } catch (error) {
       console.error(`[ERROR] Cannot open file or directory: ${errorMessage(error)}`)
-      this.notifyError('Cannot open tab', error)
+      this.notifyError('cannotOpenTab', error)
     }
   }
 
@@ -351,7 +351,7 @@ export class EditorWindow {
       this.ctx.scope.grantFile(picked.path)
       return picked.path
     } catch (error) {
-      this.notifyError('Cannot save file', error)
+      this.notifyError('cannotSave', error)
       return null
     }
   }
@@ -369,7 +369,7 @@ export class EditorWindow {
       return true
     } catch (error) {
       console.error('Error while saving:', error)
-      this.push('mt::tab-save-failure', id, errorMessage(error))
+      this.push('mt::tab-save-failure', id, describeError(this.language, error))
       return false
     } finally {
       this.saving.delete(target)
@@ -417,7 +417,7 @@ export class EditorWindow {
       await this.ctx.backend.rename(src, dest)
     } catch (error) {
       console.error(`mt::rename: Cannot rename "${src}" to "${dest}".`, error)
-      this.notifyError('Cannot rename file', error)
+      this.notifyError('cannotRename', error)
       return
     }
     await this.moved(id, src, dest)
@@ -438,7 +438,7 @@ export class EditorWindow {
       await this.ctx.backend.remove(src)
     } catch (error) {
       console.error(`mt::response-file-move-to: Cannot move "${src}" to "${String(dest)}".`, error)
-      this.notifyError('Cannot move file', error)
+      this.notifyError('cannotMove', error)
       return
     }
     await this.moved(id, src, dest)
@@ -502,7 +502,7 @@ export class EditorWindow {
       const data = await loadMarkdownFile(this.ctx.backend, pathname, loadOptionsFrom(this.ctx.preferences))
       this.push('mt::update-file', { type, change: { pathname, data, mtimeMs: stat.mtimeMs } })
     } catch (error) {
-      this.push('mt::show-notification', { title: 'Watcher I/O error', type: 'error', message: errorMessage(error) })
+      this.notifyError('cannotReload', error)
     }
   }
 
@@ -532,8 +532,12 @@ export class EditorWindow {
     }
   }
 
-  private notifyError(title: string, error: unknown): void {
-    this.push('mt::show-notification', { title, type: 'error', message: errorMessage(error) })
+  private notifyError(title: AndroidStringKey, error: unknown): void {
+    this.push('mt::show-notification', {
+      title: androidString(this.language, title),
+      type: 'error',
+      message: describeError(this.language, error)
+    })
   }
 
   private onKeydown(event: KeyboardEvent): void {
