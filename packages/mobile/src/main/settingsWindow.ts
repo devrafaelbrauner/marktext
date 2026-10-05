@@ -18,6 +18,9 @@ let removeBackHandler: (() => void) | null = null
 export function openSettingsWindow(category = ''): void {
   const type = category ? `settings/${category}` : 'settings'
   const params = new URLSearchParams({ wid: String(SETTINGS_WINDOW_ID), udp: USER_DATA_PATH, type })
+  // Same first paint as the editor (core.ts keeps `theme` in the boot URL).
+  const theme = new URLSearchParams(window.location.search).get('theme')
+  if (theme) params.set('theme', theme)
   const src = `${window.location.pathname}?${params}`
   if (overlay) {
     // Desktop focuses the open settings window on the requested page.
