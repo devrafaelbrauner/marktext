@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ipcMain, push, rendererIpc } from '../src/main/ipc'
+import { connectWindow, disposeWindow, ipcMain, push, pushTo, rendererIpc } from '../src/main/ipc'
 
 const flush = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0))
 
@@ -59,5 +59,51 @@ describe('mobile ipc', () => {
   it('sync handlers answer in the same task', () => {
     ipcMain.handleSync('mt::paths::is-same-sync', (_e, a, b) => a === b)
     expect(rendererIpc.sendSync('mt::paths::is-same-sync', '/a', '/a')).toBe(true)
+  })
+})
+
+describe('mobile ipc windows', () => {
+  it('pushTo reaches one window, push reaches all', async() => {
+    const settings = connectWindow(2)
+    const editorSeen: unknown[] = []
+    const settingsSeen: unknown[] = []
+    rendererIpc.on('mt::user-preference', (_e, p) => editorSeen.push(p))
+    settings.on('mt::user-preference', (_e, p) => settingsSeen.push(p))
+    pushTo(2)('mt::user-preference', { theme: 'dark' })
+    push('mt::user-preference', { theme: 'light' })
+    await flush()
+    expect(editorSeen).toEqual([{ theme: 'light' }])
+    expect(settingsSeen).toEqual([{ theme: 'dark' }, { theme: 'light' }])
+  })
+
+  it('handlers see the calling window and can reply to it alone', async() => {
+    const settings = connectWindow(2)
+    const senders: number[] = []
+    ipcMain.on('mt::ask-for-user-data', (event) => {
+      senders.push(event.sender.id)
+      event.sender.send('mt::current-language', 'ja')
+    })
+    const editorSeen = vi.fn()
+    const settingsSeen = vi.fn()
+    rendererIpc.on('mt::current-language', editorSeen)
+    settings.on('mt::current-language', settingsSeen)
+    settings.send('mt::ask-for-user-data')
+    await flush()
+    expect(senders).toEqual([2])
+    expect(settingsSeen).toHaveBeenCalledWith({ sender: null }, 'ja')
+    expect(editorSeen).not.toHaveBeenCalled()
+  })
+
+  it("disposeWindow drops only that window's listeners", async() => {
+    const settings = connectWindow(3)
+    const editor = vi.fn()
+    const closed = vi.fn()
+    rendererIpc.on('mt::tab-saved', editor)
+    settings.on('mt::tab-saved', closed)
+    disposeWindow(3)
+    push('mt::tab-saved', 'id-1')
+    await flush()
+    expect(editor).toHaveBeenCalledTimes(1)
+    expect(closed).not.toHaveBeenCalled()
   })
 })
