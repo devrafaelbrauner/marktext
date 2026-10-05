@@ -4,11 +4,14 @@ const config: CapacitorConfig = {
   appId: 'app.marktextplus.android',
   appName: 'MarkText Plus',
   webDir: 'dist',
+  // Capacitor's debug logging prints every plugin call's arguments, which
+  // would put API keys (CapacitorHttp Authorization headers) in Logcat.
+  loggingBehavior: 'none',
   android: {
     // The renderer never needs http:// content; vault, plugin and bundle
-    // origins are all https served by the native interceptor.
-    allowMixedContent: false,
-    webContentsDebuggingEnabled: true
+    // origins are all https served by the native interceptor. WebView
+    // debugging keeps Capacitor's default: debuggable builds only.
+    allowMixedContent: false
   },
   server: {
     androidScheme: 'https',
