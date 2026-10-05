@@ -210,6 +210,21 @@ describe('rendering', () => {
         expect(payload.formatType).toBe('wikilink');
         expect(payload.data).toEqual({ target: 'Note A' });
     });
+
+    it('a finger tap emits format-click for a token too (phones have no modifier keys); a mouse click does not', () => {
+        use(wikilink);
+        const muya = bootMuya('[[Ideias]]');
+        const handler = vi.fn();
+        muya.on('format-click', handler);
+        const content = muya.domNode.querySelector('span.mu-inline-wikilink .mu-inline-rule')!;
+
+        content.dispatchEvent(new PointerEvent('click', { bubbles: true, cancelable: true, pointerType: 'mouse' }));
+        expect(handler).not.toHaveBeenCalled();
+
+        content.dispatchEvent(new PointerEvent('click', { bubbles: true, cancelable: true, pointerType: 'touch' }));
+        expect(handler).toHaveBeenCalledTimes(1);
+        expect(handler.mock.calls[0][0]).toMatchObject({ formatType: 'wikilink', data: { target: 'Ideias' } });
+    });
 });
 
 describe('export', () => {

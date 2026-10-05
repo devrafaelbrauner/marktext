@@ -178,23 +178,26 @@ export function attachLinkMouseHandlers(muya: Muya): void {
         // their cursor-placement-only behavior. `getLinkInfo` resolves the
         // wrapper that hosts the href even when the IMG/text descendant was
         // clicked, and returns a superset (`{ href, raw, text, range }`).
-        if (!isModifierClick(event)) {
-            if (isTouchPointerEvent(event))
-                tapHandler(event);
-
-            return;
-        }
-
         // A `registerInlineSyntax` token: `formatType` is the rule name and
         // `data` its match data. Checked first so a token inside a link wins.
+        // A finger tap counts as the follow gesture too (no modifier keys on a
+        // phone); the host decides what following means for each token.
         const customToken = event.target.closest<HTMLElement>(`[${CUSTOM_INLINE_NAME_ATTR}]`);
-        if (customToken && domNode.contains(customToken)) {
+        const fingerTap = isTouchPointerEvent(event);
+        if (customToken && domNode.contains(customToken) && (fingerTap || isModifierClick(event))) {
             const { muInlineSyntax: formatType, ...data } = customToken.dataset;
             eventCenter.emit('format-click', {
                 event,
                 formatType,
                 data,
             });
+
+            return;
+        }
+
+        if (!isModifierClick(event)) {
+            if (isTouchPointerEvent(event))
+                tapHandler(event);
 
             return;
         }
