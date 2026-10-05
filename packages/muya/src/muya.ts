@@ -10,7 +10,7 @@ import type { ILocale } from './i18n/types';
 import type { IHighlight } from './inlineRenderer/types';
 import type { IReplaceOption, ISearchOption } from './search/types';
 import type { IIndexCursor } from './selection/offsetCursor';
-import type { IHistorySelection, IPublicCursorInput } from './selection/types';
+import type { IHistorySelection, IPublicCursorInput, ITextSelectionRange } from './selection/types';
 import type { ITocItem } from './state/getTOC';
 import type { IBulletListState, IOrderListState, ITableState, ITaskListState, TState } from './state/types';
 import type { IMuyaOptions, Nullable } from './types';
@@ -323,6 +323,18 @@ export class Muya {
      */
     insertText(text: string): boolean {
         return this.editor.insertText(text);
+    }
+
+    /**
+     * Parses `markdown` into blocks and inserts them after the outermost
+     * block containing the content block at `path` (default: the last
+     * selected one), as one undo step; the caret ends after the inserted
+     * content. Front matter is not recognized (`---` stays a thematic break).
+     * Returns false, changing nothing, when there is no such block or
+     * `markdown` is blank.
+     */
+    insertMarkdownBlocks(markdown: string, path?: TBlockPath): boolean {
+        return this.editor.insertMarkdownBlocks(markdown, path);
     }
 
     /**
@@ -649,6 +661,31 @@ export class Muya {
      */
     getSelectedText(): string {
         return this.editor.selection.getSelectedText();
+    }
+
+    /**
+     * The text selection as block paths and offsets. Unlike `getSelection`,
+     * which reads the live DOM selection, this falls back to the selection the
+     * editor keeps while blurred (e.g. while the app's command palette has
+     * focus). Null when there is none or its blocks left the document.
+     */
+    getTextSelection(): ITextSelectionRange | null {
+        const live = this.editor.selection.getSelection();
+        if (live && live.anchor.block.muya === this && live.focus.block.muya === this) {
+            return {
+                anchor: { path: live.anchor.block.path, offset: live.anchor.offset },
+                focus: { path: live.focus.block.path, offset: live.focus.offset },
+            };
+        }
+
+        const { anchorBlock, focusBlock, anchor, focus } = this.editor.selection;
+        if (!anchorBlock?.outMostBlock || !focusBlock?.outMostBlock || !anchor || !focus)
+            return null;
+
+        return {
+            anchor: { path: anchorBlock.path, offset: anchor.offset },
+            focus: { path: focusBlock.path, offset: focus.offset },
+        };
     }
 
     /**

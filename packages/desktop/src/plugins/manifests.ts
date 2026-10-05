@@ -1,4 +1,6 @@
 import type { PluginLocales, PluginManifest } from '@shared/plugins/types'
+import { locales as aiLocales } from '@plugins/ai/locales'
+import { manifest as aiManifest } from '@plugins/ai/manifest'
 import { locales as dailyNotesLocales } from '@plugins/daily-notes/locales'
 import { manifest as dailyNotesManifest } from '@plugins/daily-notes/manifest'
 import { locales as dataviewLocales } from '@plugins/dataview/locales'
@@ -40,5 +42,6 @@ export const BUILTIN_PLUGINS: BuiltinPluginInfo[] = [
   { manifest: kanbanManifest, locales: kanbanLocales },
   { manifest: mermaidPlusManifest, locales: mermaidPlusLocales },
   { manifest: pdfReaderManifest, locales: pdfReaderLocales },
-  { manifest: grammarManifest, locales: grammarLocales }
+  { manifest: grammarManifest, locales: grammarLocales },
+  { manifest: aiManifest, locales: aiLocales }
 ]

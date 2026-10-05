@@ -1,6 +1,7 @@
 import type { JSONOp, JSONOpComponent, JSONOpList } from 'ot-json1';
 import type Content from '../block/base/content';
 import type Format from '../block/base/format';
+import type Parent from '../block/base/parent';
 import type { TBlockPath } from '../block/types';
 import type { Muya } from '../muya';
 import type { IHistorySelection } from '../selection/types';
@@ -17,6 +18,7 @@ import InlineRenderer from '../inlineRenderer';
 import { Search } from '../search';
 import Selection from '../selection';
 import JSONState from '../state';
+import { MarkdownToState } from '../state/markdownToState';
 import { hasPick, isHTMLElement } from '../utils';
 import { getBlock } from '../utils/dom';
 import logger from '../utils/logger';
@@ -571,6 +573,58 @@ export class Editor {
             return false;
 
         this._replaceText(anchorBlock, start, end, text);
+
+        return true;
+    }
+
+    /**
+     * Parses `markdown` into blocks and inserts them after the outermost
+     * block containing the content block at `path` (default: the last
+     * selected content block), as one undo step; the caret ends at the end of
+     * the last inserted block. Front matter in `markdown` is not recognized
+     * (`---` stays a thematic break). Works while the editor is blurred.
+     * Returns false, changing nothing, when there is no such block or
+     * `markdown` is blank.
+     */
+    insertMarkdownBlocks(markdown: string, path?: TBlockPath): boolean {
+        if (typeof markdown !== 'string' || markdown.trim() === '')
+            return false;
+
+        // `queryBlock` consumes the path array.
+        const content = path ? this.scrollPage?.queryBlock([...path]) : this.selection.anchorBlock;
+        if (!content || !content.isContent())
+            return false;
+
+        const target = content.outMostBlock;
+        if (!target?.parent)
+            return false;
+
+        const { footnote, texMathDollars, texMathGfm, texMathSingleBackslash, texMathDoubleBackslash, trimUnnecessaryCodeBlockEmptyLines } = this._muya.options;
+        const states = new MarkdownToState({
+            footnote,
+            texMathDollars,
+            texMathGfm,
+            texMathSingleBackslash,
+            texMathDoubleBackslash,
+            trimUnnecessaryCodeBlockEmptyLines,
+            frontMatter: false,
+        }).generate(markdown);
+        if (states.length === 0)
+            return false;
+
+        // Same undo isolation as `_replaceText`.
+        this.jsonState.flush();
+        this.history.cutoff();
+        let previous: Parent = target;
+        for (const state of states) {
+            const block = ScrollPage.loadBlock(state.name).create(this._muya, state);
+            target.parent.insertAfter(block, previous);
+            previous = block;
+        }
+        const last = previous.lastContentInDescendant();
+        last?.setCursor(last.text.length, last.text.length, true);
+        this.jsonState.flush();
+        this.history.cutoff();
 
         return true;
     }

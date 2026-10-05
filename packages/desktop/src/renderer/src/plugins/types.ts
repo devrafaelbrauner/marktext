@@ -67,6 +67,16 @@ export interface RangeEdit {
 }
 
 /**
+ * Text selection of the active document. Offsets are UTF-16 offsets into the
+ * `text` of the content block at `path` (as `CheckableBlock.text`); `anchor`
+ * is where the selection started, so it may come after `focus`.
+ */
+export interface EditorSelection {
+  anchor: { path: BlockPath; offset: number }
+  focus: { path: BlockPath; offset: number }
+}
+
+/**
  * Prose of one block for proofreading. The parts of `annotation`, joined in
  * order (`text` and `markup` values), reproduce `text` exactly, so offsets
  * reported against the joined string are offsets into `text`.
@@ -240,6 +250,20 @@ export interface EditorApi {
   getCheckableBlocks(paths?: BlockPath[]): CheckableBlock[]
   /** Inserts text at the caret of the active markdown document. */
   insertText(text: string): void
+  /**
+   * Parses `markdown` into blocks and inserts them after the top-level block
+   * containing the content block at `after` (default: the selected block), as
+   * one undo step; the caret ends after the inserted content. Front matter is
+   * not recognized. Returns false, changing nothing, when there is no such
+   * block or `markdown` is blank.
+   */
+  insertMarkdownBlocks(markdown: string, after?: BlockPath): boolean
+  /**
+   * Current text selection (a caret is a collapsed one), or null. It survives
+   * the editor losing focus, so commands run from the command palette still
+   * see what the user selected.
+   */
+  getSelection(): EditorSelection | null
   registerInlineSyntax(rule: InlineSyntaxRule): Disposable
   /** Ctrl/Cmd-click on a token produced by `registerInlineSyntax`. */
   onDidClickInlineToken(

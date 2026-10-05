@@ -9,7 +9,8 @@
       schemes mapped to their Android hosts: the bundle is 'self'
       (https://localhost), vault files are https://vault.local and community
       plugins are https://<id>.plugin.local, all served by the native
-      request interceptor.
+      request interceptor. frame-src adds 'self' for the settings window, an
+      iframe of this bundle (src/main/settingsWindow.ts).
     -->
     <meta
       http-equiv="Content-Security-Policy"
@@ -18,7 +19,7 @@
                   style-src 'self' 'unsafe-inline';
                   img-src * data: blob: https://vault.local;
                   font-src 'self' data:;
-                  frame-src https://*.plugin.local;
+                  frame-src 'self' https://*.plugin.local;
                   "
     />
   </head>
