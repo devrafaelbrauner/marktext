@@ -435,6 +435,19 @@ describe('engine host', () => {
     expect(clicks).toEqual([{ target: 'Note' }])
   })
 
+  it('follows custom tokens on a finger tap, but not on a plain mouse or pen click', () => {
+    const muya = createFakeMuya()
+    const engine = new EngineHost({ getActiveTabId: () => 't', isMac: false, registries: {} as EngineRegistries })
+    engine.attach(muya as unknown as EngineInstance)
+    const clicks: unknown[] = []
+    engine.onDidClickInlineToken('wikilink', ({ data }) => clicks.push(data))
+    const tap = (pointerType: string): PointerEvent => new PointerEvent('click', { pointerType })
+    muya.emit('format-click', { event: tap('touch'), formatType: 'wikilink', data: { target: 'Ideias' } })
+    muya.emit('format-click', { event: tap('mouse'), formatType: 'wikilink', data: { target: 'Mouse' } })
+    muya.emit('format-click', { event: tap('pen'), formatType: 'wikilink', data: { target: 'Pen' } })
+    expect(clicks).toEqual([{ target: 'Ideias' }])
+  })
+
   it('re-applies the OR of option requests to a newly attached engine', () => {
     const engine = new EngineHost({ getActiveTabId: () => 't', isMac: false, registries: {} as EngineRegistries })
     const a = engine.requestEngineOptions({ atxHeadingRequiresSpace: true })

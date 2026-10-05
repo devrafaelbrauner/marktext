@@ -130,7 +130,10 @@ export class EngineHost {
     const listeners = this.inlineTokenClicks.get(formatType)
     if (!listeners) return
     const ctrlOrMeta = this.options.isMac ? event.metaKey : event.ctrlKey
-    if (!ctrlOrMeta) return
+    // A finger has no modifier keys, so on touch screens a tap follows the
+    // token (wikilink, tag) the way Ctrl/Cmd-click does with a mouse.
+    const fingerTap = typeof PointerEvent !== 'undefined' && event instanceof PointerEvent && event.pointerType === 'touch'
+    if (!ctrlOrMeta && !fingerTap) return
     listeners.emit({ data: { ...(data as Record<string, string>) }, event })
   }
 
