@@ -2,6 +2,9 @@ import type { AiAction } from '../common/types'
 import type { ChatMessage } from './client'
 
 const NO_FENCES = 'Do not wrap the reply in code fences.'
+// muya renders `$…$` / `$$…$$` only; models often default to LaTeX's `\(…\)`.
+const MATH_DELIMITERS =
+  'Write math only as inline `$...$` or display `$$...$$`; never use `\\(...\\)` or `\\[...\\]`.'
 
 const SYSTEM_PROMPTS: Record<AiAction, string> = {
   fixText: [
@@ -20,8 +23,10 @@ const SYSTEM_PROMPTS: Record<AiAction, string> = {
   ].join(' '),
   solveMath: [
     'Solve the math expression or problem the user sends.',
-    'Reply in Markdown, concisely: give the result first; add short step-by-step working only when the problem needs several steps.',
-    'Write formulas as inline math between single dollar signs when that helps.',
+    'For a single expression, reply with just the result.',
+    'Otherwise work it out first as a short numbered list of steps, then end with the final answer in bold on its own line;',
+    'never state an answer before the steps that compute it.',
+    MATH_DELIMITERS,
     'Answer in the language of the user\'s text.',
     NO_FENCES
   ].join(' '),
@@ -29,6 +34,7 @@ const SYSTEM_PROMPTS: Record<AiAction, string> = {
     'Answer the user\'s question concisely in Markdown (short paragraphs or lists).',
     'Say clearly when you are unsure or when the information may be outdated.',
     'When you relied on sources, list them at the end as Markdown links.',
+    MATH_DELIMITERS,
     'Answer in the language of the question.',
     NO_FENCES
   ].join(' ')
@@ -64,12 +70,40 @@ const RAW_TEXT_ACTIONS: Record<AiAction, boolean> = {
 /** A reply that is one fenced code block: ``` or ~~~ fence, optional info string, body, closing fence. */
 const WRAPPING_FENCE = /^(`{3,}|~{3,})[^\n`]*\n([\s\S]*?)\n?\1\s*$/
 
+/** Actions whose reply may carry math, written with muya's delimiters. */
+const MATH_ACTIONS: Record<AiAction, boolean> = {
+  fixText: false,
+  createTable: false,
+  solveMath: true,
+  research: true
+}
+
+// Fenced blocks and inline code spans: math delimiters inside them are text.
+const CODE_SEGMENTS = /(^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\2[ \t]*$|`+[^`\n]*`+)/m
+
+/** `\(x\)` → `$x$` and `\[x\]` → `$$` display block, outside code. */
+const toDollarMath = (markdown: string): string =>
+  markdown
+    .split(new RegExp(CODE_SEGMENTS.source, 'gm'))
+    .map((part: string | undefined, index) => {
+      // split() interleaves the captures: prose, the code segment, then its
+      // fence back-reference group, which is not text of its own.
+      if (index % 3 === 2 || part === undefined) return ''
+      if (index % 3 === 1) return part
+      return part
+        .replace(/\\\[([\s\S]+?)\\\]/g, (_match, body: string) => `\n$$\n${body.trim()}\n$$\n`)
+        .replace(/\\\(([\s\S]+?)\\\)/g, (_match, body: string) => `$${body.trim()}$`)
+    })
+    .join('')
+
 /**
- * Trims `reply` and, for actions that expect raw text, unwraps it when the
- * model put all of it in a fenced code block despite the prompt.
+ * Trims `reply`; for actions that expect raw text, unwraps it when the model
+ * put all of it in a fenced code block despite the prompt; for math-bearing
+ * actions, rewrites LaTeX `\(…\)` / `\[…\]` delimiters to muya's `$…$` / `$$`.
  */
 export const cleanReply = (action: AiAction, reply: string): string => {
   const trimmed = reply.trim()
+  if (MATH_ACTIONS[action]) return toDollarMath(trimmed).trim()
   if (!RAW_TEXT_ACTIONS[action]) return trimmed
   const fenced = WRAPPING_FENCE.exec(trimmed)
   return fenced ? fenced[2].trim() : trimmed
