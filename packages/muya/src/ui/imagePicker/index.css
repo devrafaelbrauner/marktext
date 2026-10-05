@@ -5,6 +5,7 @@
 .mu-image-picker-wrapper .mu-list-picker {
     box-sizing: border-box;
     width: 450px;
+    max-width: calc(100vw - 16px);
     max-height: 156px;
     padding: 8px 0;
     overflow-y: auto;

@@ -4,6 +4,7 @@
 
 .mu-image-selector {
     width: 500px;
+    max-width: calc(100vw - 16px);
     min-height: 190px;
     max-height: 400px;
 }

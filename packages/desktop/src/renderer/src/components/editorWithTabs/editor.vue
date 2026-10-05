@@ -2150,6 +2150,8 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
   cursor: default;
   overflow-anchor: none !important;
+  /* Set by the Android shell while the soft keyboard is open; 0 on desktop. */
+  padding-bottom: var(--mt-keyboard-inset, 0px);
 }
 
 .editor-component .mu-container {

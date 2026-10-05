@@ -3,8 +3,14 @@
     v-show="showSideBar"
     ref="sideBar"
     class="side-bar"
-    :style="[!rightColumn ? { 'min-width': '45px' } : {}, { width: `${finalSideBarWidth}px` }]"
+    :class="{ drawer: isDrawer }"
+    :style="sideBarStyle"
   >
+    <div
+      v-if="isDrawer"
+      class="drawer-backdrop"
+      @click="closeDrawer"
+    />
     <div class="left-column">
       <ul>
         <li
@@ -67,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useLayoutStore } from '@/store/layout'
 import { useProjectStore } from '@/store/project'
 import { useEditorStore } from '@/store/editor'
@@ -102,6 +108,41 @@ const finalSideBarWidth = computed<number>(() => {
   if (!showSideBar.value) return 0
   if (rightColumn.value === '') return 45
   return sideBarViewWidth.value < 220 ? 220 : sideBarViewWidth.value
+})
+
+// Below 600px the expanded sidebar overlays the editor as a drawer instead of
+// shrinking it; the 45px icon strip stays in flow as the drawer's handle.
+const NARROW_QUERY = '(max-width: 599px)'
+const narrowMedia = window.matchMedia(NARROW_QUERY)
+const isNarrow = ref(narrowMedia.matches)
+const onNarrowChange = (event: MediaQueryListEvent): void => {
+  isNarrow.value = event.matches
+}
+narrowMedia.addEventListener('change', onNarrowChange)
+onBeforeUnmount(() => narrowMedia.removeEventListener('change', onNarrowChange))
+
+const isDrawer = computed(() => isNarrow.value && rightColumn.value !== '')
+
+const sideBarStyle = computed(() => {
+  if (isDrawer.value) return { width: 'min(85vw, 320px)' }
+  return [!rightColumn.value ? { 'min-width': '45px' } : {}, { width: `${finalSideBarWidth.value}px` }]
+})
+
+// Collapsing via SET_LAYOUT only: the persisted desktop width stays untouched.
+const closeDrawer = (): void => {
+  layoutStore.SET_LAYOUT({ rightColumn: '' })
+}
+
+watch(
+  () => editorStore.currentFile?.id,
+  (id, oldId) => {
+    if (isDrawer.value && id !== oldId) closeDrawer()
+  }
+)
+
+onMounted(() => {
+  // Boot opens the files column (desktop default); on a phone start on the editor.
+  if (isDrawer.value && editorStore.currentFile) closeDrawer()
 })
 
 onMounted(() => {
@@ -262,5 +303,38 @@ const handleLeftBottomClick = (name: string): void => {
 
 .drag-bar:hover {
   border-right: 2px solid var(--iconColor);
+}
+
+.side-bar.drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  height: auto;
+  min-width: 0;
+  z-index: 2000;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.3);
+}
+
+.side-bar.drawer .drag-bar {
+  display: none;
+}
+
+/* The backdrop paints above the drawer's own background (negative z-index
+   inside its stacking context), so the columns carry an opaque background. */
+.side-bar.drawer .left-column,
+.side-bar.drawer .right-column {
+  position: relative;
+  background: linear-gradient(var(--sideBarBgColor), var(--sideBarBgColor)), var(--editorBgColor);
+}
+
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: rgba(0, 0, 0, 0.35);
 }
 </style>

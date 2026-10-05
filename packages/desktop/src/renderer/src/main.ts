@@ -20,6 +20,7 @@ import Main from './Main.vue'
 
 import './assets/styles/index.css'
 import './assets/styles/printService.css'
+import './assets/styles/mobile.css'
 
 // -----------------------------------------------
 

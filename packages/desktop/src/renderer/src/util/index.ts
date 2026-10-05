@@ -211,3 +211,6 @@ const platform =
 export const isMac = platform === 'darwin'
 export const isWindows = platform === 'win32'
 export const isLinux = platform === 'linux'
+// The Android shell reports platform 'linux'; its boot env marks the real host.
+export const isAndroid = (): boolean =>
+  typeof window !== 'undefined' && window.electron?.process?.env?.MARKTEXT_PLATFORM === 'android'

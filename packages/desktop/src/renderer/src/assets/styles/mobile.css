@@ -1,0 +1,155 @@
+/*
+ * Phone-width overrides (Android shell, 360–412px). Every rule sits behind a
+ * media query that desktop windows at normal widths never match. `!important`
+ * is needed where the target rule lives in a component's scoped style block,
+ * whose attribute selector outranks a plain class selector.
+ */
+
+/* Fixed-width floats and dialogs: clamp to the viewport with an 8px gutter. */
+@media (max-width: 599px) {
+  .el-dialog {
+    width: auto !important;
+    max-width: calc(100vw - 16px);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .el-message-box {
+    max-width: calc(100vw - 16px);
+  }
+
+  .el-overlay-dialog {
+    overflow-x: hidden;
+  }
+
+  /* Command palette / quick open and the keybinding capture dialog. */
+  .command-palette .search-wrapper,
+  .key-input-dialog .key-input-wrapper {
+    width: calc(100vw - 16px) !important;
+    max-width: 500px;
+  }
+
+  /* Find/replace bar spans the editor instead of floating 400px wide. */
+  .search-bar {
+    width: auto !important;
+    left: 8px !important;
+    right: 8px !important;
+  }
+
+  /* Rename prompt. */
+  .rename .search-wrapper {
+    width: calc(100vw - 16px) !important;
+  }
+
+  .notification-container,
+  .mt-notification {
+    min-width: 0 !important;
+    max-width: calc(100vw - 16px) !important;
+  }
+
+  /* Tab bar: overflowing tabs scroll horizontally instead of being cut off. */
+  .editor-tabs .scrollable-tabs {
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .editor-tabs .tabs-container > li {
+    max-width: 60vw !important;
+  }
+
+  /* Title bar: the 118/138px reserved toolbar areas would eat the title. */
+  .title-bar .left-toolbar,
+  .title-bar .right-toolbar {
+    min-width: 0 !important;
+  }
+
+  /* Preferences window: stacked single column (nav on top, page below). */
+  .pref-container {
+    --prefSideBarWidth: 100vw;
+
+    flex-direction: column;
+  }
+
+  .pref-container .pref-sidebar {
+    width: 100%;
+    height: auto;
+    max-height: 40vh;
+    padding-top: calc(8px + env(safe-area-inset-top, 0px));
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  .pref-container .pref-content {
+    max-width: 100vw;
+    min-height: 0;
+  }
+
+  .pref-container .pref-content .pref-setting {
+    padding: 16px 12px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    height: auto;
+    min-height: 0;
+  }
+
+  .pref-container .pref-content.frameless .pref-setting {
+    margin-top: 0;
+  }
+
+  .pref-container .pref-content > .title-bar {
+    display: none;
+  }
+}
+
+/* Safe areas: notch / gesture bar on edge-to-edge Android displays. */
+@supports (padding: env(safe-area-inset-top)) {
+  @media (max-width: 599px) {
+    .editor-container {
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      padding-left: env(safe-area-inset-left, 0px);
+      padding-right: env(safe-area-inset-right, 0px);
+      box-sizing: border-box;
+    }
+  }
+}
+
+/* Touch targets: >= 40px on coarse pointers (phones/tablets), desktop untouched. */
+@media (pointer: coarse) {
+  .side-bar-file,
+  .side-bar-folder .folder-name,
+  .opened-file {
+    min-height: 40px;
+    height: auto !important;
+    line-height: 40px !important;
+  }
+
+  .editor-tabs,
+  .editor-tabs .scrollable-tabs,
+  .editor-tabs .tabs-container,
+  .editor-tabs .tabs-container > li {
+    height: 40px !important;
+    line-height: 40px !important;
+  }
+
+  .editor-tabs .tabs-container > li > .close-icon {
+    min-width: 40px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1 !important;
+  }
+
+  .left-column ul > li,
+  .title-bar .word-count,
+  .title-bar .frameless-titlebar-menu {
+    min-height: 40px;
+    min-width: 40px;
+  }
+
+  .el-button {
+    min-height: 40px;
+  }
+}

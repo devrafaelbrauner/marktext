@@ -92,7 +92,7 @@
         <plugin-status-bar />
       </div>
       <div
-        v-if="titleBarStyle === 'custom' && !isFullScreen && !isOsx"
+        v-if="titleBarStyle === 'custom' && !isFullScreen && !isOsx && !isAndroidHost"
         class="right-toolbar"
         :class="[{ 'title-no-drag': titleBarStyle === 'custom' }]"
       >
@@ -154,7 +154,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { storeToRefs } from 'pinia'
 import { minimizePath, restorePath, maximizePath, closePath } from '../../assets/window-controls.js'
 import { PATH_SEPARATOR } from '../../config'
-import { isMac as isOsxPlatform } from '@/util'
+import { isMac as isOsxPlatform, isAndroid } from '@/util'
 import { shouldShowInAppTitleBar } from './visibility'
 import { useEditorStore } from '@/store/editor'
 import { useI18n } from 'vue-i18n'
@@ -184,6 +184,8 @@ const editorStore = useEditorStore()
 const { t } = useI18n()
 
 const isOsx = isOsxPlatform
+// Android has no window to minimize/maximize/close.
+const isAndroidHost = isAndroid()
 const HASH = {
   word: { short: 'W' },
   character: { short: 'C' },

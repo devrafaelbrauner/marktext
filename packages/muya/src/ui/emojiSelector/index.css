@@ -1,5 +1,6 @@
 .mu-emoji-picker {
     width: 348px;
+    max-width: calc(100vw - 16px);
     max-height: 350px;
     overflow-y: auto;
 }
