@@ -59,4 +59,3 @@ export const webUtils = {
   // drop from other apps); the share intent and pickers cover importing.
   getPathForFile: (_file: File): string => ''
 }
-
