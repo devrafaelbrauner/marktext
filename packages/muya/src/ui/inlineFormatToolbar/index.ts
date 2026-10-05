@@ -22,6 +22,13 @@ const defaultOptions = {
     showArrow: false,
 };
 
+// A finger selection gets the system's Cut/Copy/Paste bar above it, so the
+// toolbar goes below, past the selection handles.
+const touchPosition = {
+    placement: 'bottom' as const,
+    offsetOptions: { mainAxis: 32, crossAxis: 0, alignmentAxis: 0 },
+};
+
 /** Format keyboard shortcuts without shift modifier */
 const FORMAT_SHORTCUTS = {
     b: 'strong',
@@ -100,12 +107,12 @@ export class InlineFormatToolbar extends BaseFloat {
         const { eventCenter, domNode, editor } = this.muya;
         super.listen();
 
-        eventCenter.subscribe('muya-format-picker', ({ reference, block }) => {
+        eventCenter.subscribe('muya-format-picker', ({ reference, block, touch }) => {
             if (reference) {
                 this._block = block;
                 this._formats = block.getFormatsInRange().formats;
                 requestAnimationFrame(() => {
-                    this.show(reference);
+                    this.show(reference, undefined, touch ? touchPosition : {});
                     this._render();
                 });
             }

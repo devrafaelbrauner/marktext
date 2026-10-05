@@ -86,7 +86,8 @@ describe('touch selection sync', () => {
         expect(selection.anchorBlock?.domNode).toBe(content);
         expect(muya.editor.activeContentBlock?.domNode).toBe(content);
         expect(picker).toHaveLength(1);
-        expect(picker[0]).toMatchObject({ block: selection.anchorBlock });
+        // Placed below the selection, clear of the system Cut/Copy bar.
+        expect(picker[0]).toMatchObject({ block: selection.anchorBlock, touch: true });
         // The native range is read, never rewritten: the handles stay up.
         expect(document.getSelection()!.toString()).toBe('beta');
     });

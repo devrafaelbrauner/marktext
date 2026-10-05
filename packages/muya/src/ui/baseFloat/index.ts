@@ -163,10 +163,14 @@ abstract class BaseFloat {
     // with their own argument tuple (e.g. emojiSelector → `(item)`,
     // tableChessboard → `(row, column)`). `never[]` in the contravariant
     // arg position accepts any concrete callback shape.
-    show(reference: ReferenceElement, cb: (...args: never[]) => void = noop) {
+    show(
+        reference: ReferenceElement,
+        cb: (...args: never[]) => void = noop,
+        position: Partial<Pick<IBaseOptions, 'placement' | 'offsetOptions'>> = {},
+    ) {
         const { floatBox } = this;
         const { eventCenter } = this.muya;
-        const { placement, offsetOptions } = this.options;
+        const { placement, offsetOptions } = { ...this.options, ...position };
         if (!floatBox) {
             throw new Error('The float box is not existed.');
         }

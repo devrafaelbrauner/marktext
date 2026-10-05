@@ -140,6 +140,14 @@ watch(
   }
 )
 
+// An editor selection left active keeps the system Cut/Copy bar floating over
+// the drawer; opening the drawer moves the user away from the text anyway.
+watch(isDrawer, (open) => {
+  if (!open) return
+  window.getSelection()?.removeAllRanges()
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+})
+
 onMounted(() => {
   // Boot opens the files column (desktop default); on a phone start on the editor.
   if (isDrawer.value && editorStore.currentFile) closeDrawer()

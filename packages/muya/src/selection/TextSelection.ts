@@ -465,6 +465,7 @@ class TextSelection {
             eventCenter.emit('muya-format-picker', {
                 reference: getCursorReference(),
                 block,
+                touch: true,
             });
         }
     }
