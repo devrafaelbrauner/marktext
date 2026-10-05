@@ -1,9 +1,11 @@
 import type { Disposable } from '@shared/plugins/types'
-import type { VaultIndexReader } from '../types'
+import type { VaultIndexFs, VaultIndexReader } from '../types'
 
 export interface WorkerHandlerContext {
   /** The in-memory index of the vault the request came from. */
   readonly index: VaultIndexReader
+  /** Disk access of the worker; handlers read notes through it, never through Node directly. */
+  readonly fs: VaultIndexFs
 }
 
 /**

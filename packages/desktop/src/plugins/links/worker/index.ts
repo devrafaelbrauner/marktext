@@ -1,4 +1,3 @@
-import { promises as fs } from 'fs'
 import { registerWorkerHandler } from '../../../main/vaultIndex/worker/handlers'
 import { findMentions } from '../common/mentions'
 import { MAX_UNLINKED_MENTIONS, type UnlinkedMentionsRequest, type UnlinkedMentionsResult } from '../common/protocol'
@@ -16,7 +15,7 @@ const isRequest = (payload: unknown): payload is UnlinkedMentionsRequest =>
  * Notes that mention the basename or an alias of `path` as plain text but do
  * not link to it. Reads the notes from disk, so it lives in the index worker.
  */
-registerWorkerHandler('links.unlinkedMentions', async(payload, { index }): Promise<UnlinkedMentionsResult> => {
+registerWorkerHandler('links.unlinkedMentions', async(payload, { index, fs }): Promise<UnlinkedMentionsResult> => {
   if (!isRequest(payload)) throw new Error('links.unlinkedMentions expects { path }')
   const target = index.getFile(payload.path)
   if (!target) return { files: [], truncated: false }
@@ -31,7 +30,8 @@ registerWorkerHandler('links.unlinkedMentions', async(payload, { index }): Promi
     let content: string
     let mtimeMs: number
     try {
-      const [text, stat] = await Promise.all([fs.readFile(note.path, 'utf-8'), fs.stat(note.path)])
+      const [text, stat] = await Promise.all([fs.readText(note.path), fs.stat(note.path)])
+      if (!stat) continue
       content = text
       mtimeMs = stat.mtimeMs
     } catch {

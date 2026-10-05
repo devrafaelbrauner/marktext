@@ -6,6 +6,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import type { FileMetadata } from '@shared/plugins/types'
 import { VaultIndex, VAULT_INDEX_CACHE_VERSION } from 'main_renderer/vaultIndex/vaultIndex'
 import { loadVaultIndexCache, saveVaultIndexCache } from 'main_renderer/vaultIndex/cache'
+import { nodeVaultIndexFs } from 'main_renderer/vaultIndex/nodeFs'
 
 const FIXTURE = path.resolve(__dirname, '../../fixtures/vault')
 
@@ -27,7 +28,7 @@ const resolvedTarget = (meta: FileMetadata, target: string): string | null => {
 }
 
 describe('VaultIndex over the fixture vault', () => {
-  const index = new VaultIndex(FIXTURE)
+  const index = new VaultIndex(FIXTURE, nodeVaultIndexFs)
   const rel = relTo(FIXTURE)
   const abs = (p: string): string => path.join(FIXTURE, ...p.split('/'))
 
@@ -192,7 +193,7 @@ describe('VaultIndex incremental updates', () => {
     root = fs.mkdtempSync(path.join(os.tmpdir(), 'vault-index-'))
     fs.cpSync(FIXTURE, root, { recursive: true })
     rel = relTo(root)
-    index = new VaultIndex(root)
+    index = new VaultIndex(root, nodeVaultIndexFs)
     await index.scan()
   })
 
@@ -280,7 +281,7 @@ describe('VaultIndex incremental updates', () => {
   })
 
   it('honours the tree exclude patterns on scan and on change', async() => {
-    const excluded = new VaultIndex(root, { excludePatterns: ['Templates', '*.pdf'] })
+    const excluded = new VaultIndex(root, nodeVaultIndexFs, { excludePatterns: ['Templates', '*.pdf'] })
     await excluded.scan()
     expect(excluded.getFile(abs('Templates/Daily Template.md'))).toBeNull()
     expect(excluded.listAssets()).toEqual([])
@@ -314,9 +315,9 @@ describe('VaultIndex persisted cache', () => {
   }
 
   it('round-trips through disk and reuses entries whose mtime and size still match', async() => {
-    const first = new VaultIndex(root)
+    const first = new VaultIndex(root, nodeVaultIndexFs)
     await first.scan()
-    await saveVaultIndexCache(cacheFile, first.toCache())
+    await saveVaultIndexCache(nodeVaultIndexFs, cacheFile, first.toCache())
 
     // Same size and mtime but different content: only a cache hit keeps the old tag.
     const ideas = abs('Ideas.md')
@@ -324,15 +325,15 @@ describe('VaultIndex persisted cache', () => {
     const mtime = fs.statSync(ideas).mtime
     rewriteKeepingStat(ideas, original.replace('#idea/research', '#idea/xxxxxxxx'), mtime)
 
-    const second = new VaultIndex(root)
-    await second.scan(await loadVaultIndexCache(cacheFile))
+    const second = new VaultIndex(root, nodeVaultIndexFs)
+    await second.scan(await loadVaultIndexCache(nodeVaultIndexFs, cacheFile))
     expect(tagsOf(second, ideas)).toContain('idea/research')
     // Links are re-resolved against the current file set, not taken from the cache.
     expect(resolvedTarget(fileOf(second, abs('Home.md')), 'Notes')).toBe(abs('Notes.md'))
   })
 
   it('re-parses entries whose mtime changed', async() => {
-    const first = new VaultIndex(root)
+    const first = new VaultIndex(root, nodeVaultIndexFs)
     await first.scan()
     const cache = first.toCache()
 
@@ -340,14 +341,14 @@ describe('VaultIndex persisted cache', () => {
     const original = fs.readFileSync(ideas, 'utf8')
     rewriteKeepingStat(ideas, original.replace('#idea/research', '#idea/xxxxxxxx'), new Date(Date.now() + 60_000))
 
-    const second = new VaultIndex(root)
+    const second = new VaultIndex(root, nodeVaultIndexFs)
     await second.scan(cache)
     expect(tagsOf(second, ideas)).toContain('idea/xxxxxxxx')
     expect(tagsOf(second, ideas)).not.toContain('idea/research')
   })
 
   it('ignores caches of another root or parser version', async() => {
-    const first = new VaultIndex(root)
+    const first = new VaultIndex(root, nodeVaultIndexFs)
     await first.scan()
     const ideas = abs('Ideas.md')
     const mtime = fs.statSync(ideas).mtime
@@ -358,7 +359,7 @@ describe('VaultIndex persisted cache', () => {
       { ...first.toCache(), version: VAULT_INDEX_CACHE_VERSION + 1 },
       { ...first.toCache(), rootPath: path.join(root, 'other') }
     ]) {
-      const index = new VaultIndex(root)
+      const index = new VaultIndex(root, nodeVaultIndexFs)
       await index.scan(cache)
       expect(tagsOf(index, ideas)).toContain('idea/xxxxxxxx')
     }
@@ -366,9 +367,9 @@ describe('VaultIndex persisted cache', () => {
 
   it('treats unreadable or malformed cache files as absent', async() => {
     fs.writeFileSync(cacheFile, '{not json')
-    expect(await loadVaultIndexCache(cacheFile)).toBeNull()
+    expect(await loadVaultIndexCache(nodeVaultIndexFs, cacheFile)).toBeNull()
     fs.writeFileSync(cacheFile, JSON.stringify({ version: 1, rootPath: root, notes: [{ meta: { path: 1 } }, null] }))
-    expect(await loadVaultIndexCache(cacheFile)).toEqual({ version: 1, rootPath: root, notes: [] })
-    expect(await loadVaultIndexCache(path.join(root, 'missing.json'))).toBeNull()
+    expect(await loadVaultIndexCache(nodeVaultIndexFs, cacheFile)).toEqual({ version: 1, rootPath: root, notes: [] })
+    expect(await loadVaultIndexCache(nodeVaultIndexFs, path.join(root, 'missing.json'))).toBeNull()
   })
 })

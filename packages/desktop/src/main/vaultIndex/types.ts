@@ -13,6 +13,35 @@ export interface VaultFsChange {
   path: string
 }
 
+/** File status as the index needs it; plain data so it can cross a message port. */
+export interface VaultFileStats {
+  isFile: boolean
+  isDirectory: boolean
+  size: number
+  mtimeMs: number
+  ctimeMs: number
+}
+
+/**
+ * Disk access of the index worker. Desktop reads through Node (`nodeFs.ts`);
+ * the Android build proxies to the WebView's file backend, so the index core
+ * stays free of Node modules.
+ */
+export interface VaultIndexFs {
+  /** Follows symlinks; null when nothing readable exists at `path`. */
+  stat(path: string): Promise<VaultFileStats | null>
+  /**
+   * Absolute paths of the files below `dir`. Never descends into a folder
+   * `isIgnored` accepts and never returns an ignored path; an unreadable
+   * folder contributes nothing.
+   */
+  walk(dir: string, isIgnored: (path: string) => boolean): Promise<string[]>
+  /** UTF-8 text; rejects when the file cannot be read. */
+  readText(path: string): Promise<string>
+  /** Replaces `path` atomically where possible, creating missing folders. */
+  writeText(path: string, text: string): Promise<void>
+}
+
 /**
  * Read access to the in-memory index of one vault, handed to worker
  * handlers. Paths are absolute; results are snapshots the caller may keep.
