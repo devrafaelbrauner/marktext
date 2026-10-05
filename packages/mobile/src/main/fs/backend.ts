@@ -49,7 +49,8 @@ export interface DirEntry {
   name: string
   isFile: boolean
   isDirectory: boolean
-  /** Set when the listing carries it, which saves a stat per entry. */
+  /** Set when the listing carries them, which saves a stat per entry. */
+  size?: number
   mtimeMs?: number
   birthtimeMs?: number
 }
@@ -87,33 +88,73 @@ export interface FileBackend {
   pickSaveFile(suggestedName: string, mimeType: string, initialPath?: string): Promise<PickedEntry | null>
 }
 
-/** Depth-first walk yielding file paths below `root` that `include` accepts. */
-export async function walkFiles(
+export interface WalkedFile {
+  path: string
+  entry: DirEntry
+}
+
+// Folders listed at once: the native side reads on a small thread pool, and a
+// storage-provider listing blocks for tens of milliseconds.
+const WALK_CONCURRENCY = 4
+
+const skipHidden = (name: string): boolean => name.startsWith('.') || name === 'node_modules'
+
+/** Files below `root` that `include` accepts, with their listing entries, sorted by path. */
+export async function walkEntries(
   backend: FileBackend,
   root: string,
   include: (path: string) => boolean,
-  skipDir: (name: string) => boolean = (name) => name.startsWith('.') || name === 'node_modules'
-): Promise<string[]> {
-  const out: string[] = []
-  const stack = [root]
-  while (stack.length > 0) {
-    const dir = stack.pop() as string
+  skipDir: (name: string) => boolean = skipHidden
+): Promise<WalkedFile[]> {
+  const out: WalkedFile[] = []
+  const pending = [root]
+  const listDir = async(dir: string): Promise<void> => {
     let entries: DirEntry[]
     try {
       entries = await backend.readdir(dir)
     } catch (error) {
       // A directory removed or revoked mid-walk drops out of the result.
-      if (isMobileFsError(error, 'ENOENT') || isMobileFsError(error, 'PERMISSION_DENIED')) continue
+      if (isMobileFsError(error, 'ENOENT') || isMobileFsError(error, 'PERMISSION_DENIED')) return
       throw error
     }
     for (const entry of entries) {
       const child = dir.endsWith('/') ? dir + entry.name : `${dir}/${entry.name}`
       if (entry.isDirectory) {
-        if (!skipDir(entry.name)) stack.push(child)
+        if (!skipDir(entry.name)) pending.push(child)
       } else if (entry.isFile && include(child)) {
-        out.push(child)
+        out.push({ path: child, entry })
       }
     }
   }
-  return out.sort()
+  // Workers drain the shared queue; a worker idles out only when the queue is
+  // empty and no listing that could refill it is still running.
+  let active = 0
+  const worker = async(): Promise<void> => {
+    for (;;) {
+      const dir = pending.pop()
+      if (dir === undefined) {
+        if (active === 0) return
+        await new Promise((resolve) => setTimeout(resolve, 0))
+        continue
+      }
+      active++
+      try {
+        await listDir(dir)
+      } finally {
+        active--
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: WALK_CONCURRENCY }, worker))
+  return out.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0))
+}
+
+/** File paths below `root` that `include` accepts, sorted. */
+export async function walkFiles(
+  backend: FileBackend,
+  root: string,
+  include: (path: string) => boolean,
+  skipDir: (name: string) => boolean = skipHidden
+): Promise<string[]> {
+  return (await walkEntries(backend, root, include, skipDir)).map((file) => file.path)
 }

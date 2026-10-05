@@ -10,7 +10,7 @@ import type { VaultIndexReadyState } from '@shared/types/ipc'
 import { VaultIndexManager, type IndexWorkerProcess } from '../../../../desktop/src/main/vaultIndex/manager'
 import type { WorkerToMainMessage } from '../../../../desktop/src/main/vaultIndex/types'
 import { USER_DATA_PATH } from '../boot'
-import { walkFiles } from '../fs/backend'
+import { walkEntries, walkFiles } from '../fs/backend'
 import { EDITOR_WINDOW_ID, ipcMain, pushTo, type MobileIpcEvent } from '../ipc'
 import { fsChanged, getBackend, getRootPath, rootChanged } from '../state'
 import type {
@@ -75,17 +75,24 @@ async function serveFsCall(call: FsCall): Promise<unknown> {
     case 'walk':
       return walkFiles(backend, call.dir, () => true)
     case 'walkStats': {
-      const files = await walkFiles(backend, call.dir, () => true)
+      // Native listings carry size and mtime; stat only entries without them
+      // (each stat is a storage-provider query).
+      const files = await walkEntries(backend, call.dir, () => true)
       const out: WalkedFile[] = []
+      const missing: string[] = []
+      for (const { path, entry } of files) {
+        if (entry.size !== undefined && entry.mtimeMs !== undefined) out.push({ path, mtimeMs: entry.mtimeMs, size: entry.size })
+        else missing.push(path)
+      }
       let next = 0
       const statNext = async(): Promise<void> => {
-        while (next < files.length) {
-          const file = files[next++]
+        while (next < missing.length) {
+          const file = missing[next++]
           const stats = await backend.stat(file).catch(() => null)
           if (stats?.isFile) out.push({ path: file, mtimeMs: stats.mtimeMs, size: stats.size })
         }
       }
-      await Promise.all(Array.from({ length: Math.min(STAT_CONCURRENCY, files.length) }, statNext))
+      await Promise.all(Array.from({ length: Math.min(STAT_CONCURRENCY, missing.length) }, statNext))
       return out
     }
     case 'readText':

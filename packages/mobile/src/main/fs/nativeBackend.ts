@@ -90,10 +90,11 @@ export class NativeFileBackend implements FileBackend {
   async readdir(path: string): Promise<DirEntry[]> {
     const { entries } = await call(path, () => MtFs.readdir({ path }))
     // SAF has no creation time; the native side reports mtime for both.
-    return entries.map(({ name, isFile, isDirectory, mtimeMs }) => ({
+    return entries.map(({ name, isFile, isDirectory, size, mtimeMs }) => ({
       name,
       isFile,
       isDirectory,
+      size,
       mtimeMs,
       birthtimeMs: mtimeMs
     }))

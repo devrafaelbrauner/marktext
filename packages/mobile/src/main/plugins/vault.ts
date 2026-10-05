@@ -7,7 +7,7 @@
 import { posix } from 'pathe'
 import type { VaultFileEntry } from '@shared/plugins/types'
 import { PluginError } from '../../../../desktop/src/main/plugins/errors'
-import { isMobileFsError, walkFiles, type FileBackend, type FileStat } from '../fs/backend'
+import { isMobileFsError, walkEntries, type FileBackend, type FileStat } from '../fs/backend'
 import { fsChanged } from '../state'
 
 /** Hard cap of `readBinary`, in bytes; callers may only lower it (desktop vaultFs value). */
@@ -152,15 +152,21 @@ export class VaultFiles {
         ? new Set(extensions.filter((e): e is string => typeof e === 'string').map((e) => e.toLowerCase()))
         : null
       const extensionOf = (path: string): string => posix.extname(path).slice(1).toLowerCase()
-      const paths = await walkFiles(this.backend, posix.resolve(root), (path) =>
+      const files = await walkEntries(this.backend, posix.resolve(root), (path) =>
         !posix.basename(path).startsWith('.') && (!wanted || wanted.has(extensionOf(path)))
       )
       const result: VaultFileEntry[] = []
-      for (const path of paths) {
+      for (const { path, entry } of files) {
         if (result.length >= MAX_LIST_ENTRIES) break
-        const stat = await this.backend.stat(path)
-        if (!stat?.isFile) continue
-        result.push({ path, name: posix.basename(path), extension: extensionOf(path), size: stat.size, mtimeMs: stat.mtimeMs })
+        // Native listings carry size and mtime; a stat per file costs a
+        // storage-provider query each (seconds on a large vault).
+        let { size, mtimeMs } = entry
+        if (size === undefined || mtimeMs === undefined) {
+          const stat = await this.backend.stat(path)
+          if (!stat?.isFile) continue
+          ;({ size, mtimeMs } = stat)
+        }
+        result.push({ path, name: posix.basename(path), extension: extensionOf(path), size, mtimeMs })
       }
       return result
     })
