@@ -1,0 +1,81 @@
+{
+  "name": "IA (OpenRouter)",
+  "description": "Corrige textos, cria tabelas, faz contas e responde perguntas com o modelo de IA que você escolher na OpenRouter, usando sua própria chave de API.",
+  "settings": {
+    "apiKey": {
+      "label": "Chave de API da OpenRouter",
+      "description": "Crie uma em https://openrouter.ai/keys. Ela fica guardada criptografada neste computador e só é enviada à OpenRouter."
+    },
+    "defaultModel": {
+      "label": "Modelo padrão",
+      "description": "Id do modelo usado por todos os comandos sem modelo próprio. Copie o id (ex.: anthropic/claude-sonnet-4 ou openai/gpt-4o-mini) em https://openrouter.ai/models."
+    },
+    "fixTextModel": {
+      "label": "Modelo para “Corrigir texto”"
+    },
+    "createTableModel": {
+      "label": "Modelo para “Criar tabela”"
+    },
+    "solveMathModel": {
+      "label": "Modelo para “Calcular”"
+    },
+    "researchModel": {
+      "label": "Modelo para “Pesquisar”"
+    },
+    "overrideModel": {
+      "description": "Id de modelo de https://openrouter.ai/models só para este comando. Deixe vazio para usar o modelo padrão. Para pesquisar na web, acrescente :online ao id (ex.: openai/gpt-4o-mini:online).",
+      "placeholder": "Modelo padrão"
+    },
+    "baseUrl": {
+      "label": "URL base da API",
+      "description": "Endereço da API da OpenRouter. Altere só para um proxy compatível com a OpenRouter. http simples só é permitido para este computador (localhost)."
+    },
+    "consentGiven": {
+      "label": "Permitir o envio de texto à OpenRouter",
+      "description": "O texto em que um comando de IA trabalha é enviado à OpenRouter e ao provedor do modelo escolhido. Front matter, código e fórmulas matemáticas nunca são enviados."
+    }
+  },
+  "commands": {
+    "fixText": "IA: Corrigir texto",
+    "createTable": "IA: Criar tabela",
+    "solveMath": "IA: Calcular",
+    "research": "IA: Pesquisar"
+  },
+  "notify": {
+    "working": "Consultando {model}…",
+    "fixed": "Correções aplicadas.",
+    "noChanges": "Nenhuma correção necessária.",
+    "inserted": "Resposta de {model} inserida abaixo.",
+    "busy": "Um comando de IA ainda está em andamento."
+  },
+  "errors": {
+    "noDocument": "Abra primeiro um documento Markdown no editor.",
+    "noText": "Selecione um texto ou coloque o cursor em um parágrafo, título ou célula de tabela. Código, fórmulas e front matter nunca são enviados.",
+    "tooLong": "O texto é longo demais: no máximo {max} caracteres por requisição.",
+    "tooManyBlocks": "Selecione no máximo {max} parágrafos para corrigir de uma vez.",
+    "consent": "Permita o envio de texto à OpenRouter para usar os comandos de IA.",
+    "noKey": "Informe sua chave de API da OpenRouter nas configurações do plugin IA.",
+    "noModel": "Informe um id de modelo de openrouter.ai/models nas configurações do plugin IA.",
+    "config": "A URL base da API nas configurações do plugin IA é inválida.",
+    "auth": "A OpenRouter recusou a chave de API. Confira-a nas configurações do plugin IA.",
+    "credits": "Sua conta da OpenRouter está sem créditos para {model}.",
+    "forbidden": "A OpenRouter recusou a requisição: {message}",
+    "modelNotFound": "A OpenRouter não conhece o modelo “{model}”. Copie o id em openrouter.ai/models.",
+    "rateLimited": "Requisições demais à OpenRouter. Tente de novo em instantes.",
+    "network": "Não foi possível acessar a OpenRouter: {message}",
+    "timeout": "{model} não respondeu a tempo. Tente de novo ou escolha um modelo mais rápido.",
+    "empty": "{model} devolveu uma resposta vazia.",
+    "requestFailed": "A requisição à OpenRouter falhou: {message}",
+    "replaceFailed": "Parte do texto mudou enquanto o modelo trabalhava, então a correção dela não foi aplicada.",
+    "insertFailed": "O documento mudou enquanto o modelo trabalhava; a resposta não foi inserida."
+  },
+  "consent": {
+    "title": "Enviar texto à OpenRouter?",
+    "body": "Os comandos de IA enviam o texto selecionado (ou o parágrafo onde está o cursor) à OpenRouter, que o repassa ao provedor do modelo escolhido. Front matter, código e fórmulas matemáticas nunca são enviados.",
+    "server": "Servidor: {server}",
+    "model": "Modelo: {model}",
+    "privacy": "O uso do texto depende das políticas da OpenRouter e do provedor do modelo. Você pode retirar esta permissão a qualquer momento em Preferências → Plugins.",
+    "accept": "Permitir e enviar",
+    "decline": "Agora não"
+  }
+}

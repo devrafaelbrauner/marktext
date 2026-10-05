@@ -416,3 +416,65 @@ describe('insertText', () => {
         await vi.waitFor(() => expect(muya.getMarkdown()).toBe('Hello world\n'));
     });
 });
+
+describe('insertMarkdownBlocks', () => {
+    const MARKDOWN = 'Intro\n\n- item one\n- item two\n\nOutro\n';
+    const ITEM_ONE = [1, 'children', 0, 'children', 0, 'text'];
+    const TABLE = '| a | b |\n| --- | --- |\n| 1 | 2 |';
+
+    it('inserts parsed blocks after the outermost block at the path as one undo step', async () => {
+        const muya = bootMuya(MARKDOWN);
+
+        expect(muya.insertMarkdownBlocks(TABLE, ITEM_ONE)).toBe(true);
+
+        expect(muya.getState().map(state => state.name)).toEqual(['paragraph', 'bullet-list', 'table', 'paragraph']);
+        expect(muya.getMarkdown()).toMatch(/- item two\n\n\| a +\| b +\|\n[-| ]+\n\| 1 +\| 2 +\|\n\nOutro\n$/);
+        const selection = muya.getTextSelection()!;
+        expect(selection.focus).toEqual({ path: [2, 'children', 1, 'children', 1, 'text'], offset: 1 });
+
+        muya.undo();
+        await vi.waitFor(() => expect(muya.getMarkdown()).toBe(MARKDOWN));
+    });
+
+    it('defaults to the selected block and never reads front matter', () => {
+        const muya = bootMuya('Hello\n\nWorld\n');
+        contentAt(muya, P0).setCursor(2, 2);
+
+        expect(muya.insertMarkdownBlocks('---\nnot: front matter\n---\n\nNew text')).toBe(true);
+
+        expect(muya.getState().map(state => state.name)).toEqual(['paragraph', 'thematic-break', 'setext-heading', 'paragraph', 'paragraph']);
+        expect(muya.getTextSelection()!.anchor).toEqual({ path: [3, 'text'], offset: 8 });
+    });
+
+    it('changes nothing without a target block or blocks to insert', () => {
+        const muya = bootMuya(MARKDOWN);
+        const onChange = vi.fn();
+        muya.on('json-change', onChange);
+
+        expect(muya.insertMarkdownBlocks(TABLE, [9, 'text'])).toBe(false);
+        expect(muya.insertMarkdownBlocks('  \n\n', ITEM_ONE)).toBe(false);
+        muya.editor.jsonState.flush();
+
+        expect(onChange).not.toHaveBeenCalled();
+        expect(muya.getMarkdown()).toBe(MARKDOWN);
+    });
+});
+
+describe('getTextSelection', () => {
+    it('keeps reporting the editor selection after focus moved outside the editor', () => {
+        const muya = bootMuya('Hello world\n\nSecond line\n');
+        contentAt(muya, P1).setCursor(7, 2, true);
+        const expected = { anchor: { path: P1, offset: 7 }, focus: { path: P1, offset: 2 } };
+        expect(muya.getTextSelection()).toEqual(expected);
+
+        const input = document.createElement('input');
+        input.value = 'palette query';
+        document.body.appendChild(input);
+        bootedHosts.push(input);
+        input.focus();
+        input.select();
+        muya.blur();
+
+        expect(muya.getTextSelection()).toEqual(expected);
+    });
+});

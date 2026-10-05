@@ -10,7 +10,7 @@ permissão: o processo é confiável.
 packages/desktop/src/plugins/<id>/
   manifest.ts
   locales/en.json      # obrigatório
-  locales/pt.json      # os nove atuais têm; os outros idiomas caem no inglês
+  locales/pt.json      # os dez atuais têm; os outros idiomas caem no inglês
   locales/index.ts
   renderer/index.ts    # export default { activate, deactivate? }
   main/index.ts        # só se precisar de rede, segredo ou CPU fora do renderer
@@ -36,9 +36,7 @@ export const manifest: PluginManifest = {
   description: 'description',
   defaultEnabled: true,
   affectsParsing: false,
-  settings: [
-    { key: 'ligado', type: 'boolean', label: 'settings.ligado', default: true }
-  ]
+  settings: [{ key: 'ligado', type: 'boolean', label: 'settings.ligado', default: true }]
 }
 ```
 

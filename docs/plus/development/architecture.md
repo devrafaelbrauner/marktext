@@ -42,11 +42,11 @@ There is no `frame-src`. `connect-src` falls under `'self'`.
 
 ## Trust
 
-| Tier | Where it runs today | Access |
-| --- | --- | --- |
-| Built-in plugin | Renderer (UI) and, if needed, main. App code | Full API, no declared permission |
-| Index | one `utilityProcess` per folder | Reads the folder; not a sandbox |
-| Community (M7, not implemented) | opaque iframe, no preload | API filtered by manifest permissions |
+| Tier                            | Where it runs today                          | Access                               |
+| ------------------------------- | -------------------------------------------- | ------------------------------------ |
+| Built-in plugin                 | Renderer (UI) and, if needed, main. App code | Full API, no declared permission     |
+| Index                           | one `utilityProcess` per folder              | Reads the folder; not a sandbox      |
+| Community (M7, not implemented) | opaque iframe, no preload                    | API filtered by manifest permissions |
 
 The renderer does not make plugin network calls. HTTP goes through main, via
 `safeFetch`: `https` to any host, `http` only to loopback, no redirects, no
@@ -66,15 +66,15 @@ is `OUTSIDE_VAULT`.
 
 Three lists, on purpose: main does not bundle renderer code.
 
-| List | File |
-| --- | --- |
-| Manifests and locales | `packages/desktop/src/plugins/manifests.ts` |
-| Renderer code | `src/renderer/src/plugins/builtin.ts` |
-| Main code | `src/main/plugins/builtin.ts` (only `grammar` today) |
-| Index handlers | glob `plugins/*/worker/index.ts` |
+| List                  | File                                                     |
+| --------------------- | -------------------------------------------------------- |
+| Manifests and locales | `packages/desktop/src/plugins/manifests.ts`              |
+| Renderer code         | `src/renderer/src/plugins/builtin.ts`                    |
+| Main code             | `src/main/plugins/builtin.ts` (`grammar` and `ai` today) |
+| Index handlers        | glob `plugins/*/worker/index.ts`                         |
 
 Declared renderer order: links, tags, icons, daily-notes, dataview, kanban,
-mermaid-plus, pdf-reader, grammar. Different plugins start in parallel;
+mermaid-plus, pdf-reader, grammar, ai. Different plugins start in parallel;
 activate and deactivate of the same id are serial.
 
 State lives in `plugins.json`. Secrets are separate. `--safe` still serves
@@ -107,15 +107,17 @@ Plugin requests in the worker are prefixed (`dataview.query`,
 
 In `@muyajs/core` (`packages/muya`), useful without the host:
 
-| API | Effect |
-| --- | --- |
-| `setDecorations` / `clearDecorations` | paint-only marks; dropped when the block text changes |
-| `replaceRange` | replaces a range only if `expected` still matches; one undo step |
-| `getCheckableBlocks` | paragraphs, headings, and cells, with an annotation |
-| `registerInlineSyntax` | a token whose text is the markdown; cannot change the file |
-| `registerCodeBlockRenderer` | preview under the block. Must not be `mermaid`, `plantuml`, `vega-lite`, `flowchart`, `sequence`, `math` |
-| `registerCompletionProvider` | a list while the text before the caret matches the trigger |
-| `content-set` event | document loaded; decorations already cleared |
+| API                                   | Effect                                                                                                   |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `setDecorations` / `clearDecorations` | paint-only marks; dropped when the block text changes                                                    |
+| `replaceRange`                        | replaces a range only if `expected` still matches; one undo step                                         |
+| `getTextSelection`                    | anchor/focus as block path + text offset; kept while the editor is blurred                               |
+| `insertMarkdownBlocks`                | parses markdown and inserts the blocks after a top-level block; one undo step                            |
+| `getCheckableBlocks`                  | paragraphs, headings, and cells, with an annotation                                                      |
+| `registerInlineSyntax`                | a token whose text is the markdown; cannot change the file                                               |
+| `registerCodeBlockRenderer`           | preview under the block. Must not be `mermaid`, `plantuml`, `vega-lite`, `flowchart`, `sequence`, `math` |
+| `registerCompletionProvider`          | a list while the text before the caret matches the trigger                                               |
+| `content-set` event                   | document loaded; decorations already cleared                                                             |
 
 `Muya.use()` still exists for floating tools. That is a different path, not
 the plugin one.

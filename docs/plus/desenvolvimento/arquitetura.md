@@ -42,11 +42,11 @@ Não há `frame-src`. `connect-src` cai em `'self'`.
 
 ## Confiança
 
-| Camada | Onde roda hoje | Acesso |
-| --- | --- | --- |
-| Plugin embutido | Renderer (UI) e, se precisar, processo principal. Código do aplicativo | API completa, sem permissão declarada |
-| Índice | `utilityProcess` por pasta | Lê a pasta; não é sandbox |
-| Comunidade (M7, não implementado) | iframe opaco, sem preload | API filtrada pelas permissões do manifesto |
+| Camada                            | Onde roda hoje                                                         | Acesso                                     |
+| --------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------ |
+| Plugin embutido                   | Renderer (UI) e, se precisar, processo principal. Código do aplicativo | API completa, sem permissão declarada      |
+| Índice                            | `utilityProcess` por pasta                                             | Lê a pasta; não é sandbox                  |
+| Comunidade (M7, não implementado) | iframe opaco, sem preload                                              | API filtrada pelas permissões do manifesto |
 
 O renderer não fala com a rede de plugin. Quem busca HTTP é o principal, via
 `safeFetch`: `https` em qualquer host, `http` só em loopback, sem
@@ -66,15 +66,15 @@ pasta do arquivo ativo se nenhuma pasta estiver aberta. Fora disso,
 
 Três listas, de propósito: o principal não empacota o código do renderer.
 
-| Lista | Arquivo |
-| --- | --- |
-| Manifestos e locales | `packages/desktop/src/plugins/manifests.ts` |
-| Código do renderer | `src/renderer/src/plugins/builtin.ts` |
-| Código do principal | `src/main/plugins/builtin.ts` (hoje só `grammar`) |
-| Handlers do índice | glob `plugins/*/worker/index.ts` |
+| Lista                | Arquivo                                               |
+| -------------------- | ----------------------------------------------------- |
+| Manifestos e locales | `packages/desktop/src/plugins/manifests.ts`           |
+| Código do renderer   | `src/renderer/src/plugins/builtin.ts`                 |
+| Código do principal  | `src/main/plugins/builtin.ts` (hoje `grammar` e `ai`) |
+| Handlers do índice   | glob `plugins/*/worker/index.ts`                      |
 
 A ordem declarada no renderer é links, tags, icons, daily-notes, dataview,
-kanban, mermaid-plus, pdf-reader, grammar. Plugins diferentes sobem em
+kanban, mermaid-plus, pdf-reader, grammar, ai. Plugins diferentes sobem em
 paralelo; ativar e desativar o mesmo id é serial.
 
 Estado em `plugins.json`. Segredos à parte. `--safe` ainda serve o estado e
@@ -109,15 +109,17 @@ Pedidos de plugin no worker levam prefixo (`dataview.query`,
 
 Em `@muyajs/core` (`packages/muya`), úteis sem o host:
 
-| API | Efeito |
-| --- | --- |
-| `setDecorations` / `clearDecorations` | marcas só de pintura; somem quando o texto do bloco muda |
-| `replaceRange` | troca um intervalo se `expected` ainda bater; um passo de desfazer |
-| `getCheckableBlocks` | parágrafos, títulos e células, com anotação |
-| `registerInlineSyntax` | token cujo texto é o markdown; não altera o arquivo |
-| `registerCodeBlockRenderer` | pré-visualização sob o bloco. Não pode ser `mermaid`, `plantuml`, `vega-lite`, `flowchart`, `sequence`, `math` |
-| `registerCompletionProvider` | lista enquanto o texto antes do cursor casa o gatilho |
-| evento `content-set` | documento carregado; decorações já limpas |
+| API                                   | Efeito                                                                                                         |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `setDecorations` / `clearDecorations` | marcas só de pintura; somem quando o texto do bloco muda                                                       |
+| `replaceRange`                        | troca um intervalo se `expected` ainda bater; um passo de desfazer                                             |
+| `getTextSelection`                    | âncora e foco como caminho do bloco + offset no texto; mantida com o editor sem foco                           |
+| `insertMarkdownBlocks`                | converte markdown e insere os blocos depois de um bloco de nível superior; um passo de desfazer                |
+| `getCheckableBlocks`                  | parágrafos, títulos e células, com anotação                                                                    |
+| `registerInlineSyntax`                | token cujo texto é o markdown; não altera o arquivo                                                            |
+| `registerCodeBlockRenderer`           | pré-visualização sob o bloco. Não pode ser `mermaid`, `plantuml`, `vega-lite`, `flowchart`, `sequence`, `math` |
+| `registerCompletionProvider`          | lista enquanto o texto antes do cursor casa o gatilho                                                          |
+| evento `content-set`                  | documento carregado; decorações já limpas                                                                      |
 
 `Muya.use()` continua existindo para ferramentas flutuantes. É outro
 caminho, não o dos plugins.

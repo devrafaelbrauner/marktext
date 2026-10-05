@@ -1,3 +1,5 @@
+import { locales as aiLocales } from '@plugins/ai/locales'
+import { manifest as aiManifest } from '@plugins/ai/manifest'
 import { locales as dailyNotesLocales } from '@plugins/daily-notes/locales'
 import { manifest as dailyNotesManifest } from '@plugins/daily-notes/manifest'
 import { locales as dataviewLocales } from '@plugins/dataview/locales'
@@ -69,5 +71,10 @@ export const BUILTIN_RENDERER_PLUGINS: RendererPluginEntry[] = [
     manifest: grammarManifest,
     locales: grammarLocales,
     load: () => import('@plugins/grammar/renderer').then((m) => m.default)
+  },
+  {
+    manifest: aiManifest,
+    locales: aiLocales,
+    load: () => import('@plugins/ai/renderer').then((m) => m.default)
   }
 ]

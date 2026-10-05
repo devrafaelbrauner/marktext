@@ -3,11 +3,11 @@
 The user-data folder is Electron's folder for the `marktext` app, unless
 you move it:
 
-| System | Default path |
-| --- | --- |
-| macOS | `~/Library/Application Support/marktext` |
-| Windows | `%APPDATA%\marktext` |
-| Linux | `$XDG_CONFIG_HOME/marktext` or `~/.config/marktext` |
+| System  | Default path                                        |
+| ------- | --------------------------------------------------- |
+| macOS   | `~/Library/Application Support/marktext`            |
+| Windows | `%APPDATA%\marktext`                                |
+| Linux   | `$XDG_CONFIG_HOME/marktext` or `~/.config/marktext` |
 
 Other locations:
 
@@ -35,7 +35,7 @@ is reset on open (`clearInvalidConfig`).
 ```
 
 An id missing from `enabled` uses the manifest default (the grammar checker
-starts off; the others start on). Secrets are not stored here. Grammar
+and AI start off; the others start on). Secrets are not stored here. Grammar
 consent is the boolean `settings.grammar.consentGiven`, not a separate file.
 
 ### `secrets.json`
@@ -48,7 +48,8 @@ by plugin id:
 { "grammar": { "apiKey": "<base64>" } }
 ```
 
-The only secret today is the grammar checker's API key. The account email
+The secrets today are the grammar checker's API key and the AI plugin's
+OpenRouter key (`ai.apiKey`). The account email
 lives in `plugins.json`, in `username`. On Linux the app refuses to store
 anything when the only backend is `basic_text` (Chromium's hard-coded key).
 
@@ -67,14 +68,14 @@ are listed with empty metadata (the file is not read).
 
 ## Other files in the same folder
 
-| File | Use |
-| --- | --- |
-| `preferences.json` | General preferences (electron-store `preferences`) |
-| `keybindings.json` | User shortcuts; skipped with `--safe` |
-| `recently-used-documents.json` | Recent documents |
-| `dataCenter.json` | Image and screenshot folders |
-| `editorStates/` | Tab state |
-| `logs/<year><month>/` | Logs; the month is not zero-padded |
+| File                           | Use                                                |
+| ------------------------------ | -------------------------------------------------- |
+| `preferences.json`             | General preferences (electron-store `preferences`) |
+| `keybindings.json`             | User shortcuts; skipped with `--safe`              |
+| `recently-used-documents.json` | Recent documents                                   |
+| `dataCenter.json`              | Image and screenshot folders                       |
+| `editorStates/`                | Tab state                                          |
+| `logs/<year><month>/`          | Logs; the month is not zero-padded                 |
 
 `EnvPaths.preferencesFilePath` still points at `preference.json` (singular).
 That path is not what the app writes. The live file is `preferences.json`.

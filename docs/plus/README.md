@@ -2,8 +2,9 @@
 
 This fork (`plus/develop`) adds a plugin platform to MarkText and ships a set of
 built-in, Obsidian-compatible plugins plus a pt-BR grammar checker backed by
-LanguageTool. Generic engine and platform pieces are written so they can be
-proposed upstream; feature plugins stay in this fork.
+LanguageTool and an AI plugin backed by OpenRouter. Generic engine and
+platform pieces are written so they can be proposed upstream; feature plugins
+stay in this fork.
 
 ## Documentation
 
@@ -98,3 +99,33 @@ User pages: [guia/plugins/corretor.md](guia/plugins/corretor.md),
 - **Native spellchecker.** The plugin asks the engine host for
   `disableNativeSpellcheck` (setting, on by default); the user's spellcheck
   preference is restored when the request is released.
+
+## AI (`ai`)
+
+Fix text, create tables, calculate and research with an OpenRouter model the
+user picks, using the user's own API key; off until enabled in Preferences →
+Plugins.
+
+User pages: [guia/plugins/ia.md](guia/plugins/ia.md),
+[guide/plugins/ai.md](guide/plugins/ai.md).
+
+- **Where text goes.** Only the main part talks to the network (`ctx.net.fetch`):
+  `POST {baseUrl}/chat/completions` (default `https://openrouter.ai/api/v1`,
+  `http` only to loopback) with the key from `secrets.json` as a Bearer token.
+  Nothing is sent before consent (`consentGiven`), key and model are set.
+- **What is sent.** Only the command's input: the selection, or the checkable
+  block at the caret. Front matter, code, math and HTML blocks are never sent.
+  Fix text sends one request per block (max 20); the other commands send one
+  prompt (max 20 000 characters).
+- **Models are free text.** No model list is fetched; the user pastes ids from
+  openrouter.ai/models, with an optional per-command override. Web search is
+  OpenRouter's `:online` suffix, not app code.
+- **Edits are guarded.** Corrections go through `replaceRange` (refused if the
+  block changed, one undo step each); other answers are parsed as Markdown and
+  inserted after the selection's top-level block with the new
+  `insertMarkdownBlocks` (one undo step). The selection is read with
+  `getSelection`, which survives the command palette taking focus.
+- **Shared networking.** Buffered requests (no streaming), 60 s timeout,
+  retries on 429/502/503 and network failures reuse the grammar checker's
+  `RateLimiter`, `parseRetryAfter` and `DEFAULT_RETRY_POLICY`; client-side
+  limit 20 requests per minute.
