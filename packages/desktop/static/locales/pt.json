@@ -1058,7 +1058,8 @@
       "openExternally": "Abrir no aplicativo padrão",
       "noDocumentViews": "Nenhuma visualização de documento está disponível.",
       "viewFailed": "Não foi possível exibir esta visualização."
-    }
+    },
+    "untitled": "Sem título"
   },
   "pluginHost": {
     "activationFailed": "Não foi possível iniciar o plugin \"{name}\"",

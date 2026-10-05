@@ -9,6 +9,7 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         registerPlugin(MtFsPlugin.class);
         registerPlugin(MtSecretsPlugin.class);
+        registerPlugin(MtSystemBarsPlugin.class);
         super.onCreate(savedInstanceState);
         bridge.setWebViewClient(new MtWebViewClient(bridge));
     }

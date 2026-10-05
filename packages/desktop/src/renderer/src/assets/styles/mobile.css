@@ -153,3 +153,13 @@
     min-height: 40px;
   }
 }
+
+/* Touch-only devices scroll by swiping; the 12px desktop scrollbar track
+   (index.css) would just eat width on a phone. */
+@media (hover: none) and (pointer: coarse) {
+  ::-webkit-scrollbar:vertical,
+  ::-webkit-scrollbar:horizontal {
+    width: 0;
+    height: 0;
+  }
+}

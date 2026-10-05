@@ -1,6 +1,7 @@
 import type { IFileState } from '@shared/types/files'
 import { wordCount as getWordCount } from '@muyajs/core'
 import { getUniqueId, deepClone } from '../util'
+import { t } from '../i18n'
 
 // Helper module (NOT a Pinia store): defaults and factories for the editor
 // document state objects.
@@ -100,11 +101,12 @@ export const getBlankFileState = (
   markdown: string | null = defaultFileStateWithoutId.markdown
 ): IFileState => {
   const fileState = deepClone(defaultFileStateWithoutId) as Omit<IFileState, 'id'>
-  const defaultFilenamePrefix = defaultFileStateWithoutId.filename.split('-')[0]
+  const defaultFilenamePrefix = t('editor.untitled')
   let untitleId = Math.max(
     ...tabs.map((f) => {
       if (f.pathname === '') {
-        return +f.filename.split('-')[1]
+        // After the last '-': translated prefixes may contain dashes themselves.
+        return +(f.filename.split('-').pop() ?? 0) || 0
       } else {
         return 0
       }

@@ -1058,7 +1058,8 @@
       "openExternally": "Open in Default App",
       "noDocumentViews": "No document view is available.",
       "viewFailed": "This view could not be displayed."
-    }
+    },
+    "untitled": "Adsız"
   },
   "pluginHost": {
     "activationFailed": "Plugin \"{name}\" could not be started",
