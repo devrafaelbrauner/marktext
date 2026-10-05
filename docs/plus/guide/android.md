@@ -38,9 +38,13 @@ adb install -r packages/mobile/android/app/build/outputs/apk/debug/app-debug.apk
 - **Sidebar**: on narrow screens it opens as a drawer over the editor. Back
   closes the drawer, then the settings, then sends the app to the background
   (it never closes a document).
-- **Selection**: long-press selects a word with the system handles and the
-  editor's format toolbar. Context menus (long-press a file in the tree) show
-  as an action sheet.
+- **Selection**: long-press selects a word with the system handles; the
+  editor's format toolbar shows below the selection. Context menus (long-press
+  a file in the tree) show as an action sheet.
+- **Links**: a tap on a `[[wikilink]]` opens the note; on a `#tag`, the tags
+  panel. Desktop needs `Ctrl`+click for the same.
+- **AI**: ☰ → _Command Palette_ → type "AI". Without a selection a command uses
+  the paragraph at the caret.
 - **Settings**: ☰ → _Preferences_, full screen.
 - **Plugins**: the same ten built-ins as desktop. API keys (grammar, AI) are
   kept in the Android Keystore. Community plugins install from a folder or

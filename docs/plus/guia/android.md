@@ -38,9 +38,13 @@ adb install -r packages/mobile/android/app/build/outputs/apk/debug/app-debug.apk
 - **Barra lateral**: em telas estreitas ela abre como gaveta por cima do
   editor; o botão voltar do Android fecha a gaveta, depois as configurações,
   depois manda o app para segundo plano (nunca fecha um documento).
-- **Seleção**: toque longo seleciona a palavra e mostra as alças do sistema e
-  a barra de formatação do editor. Menus de contexto (toque longo num arquivo
-  da árvore) aparecem como folha de ações.
+- **Seleção**: toque longo seleciona a palavra e mostra as alças do sistema;
+  a barra de formatação do editor aparece abaixo da seleção. Menus de contexto
+  (toque longo num arquivo da árvore) aparecem como folha de ações.
+- **Links**: um toque num `[[wikilink]]` abre a nota; num `#tag`, o painel de
+  tags. No desktop o mesmo exige `Ctrl`+clique.
+- **IA**: ☰ → _Paleta de Comandos_ → digite "IA". Sem seleção, o comando usa o
+  parágrafo onde está o cursor.
 - **Configurações**: ☰ → _Preferências_, em tela cheia.
 - **Plugins**: os mesmos dez embutidos do desktop. As chaves de API (corretor,
   IA) ficam no Android Keystore. Plugins da comunidade instalam de uma pasta ou
