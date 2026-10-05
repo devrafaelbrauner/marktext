@@ -5,6 +5,15 @@
  * whose attribute selector outranks a plain class selector.
  */
 
+/* The sidebar is a drawer over the editor here, never beside it: the desktop
+   cap of 100vw minus the sidebar width (editorWithTabs) would leave the
+   editor a strip next to the open drawer. Flex sizing alone fits it. */
+@media (max-width: 599px) {
+  .editor-with-tabs {
+    max-width: none !important;
+  }
+}
+
 /* Fixed-width floats and dialogs: clamp to the viewport with an 8px gutter. */
 @media (max-width: 599px) {
   .el-dialog {
