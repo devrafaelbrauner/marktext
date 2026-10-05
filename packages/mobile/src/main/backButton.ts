@@ -27,6 +27,6 @@ export function handleBack(): boolean {
 export async function registerBackButton(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return
   await App.addListener('backButton', () => {
-    if (!handleBack()) void App.minimizeApp()
+    if (!handleBack()) App.minimizeApp().catch((error: unknown) => console.error(error))
   })
 }
