@@ -25,8 +25,8 @@ interface Row {
   status: string
 }
 
-// `| \`channel\` | invoke | Implementado | note |`
-const ROWS: Row[] = [...BRIDGE.matchAll(/^\| `([^`]+)` \| (invoke|send|sync) \| ([^|]+?) \|/gm)].map((match) => ({
+// `| \`channel\` | invoke | Implementado | note |`, cells padded by prettier.
+const ROWS: Row[] = [...BRIDGE.matchAll(/^\| `([^`]+)` +\| (invoke|send|sync) +\| ([^|]+?) +\|/gm)].map((match) => ({
   channel: match[1] as string,
   kind: match[2] as Kind,
   status: (match[3] as string).trim()
@@ -73,6 +73,6 @@ describe('BRIDGE.md', () => {
     const preload = readFileSync(resolve(__dirname, '../../desktop/src/preload/index.ts'), 'utf8')
     const globals = [...preload.matchAll(/exposeInMainWorld\('([^']+)'/g)].map((match) => match[1] as string)
     expect(globals).toHaveLength(15)
-    for (const name of globals) expect(BRIDGE).toMatch(new RegExp(`^\\| \`window\\.${name}\` \\|`, 'm'))
+    for (const name of globals) expect(BRIDGE).toMatch(new RegExp(`^\\| \`window\\.${name}\` +\\|`, 'm'))
   })
 })

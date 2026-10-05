@@ -44,7 +44,7 @@ describe('PathScope', () => {
   })
 
   it('allows picked documents and the configured image folders', () => {
-    const scope = scopeWith(null, { imageFolderPath: '/vault/k/Pics/${filename}', screenshotFolderPath: '/data/marktext/screenshot' })
+    const scope = scopeWith(null, { imageFolderPath: '/vault/k/Pics/$' + '{filename}', screenshotFolderPath: '/data/marktext/screenshot' })
     scope.grantFile('/doc/1234abcd/Letter.md')
     expect(scope.isAllowed('/doc/1234abcd/Letter.md')).toBe(true)
     expect(scope.isAllowed('/doc/9999abcd/Other.md')).toBe(false)
