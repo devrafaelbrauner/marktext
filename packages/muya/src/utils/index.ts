@@ -505,9 +505,22 @@ export function isKeyboardEvent(event: Event): event is KeyboardEvent {
     return 'key' in event;
 }
 
-// narrowing Event type to MouseEvent.
+// narrowing Event type to MouseEvent. Keys off `clientX`, an own field of every
+// MouseEvent subclass (PointerEvent, DragEvent, WheelEvent) in browsers and in
+// happy-dom alike; `x` is a prototype-only alias happy-dom never defines.
 export function isMouseEvent(event: Event): event is MouseEvent {
-    return 'x' in event;
+    return 'clientX' in event;
+}
+
+// narrowing Event type to PointerEvent.
+export function isPointerEvent(event: Event): event is PointerEvent {
+    return 'pointerType' in event && isMouseEvent(event);
+}
+
+// A finger on a touchscreen. Pen and mouse keep the desktop drag-to-select
+// behaviour; a finger drag scrolls, and text is selected by long-press instead.
+export function isTouchPointerEvent(event: Event): event is PointerEvent {
+    return isPointerEvent(event) && event.pointerType === 'touch';
 }
 
 export function isInputEvent(event: Event): event is InputEvent {

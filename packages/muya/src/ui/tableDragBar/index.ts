@@ -5,7 +5,7 @@ import type { Muya } from '../../index';
 
 import { ScrollPage } from '../../block/scrollPage';
 import { BLOCK_DOM_PROPERTY } from '../../config';
-import { isMouseEvent, throttle } from '../../utils';
+import { isMouseEvent, isTouchPointerEvent, throttle } from '../../utils';
 import BaseFloat from '../baseFloat';
 import './index.css';
 
@@ -176,14 +176,10 @@ export class TableDragBar extends BaseFloat {
 
     override listen() {
         const { eventCenter } = this.muya;
-        const { container } = this;
+        const { container, floatBox } = this;
         super.listen();
 
-        const handler = throttle((event: Event) => {
-            if (!isMouseEvent(event))
-                return;
-
-            const { x, y } = event;
+        const revealAt = (x: number, y: number) => {
             const els = [...document.elementsFromPoint(x, y)];
             const aboveEls = [...document.elementsFromPoint(x, y - OFFSET)];
             const leftEls = [...document.elementsFromPoint(x - OFFSET, y)];
@@ -220,15 +216,41 @@ export class TableDragBar extends BaseFloat {
             else {
                 this.hide();
             }
+        };
+
+        // Hover reveal; touch has no hover, so a tap next to the table reveals.
+        const handler = throttle((event: Event) => {
+            if (!isMouseEvent(event) || isTouchPointerEvent(event))
+                return;
+
+            revealAt(event.clientX, event.clientY);
         });
 
-        eventCenter.attachDOMEvent(document.body, 'mousemove', handler);
-        eventCenter.attachDOMEvent(container!, 'mousedown', this._mousedown);
-        eventCenter.attachDOMEvent(container!, 'mouseup', this._mouseup);
+        const tapHandler = (event: Event) => {
+            if (!isTouchPointerEvent(event) || (event.target instanceof Node && floatBox!.contains(event.target)))
+                return;
+
+            revealAt(event.clientX, event.clientY);
+        };
+
+        eventCenter.attachDOMEvent(document.body, 'pointermove', handler);
+        eventCenter.attachDOMEvent(document.body, 'pointerdown', tapHandler);
+        // The cancelled `mousedown` keeps the editor caret and focus where they
+        // are; a tap fires it too, unlike a cancelled `pointerdown`.
+        eventCenter.attachDOMEvent(container!, 'mousedown', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+        });
+        eventCenter.attachDOMEvent(container!, 'pointerdown', this._pointerdown);
+        eventCenter.attachDOMEvent(container!, 'pointerup', this._pointerup);
+        // A long-press is the drag gesture on touch, not a context menu.
+        eventCenter.attachDOMEvent(container!, 'contextmenu', (event) => {
+            if (isTouchPointerEvent(event))
+                event.preventDefault();
+        });
     }
 
-    private _mousedown = (event: Event) => {
-        event.preventDefault();
+    private _pointerdown = (event: Event) => {
         event.stopPropagation();
         this._mouseTimer = setTimeout(() => {
             this._startDrag(event);
@@ -236,7 +258,7 @@ export class TableDragBar extends BaseFloat {
         }, 300);
     };
 
-    private _mouseup = (event: Event) => {
+    private _pointerup = (event: Event) => {
         event.preventDefault();
         event.stopPropagation();
         const { container, _barType: barType } = this;
@@ -291,8 +313,9 @@ export class TableDragBar extends BaseFloat {
         }
 
         this._dragEventIds.push(
-            eventCenter.attachDOMEvent(document, 'mousemove', this._docMousemove),
-            eventCenter.attachDOMEvent(document, 'mouseup', this._docMouseup),
+            eventCenter.attachDOMEvent(document, 'pointermove', this._docMousemove),
+            eventCenter.attachDOMEvent(document, 'pointerup', this._docMouseup),
+            eventCenter.attachDOMEvent(document, 'pointercancel', this._docMouseup),
         );
     }
 

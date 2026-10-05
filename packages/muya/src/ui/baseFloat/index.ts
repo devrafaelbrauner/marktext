@@ -33,6 +33,8 @@ abstract class BaseFloat {
     public floatBox: HTMLElement | null = null;
     public container: HTMLElement | null = null;
     private _lastScrollTop: number | null = null;
+    // Visual viewport height the scroll baseline was taken at.
+    private _lastViewportHeight: number | null = null;
     protected cb: (...args: unknown[]) => void = noop;
 
     private _cleanup: (() => void) | null = null;
@@ -95,8 +97,15 @@ abstract class BaseFloat {
         const scrollHandler = (event: Event) => {
             if (!isHTMLElement(event.target))
                 return;
-            if (typeof this._lastScrollTop !== 'number') {
+
+            // A viewport that changed height since the baseline (the soft
+            // keyboard opening or closing, a window resize) scrolls the editor
+            // to keep the caret in view. That is not the user leaving the
+            // float, so re-baseline instead of measuring it.
+            const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+            if (typeof this._lastScrollTop !== 'number' || viewportHeight !== this._lastViewportHeight) {
                 this._lastScrollTop = event.target.scrollTop;
+                this._lastViewportHeight = viewportHeight;
 
                 return;
             }
@@ -143,6 +152,7 @@ abstract class BaseFloat {
 
         this.cb = noop;
         this._lastScrollTop = null;
+        this._lastViewportHeight = null;
 
         if (BUTTON_GROUP.includes(this.name))
             eventCenter.emit('muya-float-button', this, false);

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import type { Muya } from '../../muya';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import EventCenter from '../../event';
 import { attachLinkMouseHandlers } from '../linkMouseEvents';
 
@@ -333,6 +333,79 @@ describe('linkMouseEvents — dispatches muya-link-tools on hover', () => {
         domNode.appendChild(link);
 
         mouseover(link);
+        expect(emits).toHaveLength(0);
+    });
+});
+
+// Touch has no hover. A tap places the caret inside the link, which renders
+// it in edit mode (source markers visible) before the popover resolves it.
+describe('linkMouseEvents — tap on a link', () => {
+    function editModeLink(domNode: HTMLElement): HTMLElement {
+        const marker = document.createElement('span');
+        marker.classList.add('mu-gray');
+        const link = document.createElement('span');
+        link.classList.add('mu-inline-rule', 'mu-link');
+        link.dataset.raw = '[hi](https://x.com)';
+        link.dataset.start = '0';
+        link.dataset.end = '19';
+        (link as HTMLElement & { href: string }).href = 'https://x.com';
+        link.textContent = 'hi';
+        domNode.append(marker, link);
+        return link;
+    }
+
+    function tap(el: HTMLElement, pointerType = 'touch') {
+        vi.spyOn(document, 'elementFromPoint').mockReturnValue(el);
+        el.dispatchEvent(new PointerEvent('click', { bubbles: true, pointerType, clientX: 5, clientY: 5 }));
+    }
+
+    function nextFrame(): Promise<void> {
+        return new Promise(resolve => requestAnimationFrame(() => resolve()));
+    }
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+        document.getSelection()?.removeAllRanges();
+    });
+
+    it('opens the popover for the link under a finger tap with a caret', async () => {
+        const { muya, eventCenter, domNode } = makeMuya();
+        const emits = captureEmits(eventCenter);
+        attachLinkMouseHandlers(muya);
+        const link = editModeLink(domNode);
+        document.getSelection()!.collapse(link.firstChild, 1);
+
+        tap(link);
+        await nextFrame();
+
+        expect(emits).toHaveLength(1);
+        expect(emits[0].reference).toBe(link);
+        expect(emits[0].linkInfo?.href).toBe('https://x.com');
+    });
+
+    it('keeps mouse clicks to caret placement only', async () => {
+        const { muya, eventCenter, domNode } = makeMuya();
+        const emits = captureEmits(eventCenter);
+        attachLinkMouseHandlers(muya);
+        const link = editModeLink(domNode);
+        document.getSelection()!.collapse(link.firstChild, 1);
+
+        tap(link, 'mouse');
+        await nextFrame();
+
+        expect(emits).toHaveLength(0);
+    });
+
+    it('does not open over a ranged selection', async () => {
+        const { muya, eventCenter, domNode } = makeMuya();
+        const emits = captureEmits(eventCenter);
+        attachLinkMouseHandlers(muya);
+        const link = editModeLink(domNode);
+        document.getSelection()!.setBaseAndExtent(link.firstChild!, 0, link.firstChild!, 2);
+
+        tap(link);
+        await nextFrame();
+
         expect(emits).toHaveLength(0);
     });
 });

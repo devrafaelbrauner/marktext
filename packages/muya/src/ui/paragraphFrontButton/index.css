@@ -4,6 +4,9 @@
     justify-content: center;
     width: 20px;
     height: 20px;
+
+    /* A finger drag on the button moves the block instead of scrolling. */
+    touch-action: none;
 }
 
 .mu-icon-wrapper {

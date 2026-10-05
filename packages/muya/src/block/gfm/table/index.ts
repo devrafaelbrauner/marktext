@@ -95,7 +95,9 @@ class Table extends Parent {
     private _listenDomEvent() {
         const { domNode } = this;
 
-        // Fix: prevent cursor present at the end of table.
+        // Fix: prevent cursor present at the end of table. Stays on
+        // `mousedown`, which a tap fires too: a cancelled `pointerdown` does
+        // not stop a tap from moving the caret.
         const mousedownHandler = (event: Event) => {
             if (event.target === domNode) {
                 event.preventDefault();

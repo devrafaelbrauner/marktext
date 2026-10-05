@@ -4,7 +4,7 @@ import type { Muya } from '../muya';
 import type { ITableState } from '../state/types';
 import type { Nullable } from '../types';
 import { CLASS_NAMES } from '../config';
-import { isMouseEvent } from '../utils';
+import { isMouseEvent, isTouchPointerEvent } from '../utils';
 import { getBlock } from '../utils/dom';
 
 const SELECTED_CLASS = CLASS_NAMES.MU_TABLE_CELL_SELECTED;
@@ -24,6 +24,9 @@ class TableRectSelection {
     private _anchor: Nullable<ICellPosition> = null;
     private _focus: Nullable<ICellPosition> = null;
     private _isSelecting = false;
+    // Set while the rectangle mirrors a native range spanning cells (a touch
+    // selection resized with the system handles) instead of a frozen drag.
+    private _followsNativeRange = false;
     private _dragEventIds: string[] = [];
 
     static create(muya: Muya): TableRectSelection {
@@ -37,6 +40,10 @@ class TableRectSelection {
 
     get hasSelection(): boolean {
         return this._table != null && this._anchor != null && this._focus != null;
+    }
+
+    get followsNativeRange(): boolean {
+        return this._followsNativeRange;
     }
 
     isSingleCellSelected(): boolean {
@@ -106,12 +113,32 @@ class TableRectSelection {
         this._renderHighlight();
     }
 
-    private _attach(): void {
-        const { eventCenter, domNode } = this._muya;
-        eventCenter.attachDOMEvent(domNode, 'mousedown', this._onMouseDown);
+    /**
+     * Mirror a native range that runs from `anchorCell` into `focusCell`. The
+     * range is kept so the system selection handles stay up and keep resizing
+     * the rectangle; muya treats the rectangle as the selection meanwhile.
+     */
+    followCellRange(anchorCell: TableBodyCell, focusCell: TableBodyCell): void {
+        if (!this._followsNativeRange) {
+            this.clear();
+            this._muya.editor.activeContentBlock = null;
+            this._muya.ui.hideAllFloatTools();
+        }
+
+        this._table = anchorCell.table;
+        this._anchor = { cell: anchorCell, row: anchorCell.rowOffset, column: anchorCell.columnOffset };
+        this._focus = { cell: focusCell, row: focusCell.rowOffset, column: focusCell.columnOffset };
+        this._isSelecting = true;
+        this._followsNativeRange = true;
+        this._renderHighlight();
     }
 
-    private _onMouseDown = (event: Event): void => {
+    private _attach(): void {
+        const { eventCenter, domNode } = this._muya;
+        eventCenter.attachDOMEvent(domNode, 'pointerdown', this._onPointerDown);
+    }
+
+    private _onPointerDown = (event: Event): void => {
         // Right-click opens the context menu; never start a drag-select then.
         if (!isMouseEvent(event) || event.button === 2)
             return;
@@ -119,6 +146,11 @@ class TableRectSelection {
         // Any fresh interaction discards a previous frozen selection so a normal
         // caret click inside a cell behaves like plain editing again.
         this.clear();
+
+        // A finger drag scrolls; touch reaches a rectangle through the native
+        // range instead (see `followCellRange`).
+        if (isTouchPointerEvent(event))
+            return;
 
         const position = this._cellPositionFromEvent(event);
         if (position == null)
@@ -131,12 +163,13 @@ class TableRectSelection {
 
         const { eventCenter } = this._muya;
         this._dragEventIds.push(
-            eventCenter.attachDOMEvent(document, 'mousemove', this._onMouseMove),
-            eventCenter.attachDOMEvent(document, 'mouseup', this._onMouseUp),
+            eventCenter.attachDOMEvent(document, 'pointermove', this._onPointerMove),
+            eventCenter.attachDOMEvent(document, 'pointerup', this._onPointerUp),
+            eventCenter.attachDOMEvent(document, 'pointercancel', this._onPointerUp),
         );
     };
 
-    private _onMouseMove = (event: Event): void => {
+    private _onPointerMove = (event: Event): void => {
         if (!isMouseEvent(event) || this._anchor == null || this._table == null)
             return;
 
@@ -166,7 +199,7 @@ class TableRectSelection {
         this._renderHighlight();
     };
 
-    private _onMouseUp = (): void => {
+    private _onPointerUp = (): void => {
         this._detachDragEvents();
 
         // Nothing to freeze when the drag never started (a plain click) or the
@@ -328,6 +361,7 @@ class TableRectSelection {
         this._anchor = null;
         this._focus = null;
         this._isSelecting = false;
+        this._followsNativeRange = false;
     }
 }
 

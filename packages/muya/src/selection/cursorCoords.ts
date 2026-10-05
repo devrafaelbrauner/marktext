@@ -46,3 +46,19 @@ export function getCursorYOffset(paragraph: HTMLElement): { topOffset: number; b
 
     return { topOffset, bottomOffset };
 }
+
+// A floating-ui reference that pins a float to the current DOM caret.
+export function getCursorReference() {
+    const rect = getCursorCoords();
+
+    if (!rect)
+        return null;
+
+    return {
+        getBoundingClientRect() {
+            return rect;
+        },
+        clientWidth: rect.width,
+        clientHeight: rect.height,
+    };
+}

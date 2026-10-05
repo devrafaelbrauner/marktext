@@ -8,7 +8,7 @@ import { Muya } from '../../muya';
 // Coverage for the restored cross-cell table selection (Phase G). Dragging a
 // rectangle of table cells highlights them and makes copy/cut operate on just
 // that sub-range (legacy `tableSelectCellsCtrl`). These tests drive the
-// `TableRectSelection` controller through real DOM mouse events and the
+// `TableRectSelection` controller through real DOM pointer events and the
 // `Clipboard` through a synthetic `copy`/`cut` event so the whole path —
 // selection -> highlight -> clipboard payload / in-place clear — is exercised.
 
@@ -61,23 +61,15 @@ function cellDom(table: Table, row: number, column: number): HTMLElement {
     return (cell.firstChild as { domNode: HTMLElement }).domNode;
 }
 
-function fireMouse(node: HTMLElement, type: string): void {
-    const event = new MouseEvent(type, { bubbles: true, button: 0 });
-    // happy-dom's MouseEvent omits the `x`/`y` accessors that `isMouseEvent`
-    // (`'x' in event`) keys off; define them so the controller treats the
-    // synthetic event like a real pointer event (real browsers and the e2e
-    // expose `x` natively).
-    if (!('x' in event))
-        Object.defineProperty(event, 'x', { value: 0, configurable: true });
-
-    node.dispatchEvent(event);
+function firePointer(node: HTMLElement, type: string, pointerType = 'mouse'): void {
+    node.dispatchEvent(new PointerEvent(type, { bubbles: true, button: 0, pointerType }));
 }
 
 // Drag-select the rectangle whose corners are (r1,c1) and (r2,c2).
 function dragSelect(table: Table, r1: number, c1: number, r2: number, c2: number): void {
-    fireMouse(cellDom(table, r1, c1), 'mousedown');
-    fireMouse(cellDom(table, r2, c2), 'mousemove');
-    fireMouse(cellDom(table, r2, c2), 'mouseup');
+    firePointer(cellDom(table, r1, c1), 'pointerdown');
+    firePointer(cellDom(table, r2, c2), 'pointermove');
+    firePointer(cellDom(table, r2, c2), 'pointerup');
 }
 
 function selectedCount(table: Table): number {
@@ -122,18 +114,18 @@ describe('cross-cell table selection — highlight', () => {
     it('does not start a selection when the pointer stays in one cell', () => {
         const muya = bootMuya(TABLE_MD);
         const table = firstTable(muya);
-        fireMouse(cellDom(table, 0, 0), 'mousedown');
-        fireMouse(cellDom(table, 0, 0), 'mouseup');
+        firePointer(cellDom(table, 0, 0), 'pointerdown');
+        firePointer(cellDom(table, 0, 0), 'pointerup');
         expect(selectedCount(table)).toBe(0);
         expect(muya.editor.selection.table.hasSelection).toBe(false);
     });
 
-    it('clears the previous selection on a new mousedown', () => {
+    it('clears the previous selection on a new pointerdown', () => {
         const muya = bootMuya(TABLE_MD);
         const table = firstTable(muya);
         dragSelect(table, 0, 0, 1, 1);
         expect(selectedCount(table)).toBe(4);
-        fireMouse(cellDom(table, 2, 2), 'mousedown');
+        firePointer(cellDom(table, 2, 2), 'pointerdown');
         expect(selectedCount(table)).toBe(0);
     });
 
@@ -141,14 +133,60 @@ describe('cross-cell table selection — highlight', () => {
         const muya = bootMuya(TABLE_MD);
         const table = firstTable(muya);
         // Start a drag inside the table, then move/release outside it.
-        fireMouse(cellDom(table, 0, 0), 'mousedown');
-        fireMouse(cellDom(table, 0, 1), 'mousemove'); // selection arms + highlights
+        firePointer(cellDom(table, 0, 0), 'pointerdown');
+        firePointer(cellDom(table, 0, 1), 'pointermove'); // selection arms + highlights
         expect(selectedCount(table)).toBeGreaterThan(0);
-        fireMouse(muya.domNode, 'mousemove'); // pointer leaves the table
-        fireMouse(muya.domNode, 'mouseup'); // released outside
+        firePointer(muya.domNode, 'pointermove'); // pointer leaves the table
+        firePointer(muya.domNode, 'pointerup'); // released outside
         // Nothing frozen, no leftover highlight, no 1x1 anchor selection.
         expect(selectedCount(table)).toBe(0);
         expect(muya.editor.selection.table.hasSelection).toBe(false);
+    });
+
+    it('lets a browser-cancelled drag (pointercancel) end it like a release', () => {
+        const muya = bootMuya(TABLE_MD);
+        const table = firstTable(muya);
+        firePointer(cellDom(table, 0, 0), 'pointerdown');
+        firePointer(cellDom(table, 0, 1), 'pointermove');
+        firePointer(cellDom(table, 0, 1), 'pointercancel');
+        // Selecting had begun, so the rectangle freezes as on a release.
+        expect(selectedCount(table)).toBe(2);
+        firePointer(cellDom(table, 1, 1), 'pointermove');
+        expect(selectedCount(table)).toBe(2);
+    });
+
+    it('never drag-selects with a finger, which scrolls instead', () => {
+        const muya = bootMuya(TABLE_MD);
+        const table = firstTable(muya);
+        firePointer(cellDom(table, 0, 0), 'pointerdown', 'touch');
+        firePointer(cellDom(table, 1, 1), 'pointermove', 'touch');
+        firePointer(cellDom(table, 1, 1), 'pointerup', 'touch');
+        expect(selectedCount(table)).toBe(0);
+        expect(muya.editor.selection.table.hasSelection).toBe(false);
+    });
+
+    it('follows a native range across cells without dropping it', () => {
+        const muya = bootMuya(TABLE_MD);
+        const table = firstTable(muya);
+        const anchorCell = table.cellAt(0, 0) as TableBodyCell;
+        const focusCell = table.cellAt(1, 2) as TableBodyCell;
+        const range = document.createRange();
+        range.setStart(cellDom(table, 0, 0).firstChild!, 1);
+        range.setEnd(cellDom(table, 1, 2).firstChild!, 1);
+        document.getSelection()!.removeAllRanges();
+        document.getSelection()!.addRange(range);
+
+        muya.editor.selection.table.followCellRange(anchorCell, focusCell);
+
+        expect(selectedCount(table)).toBe(6);
+        expect(muya.editor.selection.table.followsNativeRange).toBe(true);
+        expect(document.getSelection()!.rangeCount).toBe(1);
+        // Resizing keeps following; a new press drops it.
+        muya.editor.selection.table.followCellRange(anchorCell, table.cellAt(0, 1) as TableBodyCell);
+        expect(selectedCount(table)).toBe(2);
+        firePointer(cellDom(table, 2, 2), 'pointerdown', 'touch');
+        expect(selectedCount(table)).toBe(0);
+        expect(muya.editor.selection.table.followsNativeRange).toBe(false);
     });
 });
 
@@ -176,10 +214,10 @@ describe('cross-cell table selection — copy', () => {
         const table = firstTable(muya);
         // A genuine 1x1 selection: start the drag on a2, move onto a neighbour
         // (so selecting begins), then shrink the focus back to the anchor cell.
-        fireMouse(cellDom(table, 1, 0), 'mousedown');
-        fireMouse(cellDom(table, 1, 1), 'mousemove'); // starts selecting
-        fireMouse(cellDom(table, 1, 0), 'mousemove'); // shrink back to anchor
-        fireMouse(cellDom(table, 1, 0), 'mouseup');
+        firePointer(cellDom(table, 1, 0), 'pointerdown');
+        firePointer(cellDom(table, 1, 1), 'pointermove'); // starts selecting
+        firePointer(cellDom(table, 1, 0), 'pointermove'); // shrink back to anchor
+        firePointer(cellDom(table, 1, 0), 'pointerup');
 
         const store = dispatchCopy(muya, 'copy');
         expect(store.get('text/plain')).toBe('a2');

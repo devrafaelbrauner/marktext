@@ -3,6 +3,7 @@ import type { Muya } from '../muya';
 import { BLOCK_DOM_PROPERTY, CLASS_NAMES } from '../config';
 import { CUSTOM_INLINE_NAME_ATTR } from '../inlineRenderer/renderer/customInline';
 import { findContentDOM } from '../selection/dom';
+import { isTouchPointerEvent } from '../utils';
 import { getLinkInfo } from '../utils/getLinkInfo';
 
 // The linkTools popover subscribes to `muya-link-tools` but had no emitter;
@@ -64,7 +65,7 @@ function isModifierClick(event: Event): boolean {
     return event instanceof MouseEvent && (event.metaKey || event.ctrlKey);
 }
 
-function isPopoverTarget(wrapper: HTMLElement): boolean {
+function isPopoverTarget(wrapper: HTMLElement, requirePreview: boolean): boolean {
     // Auto-detected links are follow-only (Cmd/Ctrl-click). The edit/unlink
     // popover doesn't apply — there is no `[text](url)` source to rewrite, and
     // the URL re-autolinks on the next render anyway.
@@ -76,7 +77,7 @@ function isPopoverTarget(wrapper: HTMLElement): boolean {
     }
 
     // HTML `<a>` is always a popover target — no source markers to hide.
-    if (wrapper.classList.contains(CLASS_NAMES.MU_RAW_HTML))
+    if (!requirePreview || wrapper.classList.contains(CLASS_NAMES.MU_RAW_HTML))
         return true;
 
     // Markdown link / reference link: only show in preview mode (the
@@ -89,18 +90,7 @@ function isPopoverTarget(wrapper: HTMLElement): boolean {
 export function attachLinkMouseHandlers(muya: Muya): void {
     const { eventCenter, domNode } = muya;
 
-    const overHandler = (event: Event) => {
-        // marktext `eventHandler/mouseEvent.js` gated the link-tools dispatch
-        // on `!hideLinkPopup`: when the user sets `hideLinkPopup: true`, the
-        // hover popover is suppressed entirely. Read it live so a runtime
-        // `setOptions({ hideLinkPopup })` toggle takes effect immediately.
-        if (muya.options?.hideLinkPopup)
-            return;
-
-        const wrapper = findLinkWrapper(event.target);
-        if (!wrapper || !isPopoverTarget(wrapper))
-            return;
-
+    const showLinkTools = (wrapper: HTMLElement) => {
         const linkInfo = getLinkInfo(wrapper);
         if (!linkInfo)
             return;
@@ -115,6 +105,35 @@ export function attachLinkMouseHandlers(muya: Muya): void {
             reference: wrapper,
             linkInfo,
             block,
+        });
+    };
+
+    const overHandler = (event: Event) => {
+        // marktext `eventHandler/mouseEvent.js` gated the link-tools dispatch
+        // on `!hideLinkPopup`: when the user sets `hideLinkPopup: true`, the
+        // hover popover is suppressed entirely. Read it live so a runtime
+        // `setOptions({ hideLinkPopup })` toggle takes effect immediately.
+        if (muya.options?.hideLinkPopup)
+            return;
+
+        const wrapper = findLinkWrapper(event.target);
+        if (wrapper && isPopoverTarget(wrapper, true))
+            showLinkTools(wrapper);
+    };
+
+    // Touch has no hover, so a tap on a link opens the popover. The tap also
+    // puts the caret inside the link, which re-renders it in edit mode on the
+    // next frame; resolve the wrapper from the tap point after that render,
+    // and accept it with its source markers showing.
+    const tapHandler = (event: PointerEvent) => {
+        const { clientX, clientY } = event;
+        requestAnimationFrame(() => {
+            if (muya.options?.hideLinkPopup || !document.getSelection()?.isCollapsed)
+                return;
+
+            const wrapper = findLinkWrapper(document.elementFromPoint(clientX, clientY));
+            if (wrapper && domNode.contains(wrapper) && isPopoverTarget(wrapper, false))
+                showLinkTools(wrapper);
         });
     };
 
@@ -159,8 +178,12 @@ export function attachLinkMouseHandlers(muya: Muya): void {
         // their cursor-placement-only behavior. `getLinkInfo` resolves the
         // wrapper that hosts the href even when the IMG/text descendant was
         // clicked, and returns a superset (`{ href, raw, text, range }`).
-        if (!isModifierClick(event))
+        if (!isModifierClick(event)) {
+            if (isTouchPointerEvent(event))
+                tapHandler(event);
+
             return;
+        }
 
         // A `registerInlineSyntax` token: `formatType` is the rule name and
         // `data` its match data. Checked first so a token inside a link wins.

@@ -122,6 +122,9 @@ class Code extends Parent {
             editor.clipboard.copy(CopyType.COPY_CODE_CONTENT, codeContent.text);
         };
 
+        // Stays on `mousedown`, which a tap fires too: a cancelled
+        // `pointerdown` only suppresses the compatibility mouse events, and on
+        // touch the tap still moves the caret.
         const mousedownHandler = (event: Event) => {
             event.preventDefault();
         };

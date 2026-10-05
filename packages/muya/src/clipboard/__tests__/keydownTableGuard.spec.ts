@@ -57,19 +57,16 @@ function cellDom(table: TableBlock, row: number, column: number): HTMLElement {
     return (cell.firstChild as { domNode: HTMLElement }).domNode;
 }
 
-function fireMouse(node: HTMLElement, type: string): void {
-    const event = new MouseEvent(type, { bubbles: true, button: 0 });
-    if (!('x' in event))
-        Object.defineProperty(event, 'x', { value: 0, configurable: true });
-    node.dispatchEvent(event);
+function firePointer(node: HTMLElement, type: string): void {
+    node.dispatchEvent(new PointerEvent(type, { bubbles: true, button: 0, pointerType: 'mouse' }));
 }
 
-// Build a genuine frozen rectangle selection through real DOM mouse events
+// Build a genuine frozen rectangle selection through real DOM pointer events
 // (same pattern as selection/__tests__/TableRectSelection.spec.ts).
 function dragSelect(table: TableBlock, r1: number, c1: number, r2: number, c2: number): void {
-    fireMouse(cellDom(table, r1, c1), 'mousedown');
-    fireMouse(cellDom(table, r2, c2), 'mousemove');
-    fireMouse(cellDom(table, r2, c2), 'mouseup');
+    firePointer(cellDom(table, r1, c1), 'pointerdown');
+    firePointer(cellDom(table, r2, c2), 'pointermove');
+    firePointer(cellDom(table, r2, c2), 'pointerup');
 }
 
 function tick(): Promise<void> {
