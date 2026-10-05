@@ -132,6 +132,8 @@ describe('ai main part', () => {
   it('rewrites LaTeX math delimiters to muya dollars outside code, for math and research replies', () => {
     expect(cleanReply('solveMath', '1. \\( 0,15 \\times 240 = 36 \\)\n\n**45**')).toBe('1. $0,15 \\times 240 = 36$\n\n**45**')
     expect(cleanReply('research', 'Area:\n\\[ \\pi r^2 \\]\nDone')).toBe('Area:\n\n$$\n\\pi r^2\n$$\n\nDone')
+    // A one-line `$$…$$` (inside a list item, typically) stays inline.
+    expect(cleanReply('solveMath', '1. Calcule:\n   $$3^2 = 9$$')).toBe('1. Calcule:\n   $3^2 = 9$')
     const code = 'Use `\\(x\\)` or:\n```tex\n\\(x\\)\n```'
     expect(cleanReply('research', code)).toBe(code)
     // Proofreading returns the user's text: their own LaTeX stays as written.
