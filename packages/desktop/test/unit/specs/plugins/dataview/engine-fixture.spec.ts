@@ -3,6 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { VaultIndex } from 'main_renderer/vaultIndex/vaultIndex'
+import { nodeVaultIndexFs } from 'main_renderer/vaultIndex/nodeFs'
 import { runQuery, type ListResult, type QueryResponse, type QueryResult, type TableResult, type TaskResult } from '@plugins/dataview/common/engine'
 import { linkText, valueToString, type LinkValue } from '@plugins/dataview/common/values'
 
@@ -17,7 +18,7 @@ const dataviewBlocks = (file: string): string[] =>
   [...fs.readFileSync(file, 'utf-8').matchAll(/```dataview\n([\s\S]*?)```/g)].map((match) => match[1])
 
 describe('Dataview engine over the fixture vault', () => {
-  const index = new VaultIndex(FIXTURE)
+  const index = new VaultIndex(FIXTURE, nodeVaultIndexFs)
   const run = (query: string, origin: string | null = QUERY_NOTE): QueryResponse => runQuery(query, origin, index, { now: NOW })
   const ok = (query: string, origin: string | null = QUERY_NOTE): QueryResult => {
     const response = run(query, origin)

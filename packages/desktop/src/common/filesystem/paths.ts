@@ -1,11 +1,18 @@
 import fs from 'fs'
 import path from 'path'
 import { isFile, isFile2, isSymbolicLink } from './index'
-import { minimatch } from 'minimatch'
-import { MARKDOWN_EXTENSIONS, IMAGE_EXTENSIONS, VIEWABLE_ASSET_EXTENSIONS } from './extensions'
+import { IMAGE_EXTENSIONS, VIEWABLE_ASSET_EXTENSIONS, hasMarkdownExtension } from './extensions'
 
-// The lists live in a module without Node imports so web builds can use them.
-export { MARKDOWN_EXTENSIONS, MARKDOWN_INCLUSIONS, IMAGE_EXTENSIONS, VIEWABLE_ASSET_EXTENSIONS } from './extensions'
+// The lists and pure matchers live in modules without Node imports so web
+// builds and the vault index worker can use them.
+export {
+  MARKDOWN_EXTENSIONS,
+  MARKDOWN_INCLUSIONS,
+  IMAGE_EXTENSIONS,
+  VIEWABLE_ASSET_EXTENSIONS,
+  hasMarkdownExtension
+} from './extensions'
+export { checkPathExcludePattern } from './excludePatterns'
 
 // Extensions the OS shell will execute rather than open in an application.
 // Opening one of these via shell.openPath runs code, so a markdown link
@@ -73,14 +80,6 @@ export const isDangerousExecutableFile = (filepath: string): boolean => {
   // before reading the extension or the guard is trivially bypassed.
   const ext = path.extname(filepath.replace(/[ .]+$/, '')).slice(1).toLowerCase()
   return !!ext && DANGEROUS_EXECUTABLE_EXTENSIONS.includes(ext)
-}
-
-/**
- * Returns true if the filename matches one of the markdown extensions.
- */
-export const hasMarkdownExtension = (filename: string): boolean => {
-  if (!filename || typeof filename !== 'string') return false
-  return MARKDOWN_EXTENSIONS.some((ext) => filename.toLowerCase().endsWith(`.${ext}`))
 }
 
 /**
@@ -177,17 +176,4 @@ export const isChildOfDirectory = (dir: string, child: string): boolean => {
   if (!dir || !child) return false
   const relative = path.relative(dir, child)
   return !!relative && !relative.startsWith('..') && !path.isAbsolute(relative)
-}
-
-/**
- * Returns true if the pathname matches one of the exclude patterns.
- */
-export const checkPathExcludePattern = (pathname: string, patterns: readonly string[]): boolean => {
-  if (!pathname || typeof pathname !== 'string') return false
-  for (const pattern of patterns) {
-    if (minimatch(pathname, pattern, { matchBase: true })) {
-      return true
-    }
-  }
-  return false
 }

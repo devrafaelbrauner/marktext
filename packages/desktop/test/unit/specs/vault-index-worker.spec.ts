@@ -5,8 +5,10 @@ import path from 'path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { dispatchWorkerRequest, registerWorkerHandler } from 'main_renderer/vaultIndex/worker/handlers'
 import { createIndexWorkerRuntime } from 'main_renderer/vaultIndex/worker/runtime'
-import { VaultIndexManager, getVaultIndexCacheFile, type IndexWorkerProcess } from 'main_renderer/vaultIndex/manager'
+import { VaultIndexManager, type IndexWorkerProcess } from 'main_renderer/vaultIndex/manager'
+import { getVaultIndexCacheFile } from 'main_renderer/vaultIndex/cacheFile'
 import type { MainToWorkerMessage, VaultIndexReader, WorkerToMainMessage } from 'main_renderer/vaultIndex/types'
+import { nodeVaultIndexFs } from 'main_renderer/vaultIndex/nodeFs'
 
 const FIXTURE = path.resolve(__dirname, '../../fixtures/vault')
 const emptyReader = {} as VaultIndexReader
@@ -16,7 +18,7 @@ describe('worker handler registry', () => {
     const registration = registerWorkerHandler('spec.echo', (payload, { index }) => ({ payload, root: index.rootPath }))
     try {
       const reader = { rootPath: '/vault' } as VaultIndexReader
-      await expect(dispatchWorkerRequest('spec.echo', { a: 1 }, { index: reader })).resolves.toEqual({
+      await expect(dispatchWorkerRequest('spec.echo', { a: 1 }, { index: reader, fs: nodeVaultIndexFs })).resolves.toEqual({
         payload: { a: 1 },
         root: '/vault'
       })
@@ -31,8 +33,8 @@ describe('worker handler registry', () => {
       throw new Error('bad payload')
     })
     try {
-      await expect(dispatchWorkerRequest('spec.async', null, { index: emptyReader })).resolves.toBe('done')
-      await expect(dispatchWorkerRequest('spec.fail', null, { index: emptyReader })).rejects.toThrow('bad payload')
+      await expect(dispatchWorkerRequest('spec.async', null, { index: emptyReader, fs: nodeVaultIndexFs })).resolves.toBe('done')
+      await expect(dispatchWorkerRequest('spec.fail', null, { index: emptyReader, fs: nodeVaultIndexFs })).rejects.toThrow('bad payload')
     } finally {
       ok.dispose()
       bad.dispose()
@@ -40,14 +42,14 @@ describe('worker handler registry', () => {
   })
 
   it('rejects unknown, empty and duplicate types', async() => {
-    await expect(dispatchWorkerRequest('spec.none', null, { index: emptyReader })).rejects.toThrow(
+    await expect(dispatchWorkerRequest('spec.none', null, { index: emptyReader, fs: nodeVaultIndexFs })).rejects.toThrow(
       'No vault index handler registered for "spec.none"'
     )
     expect(() => registerWorkerHandler('', () => null)).toThrow()
     const first = registerWorkerHandler('spec.dup', () => 1)
     expect(() => registerWorkerHandler('spec.dup', () => 2)).toThrow('already registered')
     first.dispose()
-    await expect(dispatchWorkerRequest('spec.dup', null, { index: emptyReader })).rejects.toThrow()
+    await expect(dispatchWorkerRequest('spec.dup', null, { index: emptyReader, fs: nodeVaultIndexFs })).rejects.toThrow()
   })
 
   it('disposing a stale registration keeps the newer handler of the same type', async() => {
@@ -56,7 +58,7 @@ describe('worker handler registry', () => {
     const second = registerWorkerHandler('spec.swap', () => 'second')
     first.dispose()
     try {
-      await expect(dispatchWorkerRequest('spec.swap', null, { index: emptyReader })).resolves.toBe('second')
+      await expect(dispatchWorkerRequest('spec.swap', null, { index: emptyReader, fs: nodeVaultIndexFs })).resolves.toBe('second')
     } finally {
       second.dispose()
     }
@@ -80,7 +82,7 @@ const createInProcessWorker = (): IndexWorkerProcess & { exit(code: number): voi
         if (alive) for (const listener of messageListeners) listener(copy)
       }, 0)
     },
-    { cacheWriteDelayMs: 5, onDisposed: () => setTimeout(() => exit(0), 0) }
+    { fs: nodeVaultIndexFs, cacheWriteDelayMs: 5, onDisposed: () => setTimeout(() => exit(0), 0) }
   )
   const received: MainToWorkerMessage[] = []
   return {
@@ -116,6 +118,7 @@ describe('index worker runtime', () => {
     const posted: WorkerToMainMessage[] = []
     const disposed = vi.fn()
     const runtime = createIndexWorkerRuntime((message) => posted.push(structuredClone(message)), {
+      fs: nodeVaultIndexFs,
       cacheWriteDelayMs: 60_000,
       onDisposed: disposed
     })
@@ -162,7 +165,7 @@ describe('index worker runtime', () => {
 
   it('re-scans with new exclude patterns and reports removed notes', async() => {
     const posted: WorkerToMainMessage[] = []
-    const runtime = createIndexWorkerRuntime((message) => posted.push(message))
+    const runtime = createIndexWorkerRuntime((message) => posted.push(message), { fs: nodeVaultIndexFs })
     runtime.handle({ kind: 'init', rootPath: root, cacheFile: null, excludePatterns: [] })
     await vi.waitFor(() => expect(posted).toContainEqual({ kind: 'ready' }))
     runtime.handle({ kind: 'config', excludePatterns: ['Daily'] })
@@ -188,7 +191,7 @@ describe('VaultIndexManager', () => {
     workers = []
     sent = []
     manager = new VaultIndexManager({
-      cacheDir,
+      getCacheFile: (rootPath) => getVaultIndexCacheFile(cacheDir, rootPath),
       getExcludePatterns: () => [],
       spawnWorker: () => {
         const worker = createInProcessWorker()

@@ -1,8 +1,7 @@
 import path from 'path'
-import { createHash } from 'crypto'
 import type { VaultChangeEvent } from '@shared/plugins/types'
 import type { VaultIndexReadyState } from '@shared/types/ipc'
-import type { WatcherTapEvent } from '../filesystem/watcher'
+import type { WatcherTapEvent } from '../filesystem/watcherTap'
 import type {
   MainToWorkerMessage,
   VaultFsChange,
@@ -11,7 +10,7 @@ import type {
   WorkerToMainMessage
 } from './types'
 
-/** Transport to one index worker; production wraps an Electron utility process. */
+/** Transport to one index worker; desktop wraps an Electron utility process, Android a Web Worker. */
 export interface IndexWorkerProcess {
   postMessage(message: MainToWorkerMessage): void
   onMessage(listener: (message: WorkerToMainMessage) => void): void
@@ -20,8 +19,8 @@ export interface IndexWorkerProcess {
 }
 
 export interface VaultIndexManagerOptions {
-  /** Folder of the persisted caches (`<userData>/vault-index`); null disables persistence. */
-  cacheDir: string | null
+  /** Persisted cache of a root (`<userData>/vault-index/<sha1(root)>.json`); null disables persistence. */
+  getCacheFile: (rootPath: string) => string | null
   /** Current `treePathExcludePatterns` preference. */
   getExcludePatterns: () => string[]
   spawnWorker: (rootPath: string) => IndexWorkerProcess
@@ -66,10 +65,6 @@ const EMPTY_RESULTS: { [K in VaultIndexQueryMethod]: VaultIndexQueries[K]['ret']
   getTags: [],
   getFilesWithTag: []
 }
-
-/** `<cacheDir>/<sha1(root)>.json`. */
-export const getVaultIndexCacheFile = (cacheDir: string, rootPath: string): string =>
-  path.join(cacheDir, `${createHash('sha1').update(path.resolve(rootPath)).digest('hex')}.json`)
 
 const isInside = (rootPath: string, pathname: string): boolean => {
   const rel = path.relative(rootPath, pathname)
@@ -221,7 +216,6 @@ export class VaultIndexManager {
   }
 
   private _startWorker(entry: RootEntry): void {
-    const { cacheDir } = this._options
     const worker = this._options.spawnWorker(entry.rootPath)
     entry.worker = worker
     entry.ready = false
@@ -230,7 +224,7 @@ export class VaultIndexManager {
     worker.postMessage({
       kind: 'init',
       rootPath: entry.rootPath,
-      cacheFile: cacheDir ? getVaultIndexCacheFile(cacheDir, entry.rootPath) : null,
+      cacheFile: this._options.getCacheFile(entry.rootPath),
       excludePatterns: this._options.getExcludePatterns()
     })
   }

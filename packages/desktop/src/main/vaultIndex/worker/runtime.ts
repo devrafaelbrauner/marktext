@@ -1,5 +1,5 @@
 import { loadVaultIndexCache, saveVaultIndexCache } from '../cache'
-import type { MainToWorkerMessage, VaultIndexQueries, WorkerToMainMessage } from '../types'
+import type { MainToWorkerMessage, VaultIndexFs, VaultIndexQueries, VaultIndexReader, WorkerToMainMessage } from '../types'
 import { VaultIndex } from '../vaultIndex'
 import { dispatchWorkerRequest } from './handlers'
 
@@ -7,6 +7,8 @@ import { dispatchWorkerRequest } from './handlers'
 const CACHE_WRITE_DELAY_MS = 2000
 
 export interface IndexWorkerRuntimeOptions {
+  /** Disk access for scanning, cache persistence and request handlers. */
+  fs: VaultIndexFs
   cacheWriteDelayMs?: number
   /** Called after `dispose` flushed the cache; the entry exits the process. */
   onDisposed?: () => void
@@ -14,6 +16,12 @@ export interface IndexWorkerRuntimeOptions {
 
 export interface IndexWorkerRuntime {
   handle(message: MainToWorkerMessage): void
+  /**
+   * The index of the last `init`, for hosts that answer more than the
+   * message protocol (the Android worker's search and resume rescan). Its
+   * state is the last completed scan; null before `init`.
+   */
+  readonly index: VaultIndexReader | null
 }
 
 /**
@@ -25,7 +33,7 @@ export interface IndexWorkerRuntime {
  */
 export const createIndexWorkerRuntime = (
   post: (message: WorkerToMainMessage) => void,
-  options: IndexWorkerRuntimeOptions = {}
+  options: IndexWorkerRuntimeOptions
 ): IndexWorkerRuntime => {
   let index: VaultIndex | null = null
   let cacheFile: string | null = null
@@ -45,7 +53,7 @@ export const createIndexWorkerRuntime = (
     cacheTimer = undefined
     if (!index || !cacheFile) return
     try {
-      await saveVaultIndexCache(cacheFile, index.toCache())
+      await saveVaultIndexCache(options.fs, cacheFile, index.toCache())
     } catch (error) {
       log('warn', `Could not write the vault index cache: ${String(error)}`)
     }
@@ -80,14 +88,17 @@ export const createIndexWorkerRuntime = (
   }
 
   return {
+    get index() {
+      return index
+    },
     handle(message) {
       switch (message.kind) {
         case 'init': {
-          const current = new VaultIndex(message.rootPath, { excludePatterns: message.excludePatterns })
+          const current = new VaultIndex(message.rootPath, options.fs, { excludePatterns: message.excludePatterns })
           index = current
           cacheFile = message.cacheFile
           enqueue(async() => {
-            const cache = cacheFile ? await loadVaultIndexCache(cacheFile) : null
+            const cache = cacheFile ? await loadVaultIndexCache(options.fs, cacheFile) : null
             await current.scan(cache)
             post({ kind: 'ready' })
             scheduleCacheWrite()
@@ -132,7 +143,7 @@ export const createIndexWorkerRuntime = (
             post({ kind: 'reply', id: message.id, ok: false, error: 'The vault index is not initialized' })
             break
           }
-          dispatchWorkerRequest(message.type, message.payload, { index: current }).then(
+          dispatchWorkerRequest(message.type, message.payload, { index: current, fs: options.fs }).then(
             (value) => post({ kind: 'reply', id: message.id, ok: true, value }),
             (error: unknown) =>
               post({ kind: 'reply', id: message.id, ok: false, error: error instanceof Error ? error.message : String(error) })

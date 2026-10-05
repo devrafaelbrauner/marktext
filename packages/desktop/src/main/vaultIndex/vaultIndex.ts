@@ -1,7 +1,6 @@
-import fsPromises from 'fs/promises'
 import path from 'path'
-import type { Stats } from 'fs'
-import { checkPathExcludePattern, hasMarkdownExtension } from 'common/filesystem/paths'
+import { checkPathExcludePattern } from 'common/filesystem/excludePatterns'
+import { hasMarkdownExtension } from 'common/filesystem/extensions'
 import { createLinkResolver, getDailyNoteDate, parseNote, type LinkResolver } from 'common/markdownExt'
 import type {
   BacklinkEntry,
@@ -10,7 +9,7 @@ import type {
   VaultChangeEvent,
   VaultFileEntry
 } from '@shared/plugins/types'
-import type { VaultIndexCache, VaultFsChange, VaultIndexReader } from './types'
+import type { VaultFileStats, VaultIndexCache, VaultIndexFs, VaultFsChange, VaultIndexReader } from './types'
 
 /** Bump whenever parser output changes so stale caches are re-parsed. */
 export const VAULT_INDEX_CACHE_VERSION = 1
@@ -53,6 +52,7 @@ const sameLinks = (a: FileMetadata['links'], b: FileMetadata['links']): boolean 
  */
 export class VaultIndex implements VaultIndexReader {
   readonly rootPath: string
+  private readonly _fs: VaultIndexFs
   private _excludePatterns: readonly string[]
   private readonly _maxParseBytes: number
   private _notes = new Map<string, NoteRecord>()
@@ -61,8 +61,9 @@ export class VaultIndex implements VaultIndexReader {
   private _backlinks: Map<string, BacklinkEntry[]> | null = null
   private _tags: TagCount[] | null = null
 
-  constructor(rootPath: string, options: VaultIndexOptions = {}) {
+  constructor(rootPath: string, fs: VaultIndexFs, options: VaultIndexOptions = {}) {
     this.rootPath = path.resolve(rootPath)
+    this._fs = fs
     this._excludePatterns = options.excludePatterns ?? []
     this._maxParseBytes = options.maxParseBytes ?? DEFAULT_MAX_PARSE_BYTES
   }
@@ -99,12 +100,12 @@ export class VaultIndex implements VaultIndexReader {
     if (cache && cache.version === VAULT_INDEX_CACHE_VERSION && cache.rootPath === this.rootPath) {
       for (const note of cache.notes) cached.set(note.meta.path, note)
     }
-    const files = await this._walk(this.rootPath)
+    const files = await this._fs.walk(this.rootPath, (p) => this.isIgnored(p))
     const notes = new Map<string, NoteRecord>()
     const assets = new Map<string, AssetRecord>()
     await this._forEachConcurrent(files, async(file) => {
-      const stats = await this._stat(file)
-      if (!stats?.isFile()) return
+      const stats = await this._fs.stat(file)
+      if (!stats?.isFile) return
       if (!hasMarkdownExtension(file)) {
         assets.set(file, this._assetRecord(file, stats))
         return
@@ -136,14 +137,14 @@ export class VaultIndex implements VaultIndexReader {
     const removed = new Set<string>()
     let fileSetChanged = false
 
-    const upsertFile = async(file: string, known?: Stats): Promise<void> => {
+    const upsertFile = async(file: string, known?: VaultFileStats): Promise<void> => {
       if (this.isIgnored(file)) return
-      const stats = known ?? (await this._stat(file))
+      const stats = known ?? (await this._fs.stat(file))
       if (!stats) {
         if (this._remove(file, removed)) fileSetChanged = true
         return
       }
-      if (!stats.isFile()) return
+      if (!stats.isFile) return
       if (!hasMarkdownExtension(file)) {
         if (!this._assets.has(file)) fileSetChanged = true
         this._assets.set(file, this._assetRecord(file, stats))
@@ -162,9 +163,9 @@ export class VaultIndex implements VaultIndexReader {
     // never descended into, so symlinked folders cannot cause cycles.
     const upsert = async(file: string): Promise<void> => {
       if (this.isIgnored(file)) return
-      const stats = await this._stat(file)
-      if (stats?.isDirectory()) {
-        for (const child of await this._walk(file)) await upsertFile(child)
+      const stats = await this._fs.stat(file)
+      if (stats?.isDirectory) {
+        for (const child of await this._fs.walk(file, (p) => this.isIgnored(p))) await upsertFile(child)
       } else {
         await upsertFile(file, stats ?? undefined)
       }
@@ -357,7 +358,7 @@ export class VaultIndex implements VaultIndexReader {
     return this._assets.delete(file)
   }
 
-  private _assetRecord(file: string, stats: Stats): AssetRecord {
+  private _assetRecord(file: string, stats: VaultFileStats): AssetRecord {
     return {
       rel: this._rel(file),
       entry: {
@@ -370,11 +371,11 @@ export class VaultIndex implements VaultIndexReader {
     }
   }
 
-  private async _readNote(file: string, stats: Stats): Promise<NoteRecord | null> {
+  private async _readNote(file: string, stats: VaultFileStats): Promise<NoteRecord | null> {
     let markdown = ''
     if (stats.size <= this._maxParseBytes) {
       try {
-        markdown = await fsPromises.readFile(file, 'utf8')
+        markdown = await this._fs.readText(file)
       } catch {
         return null
       }
@@ -403,35 +404,6 @@ export class VaultIndex implements VaultIndexReader {
       wordCount: parsed.wordCount
     }
     return { meta, rel: this._rel(file), contexts: parsed.links.map((link) => (lines[link.line] ?? '').trim()) }
-  }
-
-  private async _stat(file: string): Promise<Stats | null> {
-    try {
-      return await fsPromises.stat(file)
-    } catch {
-      return null
-    }
-  }
-
-  /** All non-ignored file paths below `dir`; symlinked folders are not followed (cycles). */
-  private async _walk(dir: string): Promise<string[]> {
-    const files: string[] = []
-    const visit = async(current: string): Promise<void> => {
-      let entries
-      try {
-        entries = await fsPromises.readdir(current, { withFileTypes: true })
-      } catch {
-        return
-      }
-      for (const entry of entries) {
-        const full = path.join(current, entry.name)
-        if (this.isIgnored(full)) continue
-        if (entry.isDirectory()) await visit(full)
-        else if (entry.isFile() || entry.isSymbolicLink()) files.push(full)
-      }
-    }
-    await visit(dir)
-    return files
   }
 
   private async _forEachConcurrent(items: string[], fn: (item: string) => Promise<void>): Promise<void> {
