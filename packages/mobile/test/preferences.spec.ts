@@ -87,6 +87,18 @@ describe('Preferences.load', () => {
   })
 })
 
+describe('Android-pinned preferences', () => {
+  it('keeps the custom title bar (it holds the ☰ menu) whatever is stored or set', async() => {
+    const backend = new MemoryFileBackend({ [PREFERENCES_PATH]: JSON.stringify({ titleBarStyle: 'native' }) })
+    const prefs = await Preferences.load(backend, light)
+    expect(prefs.getItem('titleBarStyle')).toBe('custom')
+    expect(prefs.setItems({ titleBarStyle: 'native', fontSize: 18 })).toEqual({ titleBarStyle: 'custom', fontSize: 18 })
+    expect(prefs.getItem('titleBarStyle')).toBe('custom')
+    await flush()
+    expect((await stored(backend)).titleBarStyle).toBe('custom')
+  })
+})
+
 describe('Preferences.setItems', () => {
   it('applies and persists valid entries, drops invalid ones, notifies with the applied partial', async() => {
     const backend = new MemoryFileBackend()

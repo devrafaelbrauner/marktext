@@ -119,6 +119,10 @@ class JsonFile {
   }
 }
 
+// Preferences Android cannot honour. `native` title bars do not exist here:
+// the custom one carries the ☰ menu, so without it nothing opens files.
+const ANDROID_PINNED: PreferenceMap = { titleBarStyle: 'custom' }
+
 export class Preferences {
   private readonly listeners = new Set<(change: PreferenceMap) => void>()
 
@@ -148,6 +152,7 @@ export class Preferences {
     if (values.followSystemTheme === true) {
       values.theme = options.systemDark ? values.darkModeTheme : values.lightModeTheme
     }
+    Object.assign(values, ANDROID_PINNED)
     const preferences = new Preferences(values, new JsonFile(backend, PREFERENCES_PATH))
     await preferences.file.save(values)
     return preferences
@@ -172,6 +177,11 @@ export class Preferences {
     }
     const applied: PreferenceMap = {}
     for (const [key, value] of Object.entries(settings)) {
+      if (key in ANDROID_PINNED) {
+        // Echo the pinned value so the settings page shows what applies.
+        applied[key] = this.values[key]
+        continue
+      }
       if (!isValidPreference(key, value)) {
         console.error(`[preferences] rejected invalid value for "${key}"`, value)
         continue
