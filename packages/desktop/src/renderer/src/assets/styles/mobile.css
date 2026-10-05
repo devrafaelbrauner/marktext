@@ -178,3 +178,27 @@
     height: 0;
   }
 }
+
+/* Tables keep readable columns on a phone and scroll sideways instead of
+   breaking every word across lines. */
+@media (max-width: 599px) {
+  figure.mu-table {
+    overflow-x: auto;
+  }
+
+  .mu-table-inner .mu-table-cell-content {
+    display: inline-block;
+    min-width: 6em;
+  }
+}
+
+/* An inactive HTML block keeps its source laid out (invisible) for caret
+   navigation. On touch screens a large source (e.g. an inline base64 image)
+   kept the renderer busy every frame (~10 fps with the note idle), and taps
+   do not navigate the caret into it, so it is not laid out until the block is
+   active. */
+@media (hover: none) and (pointer: coarse) {
+  figure:not(.mu-active, .mu-disable-html-render).mu-html-block .mu-html-container {
+    display: none;
+  }
+}
