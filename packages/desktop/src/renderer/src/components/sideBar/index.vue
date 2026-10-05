@@ -140,6 +140,14 @@ watch(
   }
 )
 
+// Jumping into the current document (a search hit, an outline heading) moves
+// focus to the editor without switching files: the drawer would cover it.
+const onFocusIn = (event: FocusEvent): void => {
+  if (isDrawer.value && event.target instanceof Element && event.target.closest('.editor-wrapper')) closeDrawer()
+}
+document.addEventListener('focusin', onFocusIn)
+onBeforeUnmount(() => document.removeEventListener('focusin', onFocusIn))
+
 // An editor selection left active keeps the system Cut/Copy bar floating over
 // the drawer; opening the drawer moves the user away from the text anyway.
 watch(isDrawer, (open) => {
