@@ -3,7 +3,7 @@ import type { Muya } from '../../index';
 import type { ImageToken } from '../../inlineRenderer/types';
 import { autoUpdate } from '@floating-ui/dom';
 
-import { isHTMLElement, isMouseEvent } from '../../utils';
+import { isHTMLElement, isMouseEvent, isPointerEvent } from '../../utils';
 import { findScrollContainer } from '../../utils/dom';
 import './index.css';
 
@@ -24,7 +24,7 @@ export class ImageResizeBar {
     private _movingAnchor: string | null = null;
     private _status: boolean = false;
     private _width: number | null = null;
-    // Pointer position and image width as of mousedown. Writing a width moves
+    // Pointer position and image width as of pointerdown. Writing a width moves
     // the image's own edges, so live geometry is not a usable reference while
     // dragging — only this snapshot is (#5392).
     private _dragStart: { clientX: number; width: number } | null = null;
@@ -85,7 +85,7 @@ export class ImageResizeBar {
         eventCenter.attachDOMEvent(findScrollContainer(domNode), 'scroll', scrollHandler);
         eventCenter.attachDOMEvent(this._container, 'dragstart', event =>
             event.preventDefault());
-        eventCenter.attachDOMEvent(document.body, 'mousedown', this._mouseDown);
+        eventCenter.attachDOMEvent(document.body, 'pointerdown', this._mouseDown);
     }
 
     private _render() {
@@ -146,25 +146,33 @@ export class ImageResizeBar {
         this._dragStart = isMouseEvent(event) && image
             ? { clientX: event.clientX, width: image.getBoundingClientRect().width }
             : null;
-        // A pointer dragged past the window's edge keeps driving the resize,
-        // but those out-of-viewport coordinates hit test to `<html>`, whose
-        // bubble path skips `<body>`. Listening on the document keeps the
-        // release outside the window a normal release instead of a silently
-        // dropped width (#5393).
+        // A finger or pen keeps the handle as the target of every move and of
+        // the release, wherever it goes (`touch-action: none` on the handle
+        // keeps the drag from scrolling instead). A mouse is left uncaptured:
+        // past the window's edge its events hit `<html>`, whose bubble path
+        // skips `<body>`, so listening on the document keeps that release a
+        // normal release instead of a silently dropped width (#5393).
+        if (isPointerEvent(event) && event.pointerType !== 'mouse')
+            handle.setPointerCapture(event.pointerId);
         const mouseMoveId = eventCenter.attachDOMEvent(
             document,
-            'mousemove',
+            'pointermove',
             this._mouseMove,
         );
         const mouseUpId = eventCenter.attachDOMEvent(
             document,
-            'mouseup',
+            'pointerup',
+            this._mouseUp,
+        );
+        const cancelId = eventCenter.attachDOMEvent(
+            document,
+            'pointercancel',
             this._mouseUp,
         );
         this._resizing = true;
         // Hide image toolbar
         eventCenter.emit('muya-image-toolbar', { reference: null });
-        this._eventId.push(mouseMoveId, mouseUpId);
+        this._eventId.push(mouseMoveId, mouseUpId, cancelId);
     };
 
     private _mouseMove = (event: Event) => {

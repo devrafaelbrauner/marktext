@@ -2,6 +2,9 @@
     border: none;
     box-shadow: none;
     cursor: pointer;
+
+    /* A finger drag on the bar reorders rows/columns instead of scrolling. */
+    touch-action: none;
 }
 
 .mu-table-drag-bar[data-drag='bottom'] {

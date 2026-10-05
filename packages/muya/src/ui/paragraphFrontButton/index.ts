@@ -8,7 +8,7 @@ import dragIcon from '../../assets/icons/drag/2.png';
 import BulletList from '../../block/commonMark/bulletList';
 import OrderList from '../../block/commonMark/orderList';
 import { BLOCK_DOM_PROPERTY } from '../../config';
-import { isMouseEvent, throttle, verticalPositionInRect } from '../../utils';
+import { isMouseEvent, isTouchPointerEvent, throttle, verticalPositionInRect } from '../../utils';
 import { h, patch } from '../../utils/snabbdom';
 import { getIcon } from './config';
 
@@ -107,20 +107,10 @@ export class ParagraphFrontButton {
     }
 
     listen() {
-        const { _container: container } = this;
+        const { _container: container, _floatBox: floatBox } = this;
         const { eventCenter } = this.muya;
 
-        // attachDOMEvent's listener is typed as `EventListener` ((evt:
-        // Event) => void). Take Event and narrow with the `isMouseEvent`
-        // guard — same pattern as `mouseMove` below — rather than casting
-        // the wrapper to EventListener (which would hide a real mismatch).
-        const mousemoveHandler = throttle((event: Event) => {
-            if (this._disableListen)
-                return;
-            if (!isMouseEvent(event))
-                return;
-
-            const { x, y } = event;
+        const revealAt = (x: number, y: number) => {
             const els = [
                 ...document.elementsFromPoint(x, y),
                 ...document.elementsFromPoint(x + LEFT_OFFSET, y),
@@ -137,7 +127,28 @@ export class ParagraphFrontButton {
             else {
                 this.hide();
             }
+        };
+
+        // Hover reveal. A finger only produces moves while pressed, and those
+        // scroll the page, so touch reveals on a tap instead.
+        const pointermoveHandler = throttle((event: Event) => {
+            if (this._disableListen || !isMouseEvent(event) || isTouchPointerEvent(event))
+                return;
+
+            revealAt(event.clientX, event.clientY);
         }, 300);
+
+        const pointerdownHandler = (event: Event) => {
+            if (
+                this._disableListen
+                || !isTouchPointerEvent(event)
+                || (event.target instanceof Node && floatBox.contains(event.target))
+            ) {
+                return;
+            }
+
+            revealAt(event.clientX, event.clientY);
+        };
 
         const clickHandler = () => {
             eventCenter.emit('muya-front-menu', {
@@ -148,14 +159,26 @@ export class ParagraphFrontButton {
             });
         };
 
-        eventCenter.attachDOMEvent(container, 'mousedown', this._dragBarMouseDown);
-        eventCenter.attachDOMEvent(container, 'mouseup', this._dragBarMouseUp);
-        eventCenter.attachDOMEvent(document, 'mousemove', mousemoveHandler);
+        // The cancelled `mousedown` keeps the editor caret and focus where they
+        // are; a tap fires it too, unlike a cancelled `pointerdown`.
+        eventCenter.attachDOMEvent(container, 'mousedown', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+        });
+        eventCenter.attachDOMEvent(container, 'pointerdown', this._dragBarPointerDown);
+        eventCenter.attachDOMEvent(container, 'pointerup', this._dragBarPointerUp);
+        eventCenter.attachDOMEvent(container, 'pointercancel', this._dragBarPointerUp);
+        // A long-press is the drag gesture on touch, not a context menu.
+        eventCenter.attachDOMEvent(container, 'contextmenu', (event) => {
+            if (isTouchPointerEvent(event))
+                event.preventDefault();
+        });
+        eventCenter.attachDOMEvent(document, 'pointermove', pointermoveHandler);
+        eventCenter.attachDOMEvent(document, 'pointerdown', pointerdownHandler);
         eventCenter.attachDOMEvent(container, 'click', clickHandler);
     }
 
-    private _dragBarMouseDown = (event: Event) => {
-        event.preventDefault();
+    private _dragBarPointerDown = (event: Event) => {
         event.stopPropagation();
         this._dragTimer = setTimeout(() => {
             this._startDrag();
@@ -163,7 +186,7 @@ export class ParagraphFrontButton {
         }, 300);
     };
 
-    private _dragBarMouseUp = () => {
+    private _dragBarPointerUp = () => {
         if (this._dragTimer) {
             clearTimeout(this._dragTimer);
             this._dragTimer = null;
@@ -279,10 +302,11 @@ export class ParagraphFrontButton {
         this._dragEvents = [
             eventCenter.attachDOMEvent(
                 document,
-                'mousemove',
+                'pointermove',
                 throttle(this._mouseMove, 100),
             ),
-            eventCenter.attachDOMEvent(document, 'mouseup', this._mouseUp),
+            eventCenter.attachDOMEvent(document, 'pointerup', this._mouseUp),
+            eventCenter.attachDOMEvent(document, 'pointercancel', this._mouseUp),
         ];
     };
 

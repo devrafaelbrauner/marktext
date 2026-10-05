@@ -124,6 +124,7 @@ import {
 } from '@/util/tocNavigation'
 import { findActiveHeadingSlug, type HeadingPosition } from '@/util/findActiveHeading'
 import { addCommonStyle, setEditorWidth } from '@/util/theme'
+import { watchSoftKeyboard } from '@/util/visualViewport'
 import { usePreferencesStore } from '@/store/preferences'
 import { useEditorStore } from '@/store/editor'
 import { useProjectStore } from '@/store/project'
@@ -278,6 +279,8 @@ let spellchecker: SpellChecker | null = null
 let switchLanguageCommand: SpellcheckerLanguageCommand | null = null
 // The engine has no `scroll` event; we listen on the scroll container directly.
 let scrollHandler: ((e: Event) => void) | null = null
+// Inert without a touchscreen soft keyboard (see `util/visualViewport`).
+let stopSoftKeyboard: (() => void) | null = null
 
 // The engine's undo/redo history (`getHistory()`) has a different shape than
 // the desktop store's `tab.history` (which drives the save/dirty tracking and
@@ -1841,6 +1844,7 @@ onMounted(() => {
   // the document tree and instantiates the registered UI plugins).
   muya.init()
   editor.value = muya
+  stopSoftKeyboard = watchSoftKeyboard(muya.domNode)
   engineHost.setSpellcheckPreference(spellcheckerEnabled.value)
   engineHost.attach(muya)
   // The first document's content is set via constructor options, so no
@@ -2074,6 +2078,8 @@ onBeforeUnmount(() => {
 
   document.removeEventListener('keyup', keyup)
   editorStore.SET_SELECTION_WORD_COUNT(null)
+  stopSoftKeyboard?.()
+  stopSoftKeyboard = null
 
   // Remove the manual scroll listener; engine `on(...)` listeners are torn down
   // by `destroy()` → `eventCenter.unsubscribeAll()`.

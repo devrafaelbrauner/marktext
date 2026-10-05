@@ -51,24 +51,24 @@ describe('image resize bar after its image is removed', () => {
         expect(document.querySelectorAll('.mu-transformer .bar')).toHaveLength(0);
     });
 
-    it('stops following the mouse when hidden in the middle of a drag', () => {
+    it('stops following the pointer when hidden in the middle of a drag', () => {
         vi.useFakeTimers();
         const eventCenter = setup();
 
         eventCenter.emit('muya-transformer', { block: {}, reference: imageContainer(), imageInfo: {} });
         vi.runAllTimers();
         const handle = document.querySelector<HTMLElement>('.mu-transformer .bar.right')!;
-        handle.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        handle.dispatchEvent(pointerEvent('pointerdown', 0));
 
         eventCenter.emit('muya-transformer', { reference: null });
 
-        expect(eventCenter.events.some(e => e.event === 'mousemove')).toBe(false);
+        expect(eventCenter.events.some(e => e.event === 'pointermove')).toBe(false);
 
         const listenerErrors: unknown[] = [];
         const onError = (event: ErrorEvent) => listenerErrors.push(event.error ?? event.message);
         window.addEventListener('error', onError);
         try {
-            expect(() => document.body.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 40 }))).not.toThrow();
+            expect(() => document.body.dispatchEvent(pointerMove(40))).not.toThrow();
         }
         finally {
             window.removeEventListener('error', onError);
@@ -88,26 +88,22 @@ function contentBar(): HTMLElement {
     return bar;
 }
 
-// happy-dom's MouseEvent has no `x`, which is how the bar recognises a mouse
-// event; real browsers always set it, on mousedown as much as on mousemove.
-function mouseEvent(type: string, clientX: number): MouseEvent {
-    const event = new MouseEvent(type, { bubbles: true, clientX });
-    Object.defineProperty(event, 'x', { value: clientX });
-    return event;
+function pointerEvent(type: string, clientX: number, pointerType = 'mouse', button = 0): PointerEvent {
+    return new PointerEvent(type, { bubbles: true, clientX, pointerId: 1, pointerType, button });
 }
 
-function mouseMove(clientX: number): MouseEvent {
-    return mouseEvent('mousemove', clientX);
+function pointerMove(clientX: number, pointerType = 'mouse'): PointerEvent {
+    return pointerEvent('pointermove', clientX, pointerType);
 }
 
 // happy-dom rethrows listener errors from dispatchEvent; collect them per
-// step so a throwing mousemove still lets the mouseup run.
-function dragFrom(target: HTMLElement, clientX = 40): unknown[] {
+// step so a throwing pointermove still lets the pointerup run.
+function dragFrom(target: HTMLElement, clientX = 40, pointerType = 'mouse'): unknown[] {
     const listenerErrors: unknown[] = [];
     const steps: Array<[EventTarget, Event]> = [
-        [target, mouseEvent('mousedown', 0)],
-        [document.body, mouseMove(clientX)],
-        [document.body, new MouseEvent('mouseup', { bubbles: true })],
+        [target, pointerEvent('pointerdown', 0, pointerType)],
+        [document.body, pointerMove(clientX, pointerType)],
+        [document.body, pointerEvent('pointerup', clientX, pointerType)],
     ];
     for (const [eventTarget, event] of steps) {
         try {
@@ -162,18 +158,18 @@ describe('image resize bar and document content with class "bar" (#5116)', () =>
         expect(document.querySelectorAll('.mu-transformer .bar')).toHaveLength(2);
     });
 
-    it('attaches no drag listeners for a press on content that never gets its mouseup', () => {
+    it('attaches no drag listeners for a press on content that never gets its pointerup', () => {
         vi.useFakeTimers();
         const eventCenter = setup();
         const reference = imageContainer();
 
         eventCenter.emit('muya-transformer', { block: { updateImage: vi.fn() }, reference, imageInfo: {} });
         vi.runAllTimers();
-        // A right press opens the context menu, which takes the mouseup.
-        contentBar().dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 2 }));
-        document.body.dispatchEvent(mouseMove(200));
+        // A right press opens the context menu, which takes the pointerup.
+        contentBar().dispatchEvent(pointerEvent('pointerdown', 0, 'mouse', 2));
+        document.body.dispatchEvent(pointerMove(200));
 
-        expect(eventCenter.events.some(e => e.event === 'mousemove')).toBe(false);
+        expect(eventCenter.events.some(e => e.event === 'pointermove')).toBe(false);
         expect(reference.querySelector('img')!.hasAttribute('width')).toBe(false);
     });
 
@@ -207,9 +203,45 @@ describe('image resize bar and document content with class "bar" (#5116)', () =>
         const errors = dragFrom(document.querySelector<HTMLElement>('.mu-transformer .bar.right')!, 200);
 
         expect(errors).toEqual([]);
-        // The width grows by the pointer's travel since mousedown. happy-dom
+        // The width grows by the pointer's travel since pointerdown. happy-dom
         // has no layout, so the image starts at width 0 and the press at x 0.
         expect(block.updateImage).toHaveBeenCalledWith(imageInfo, 'width', '200');
+    });
+
+    it('resizes from a finger drag, capturing the pointer on the handle', () => {
+        vi.useFakeTimers();
+        const eventCenter = setup();
+        const block = { updateImage: vi.fn() };
+        const imageInfo = {};
+
+        eventCenter.emit('muya-transformer', { block, reference: imageContainer(), imageInfo });
+        vi.runAllTimers();
+        const handle = document.querySelector<HTMLElement>('.mu-transformer .bar.right')!;
+        handle.dispatchEvent(pointerEvent('pointerdown', 0, 'touch'));
+
+        expect(handle.hasPointerCapture(1)).toBe(true);
+
+        document.body.dispatchEvent(pointerMove(120, 'touch'));
+        document.body.dispatchEvent(pointerEvent('pointerup', 120, 'touch'));
+
+        expect(block.updateImage).toHaveBeenCalledWith(imageInfo, 'width', '120');
+    });
+
+    it('commits the width reached when the browser cancels the pointer', () => {
+        vi.useFakeTimers();
+        const eventCenter = setup();
+        const block = { updateImage: vi.fn() };
+        const imageInfo = {};
+
+        eventCenter.emit('muya-transformer', { block, reference: imageContainer(), imageInfo });
+        vi.runAllTimers();
+        const handle = document.querySelector<HTMLElement>('.mu-transformer .bar.right')!;
+        handle.dispatchEvent(pointerEvent('pointerdown', 0, 'touch'));
+        document.body.dispatchEvent(pointerMove(90, 'touch'));
+        document.body.dispatchEvent(pointerEvent('pointercancel', 90, 'touch'));
+
+        expect(block.updateImage).toHaveBeenCalledWith(imageInfo, 'width', '90');
+        expect(eventCenter.events.some(e => e.event === 'pointermove')).toBe(false);
     });
 });
 
@@ -222,10 +254,10 @@ describe('image resize bar and document content with class "bar" (#5116)', () =>
 function dragOutsideWindow(handle: HTMLElement, clientX: number): unknown[] {
     const listenerErrors: unknown[] = [];
     const steps: Array<[EventTarget, Event]> = [
-        [handle, mouseEvent('mousedown', 0)],
-        [document.body, mouseMove(clientX / 2)],
-        [document.documentElement, mouseMove(clientX)],
-        [document.documentElement, new MouseEvent('mouseup', { bubbles: true })],
+        [handle, pointerEvent('pointerdown', 0)],
+        [document.body, pointerMove(clientX / 2)],
+        [document.documentElement, pointerMove(clientX)],
+        [document.documentElement, pointerEvent('pointerup', clientX)],
         [document.documentElement, new MouseEvent('click', { bubbles: true })],
     ];
     for (const [eventTarget, event] of steps) {
@@ -268,6 +300,6 @@ describe('image resize released outside the window (#5393)', () => {
         vi.runAllTimers();
         dragOutsideWindow(document.querySelector<HTMLElement>('.mu-transformer .bar.right')!, 200);
 
-        expect(eventCenter.events.some(e => e.event === 'mousemove')).toBe(false);
+        expect(eventCenter.events.some(e => e.event === 'pointermove')).toBe(false);
     });
 });

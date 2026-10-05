@@ -10,6 +10,19 @@
     border: 2px solid var(--editor-bg-color);
     border-radius: 5px;
     box-shadow: 0 2px 2px 0 rgb(0 0 0 / 15%);
+
+    /* A finger drag on a handle resizes instead of scrolling. */
+    touch-action: none;
+}
+
+/* Widen the hit area for fingers without changing the drawn handle. */
+@media (pointer: coarse) {
+    .mu-transformer .bar::before {
+        position: absolute;
+
+        content: '';
+        inset: -12px;
+    }
 }
 
 .mu-transformer .left {

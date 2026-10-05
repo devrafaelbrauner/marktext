@@ -2,19 +2,20 @@ import type Content from '../block/base/content';
 import type Format from '../block/base/format';
 import type BulletList from '../block/commonMark/bulletList';
 import type OrderList from '../block/commonMark/orderList';
+import type TableBodyCell from '../block/gfm/table/cell';
 import type TaskList from '../block/gfm/taskList';
 import type { TBlockPath } from '../block/types';
 import type { Muya } from '../muya';
 import type { Nullable } from '../types';
 import type Selection from './index';
 import type { IAnchorFocusInfo, INodeOffset, ISelection, ISelectionEndpoints } from './types';
-import { isHTMLElement, isMouseEvent } from '../utils';
+import { isHTMLElement, isMouseEvent, isPointerEvent } from '../utils';
 import logger from '../utils/logger';
 import {
     buildSelectionAffiliation,
     endpointBlockInfo,
 } from './affiliation';
-import { getCursorCoords } from './cursorCoords';
+import { getCursorCoords, getCursorReference } from './cursorCoords';
 import {
     compareParagraphsOrder,
     getLegalOffset,
@@ -91,6 +92,12 @@ class TextSelection {
         isSelect: false,
         selection: null,
     };
+
+    // `pointerType` of the latest press anywhere in the document. Selections
+    // made with a finger arrive only as `selectionchange` (long-press, then the
+    // system handles), never as pointer moves or a click.
+    private _lastPointerType = '';
+    private _touchSyncFrame: number | null = null;
 
     constructor(private _muya: Muya, private _selection: Selection) {
         this._listenSelectActions();
@@ -301,12 +308,19 @@ class TextSelection {
     private _listenSelectActions() {
         const { eventCenter, domNode } = this._muya;
 
-        const handleMousedown = (event: Event) => {
+        const handlePointerdown = (event: Event) => {
+            // A finger drag scrolls the page rather than selecting text, so it
+            // never starts a drag-select.
             this._selectInfo = {
-                isSelect: true,
+                isSelect: isPointerEvent(event) && event.pointerType !== 'touch',
                 selection: null,
             };
+        };
 
+        // Triple-click stays on `mousedown`: pointer events always report
+        // `detail` 0, and only a cancelled `mousedown` stops the native
+        // paragraph selection.
+        const handleMousedown = (event: Event) => {
             if (!isMouseEvent(event) || event.button !== 0 || event.detail < 3)
                 return;
 
@@ -319,7 +333,7 @@ class TextSelection {
             line.block.setCursor(line.start, line.end);
         };
 
-        const handleMouseupOrLeave = () => {
+        const handlePointerupOrLeave = () => {
             const { selection } = this._selectInfo;
             if (selection?.anchor.block.outMostBlock && selection.focus.block.outMostBlock)
                 this.setSelection(selection.anchor, selection.focus);
@@ -330,12 +344,12 @@ class TextSelection {
             };
         };
 
-        const handleMousemoveOrClick = (event: Event) => {
+        const handlePointermoveOrClick = (event: Event) => {
             if (!isMouseEvent(event))
                 return;
 
             const { type, shiftKey } = event;
-            if (type === 'mousemove' && !this._selectInfo.isSelect)
+            if (type === 'pointermove' && !this._selectInfo.isSelect)
                 return;
 
             if (type === 'click' && !shiftKey)
@@ -356,17 +370,103 @@ class TextSelection {
             const endpointAnchor = { offset: anchor.offset, block: anchorBlock, path: anchorBlock.path };
             const endpointFocus = { offset: focus.offset, block: focusBlock, path: focusBlock.path };
 
-            if (type === 'mousemove')
+            if (type === 'pointermove')
                 this._selectInfo.selection = { anchor: endpointAnchor, focus: endpointFocus };
             else
                 this.setSelection(endpointAnchor, endpointFocus);
         };
 
+        const trackPointerType = (event: Event) => {
+            if (isPointerEvent(event))
+                this._lastPointerType = event.pointerType;
+        };
+
+        // Coalesce the burst a handle drag produces into one sync per frame.
+        const handleSelectionchange = () => {
+            if (this._lastPointerType !== 'touch' || this._touchSyncFrame != null)
+                return;
+
+            this._touchSyncFrame = requestAnimationFrame(() => {
+                this._touchSyncFrame = null;
+                this._syncTouchSelection();
+            });
+        };
+
+        eventCenter.attachDOMEvent(domNode, 'pointerdown', handlePointerdown);
         eventCenter.attachDOMEvent(domNode, 'mousedown', handleMousedown);
-        eventCenter.attachDOMEvent(domNode, 'mousemove', handleMousemoveOrClick);
-        eventCenter.attachDOMEvent(domNode, 'mouseup', handleMouseupOrLeave);
-        eventCenter.attachDOMEvent(domNode, 'mouseleave', handleMouseupOrLeave);
-        eventCenter.attachDOMEvent(domNode, 'click', handleMousemoveOrClick);
+        eventCenter.attachDOMEvent(domNode, 'pointermove', handlePointermoveOrClick);
+        eventCenter.attachDOMEvent(domNode, 'pointerup', handlePointerupOrLeave);
+        eventCenter.attachDOMEvent(domNode, 'pointerleave', handlePointerupOrLeave);
+        eventCenter.attachDOMEvent(domNode, 'pointercancel', handlePointerupOrLeave);
+        eventCenter.attachDOMEvent(domNode, 'click', handlePointermoveOrClick);
+        eventCenter.attachDOMEvent(this._doc, 'pointerdown', trackPointerType, true);
+        eventCenter.attachDOMEvent(this._doc, 'selectionchange', handleSelectionchange);
+    }
+
+    /**
+     * Adopt a selection the user made with a finger. It is read from the DOM
+     * and never written back: re-applying the range would dismiss the system
+     * selection handles mid-drag.
+     */
+    private _syncTouchSelection() {
+        const { domNode, eventCenter, editor } = this._muya;
+        if (!domNode.isConnected)
+            return;
+
+        const native = this.getSelection();
+        if (!native)
+            return;
+
+        const { anchor, focus, isCollapsed, isSelectionInSameBlock } = native;
+        if (anchor.block.muya !== this._muya || focus.block.muya !== this._muya)
+            return;
+
+        const tableSelection = this._selection.table;
+        const anchorCell = anchor.block.closestBlock('table.cell') as TableBodyCell | null;
+        const focusCell = focus.block.closestBlock('table.cell') as TableBodyCell | null;
+        if (anchorCell && focusCell && anchorCell !== focusCell && anchorCell.table === focusCell.table) {
+            tableSelection.followCellRange(anchorCell, focusCell);
+
+            return;
+        }
+        if (tableSelection.followsNativeRange)
+            tableSelection.clear();
+
+        // A caret comes from a tap, whose `click` already placed it through the
+        // block's click handler.
+        if (isCollapsed) {
+            eventCenter.emit('muya-format-picker', { reference: null });
+
+            return;
+        }
+
+        if (
+            this.anchorBlock === anchor.block
+            && this.focusBlock === focus.block
+            && this.anchor?.offset === anchor.offset
+            && this.focus?.offset === focus.offset
+        ) {
+            return;
+        }
+
+        this.anchor = { offset: anchor.offset };
+        this.anchorBlock = anchor.block;
+        this.anchorPath = anchor.block.path;
+        this.focus = { offset: focus.offset };
+        this.focusBlock = focus.block;
+        this.focusPath = focus.block.path;
+        editor.activeContentBlock = isSelectionInSameBlock ? anchor.block : null;
+        this._emitSelectionChange();
+
+        // Duck-typed like `_emitSelectionChange`: only Format blocks carry
+        // inline formats, so code and other plain-text blocks get no toolbar.
+        const block = anchor.block as Format;
+        if (isSelectionInSameBlock && typeof block.getFormatsInRange === 'function') {
+            eventCenter.emit('muya-format-picker', {
+                reference: getCursorReference(),
+                block,
+            });
+        }
     }
 
     private _selectRange(range: Range) {
