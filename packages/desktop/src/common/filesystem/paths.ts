@@ -2,37 +2,10 @@ import fs from 'fs'
 import path from 'path'
 import { isFile, isFile2, isSymbolicLink } from './index'
 import { minimatch } from 'minimatch'
+import { MARKDOWN_EXTENSIONS, IMAGE_EXTENSIONS, VIEWABLE_ASSET_EXTENSIONS } from './extensions'
 
-export const MARKDOWN_EXTENSIONS: readonly string[] = Object.freeze([
-  'markdown',
-  'mdown',
-  'mkdn',
-  'md',
-  'mkd',
-  'mdwn',
-  'mdtxt',
-  'mdtext',
-  'mdx',
-  'text',
-  'txt'
-])
-
-export const MARKDOWN_INCLUSIONS: readonly string[] = Object.freeze(
-  MARKDOWN_EXTENSIONS.map((x) => '*.' + x)
-)
-
-export const IMAGE_EXTENSIONS: readonly string[] = Object.freeze([
-  'jpeg',
-  'jpg',
-  'png',
-  'gif',
-  'svg',
-  'webp'
-])
-
-// Non-markdown files that open in an in-app tab when a plugin registers a view
-// for their extension (otherwise the OS default application opens them).
-export const VIEWABLE_ASSET_EXTENSIONS: readonly string[] = Object.freeze(['pdf'])
+// The lists live in a module without Node imports so web builds can use them.
+export { MARKDOWN_EXTENSIONS, MARKDOWN_INCLUSIONS, IMAGE_EXTENSIONS, VIEWABLE_ASSET_EXTENSIONS } from './extensions'
 
 // Extensions the OS shell will execute rather than open in an application.
 // Opening one of these via shell.openPath runs code, so a markdown link

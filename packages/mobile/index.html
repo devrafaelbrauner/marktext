@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>MarkText</title>
+    <!--
+      Desktop CSP (packages/desktop/src/renderer/index.html) with the Electron
+      schemes mapped to their Android hosts: the bundle is 'self'
+      (https://localhost), vault files are https://vault.local and community
+      plugins are https://<id>.plugin.local, all served by the native
+      request interceptor.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self';
+                  script-src 'self';
+                  style-src 'self' 'unsafe-inline';
+                  img-src * data: blob: https://vault.local;
+                  font-src 'self' data:;
+                  frame-src https://*.plugin.local;
+                  "
+    />
+  </head>
+
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/entry.ts"></script>
+  </body>
+</html>

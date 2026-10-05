@@ -1,0 +1,24 @@
+{
+  "extends": "../desktop/tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node", "vite/client"],
+    "paths": {
+      "@/*": ["../desktop/src/renderer/src/*"],
+      "common/*": ["../desktop/src/common/*"],
+      "@muyajs/core": ["../muya/lib/types/index.d.ts"],
+      "@muyajs/core/*": ["../muya/lib/types/*"],
+      "@shared/*": ["../desktop/src/shared/*"],
+      "@plugins/*": ["../desktop/src/plugins/*"],
+      "@mobile/*": ["./src/*"],
+      "electron": ["./src/shim/electron.ts"]
+    }
+  },
+  "include": [
+    "../desktop/src/types/**/*.d.ts",
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "vite.web.config.ts",
+    "capacitor.config.ts"
+  ]
+}
