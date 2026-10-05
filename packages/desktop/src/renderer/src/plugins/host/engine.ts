@@ -135,6 +135,9 @@ export class EngineHost {
     const fingerTap = typeof PointerEvent !== 'undefined' && event instanceof PointerEvent && event.pointerType === 'touch'
     if (!ctrlOrMeta && !fingerTap) return
     listeners.emit({ data: { ...(data as Record<string, string>) }, event })
+    // The tap also focused the editor, which opened the soft keyboard over the
+    // note just navigated to.
+    if (fingerTap && document.activeElement instanceof HTMLElement) document.activeElement.blur()
   }
 
   constructor(private readonly options: EngineHostOptions) {
